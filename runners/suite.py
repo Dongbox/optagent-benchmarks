@@ -154,6 +154,8 @@ def build_summary(
         for row in rows
         if row.get("status") != "error" and row.get("objective") is not None and row.get("feasible") is True
     ]
+    error_rows = [row for row in rows if row.get("status") == "error"]
+    non_feasible_rows = [row for row in rows if row.get("status") != "error" and row.get("feasible") is not True]
     best_by_case: dict[str, dict[str, Any]] = {}
     for row in successful_rows:
         key = str(row["benchmark_id"])
@@ -171,7 +173,8 @@ def build_summary(
         "skipped_case_count": len(skipped_cases),
         "strategy_run_count": len(rows),
         "successful_run_count": len(successful_rows),
-        "error_run_count": len(rows) - len(successful_rows),
+        "error_run_count": len(error_rows),
+        "non_feasible_run_count": len(non_feasible_rows),
         "families": list(config["families"]),
         "tiers": list(config["tiers"]),
         "strategies": list(config["strategies"]),
@@ -210,6 +213,7 @@ def write_results_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
         "status",
         "feasible",
         "objective",
+        "raw_objective",
         "reference_objective",
         "gap_abs",
         "gap_rel",
@@ -238,6 +242,7 @@ def render_report(summary: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         f"- Executed cases: {summary['executed_case_count']}",
         f"- Runs: {summary['strategy_run_count']}",
         f"- Successful runs: {summary['successful_run_count']}",
+        f"- Non-feasible runs: {summary['non_feasible_run_count']}",
         f"- Error runs: {summary['error_run_count']}",
         "",
         "## Best By Case",
@@ -269,8 +274,8 @@ def render_report(summary: dict[str, Any], rows: list[dict[str, Any]]) -> str:
             "",
             "## Runs",
             "",
-            "| Case | Route | Kind | Status | Objective | Gap % | Seconds | Metadata highlights |",
-            "| --- | --- | --- | --- | ---: | ---: | ---: | --- |",
+            "| Case | Route | Kind | Status | Objective | Raw objective | Gap % | Seconds | Metadata highlights |",
+            "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
         ]
     )
     for row in rows:
@@ -301,6 +306,7 @@ def render_report(summary: dict[str, Any], rows: list[dict[str, Any]]) -> str:
                     f"`{row.get('kind') or ''}`",
                     str(row.get("status")),
                     _fmt(row.get("objective")),
+                    _fmt(row.get("raw_objective")),
                     _fmt_pct(row.get("gap_rel")),
                     _fmt(row.get("elapsed_seconds")),
                     ", ".join(highlights) if highlights else "",
