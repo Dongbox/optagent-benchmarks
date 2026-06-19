@@ -12,7 +12,7 @@ from optagent import AlnsConfig, GaConfig, SolveOptions, TabuConfig, solve
 
 from benchmarks.loaders.sequence_quadratic_assignment import load_qap_case
 from benchmarks.models.sequence_quadratic_assignment import QapBenchmarkModel, build_qap_model
-from benchmarks.runners.common import objective_gap, summarize_solution_metadata
+from benchmarks.runners.common import model_style_from_program, objective_gap, strategy_profile_name, summarize_solution_metadata
 
 
 @dataclass(frozen=True)
@@ -80,6 +80,8 @@ def _run_strategy(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": strategy_name,
+            "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="strategy_run"),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "strategy_config": asdict(strategy_config),
             "solver_name": solution.solver_name,
             "status": getattr(solution.status, "value", str(solution.status)),
@@ -105,6 +107,8 @@ def _run_strategy(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": strategy_name,
+            "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="strategy_run"),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "status": "error",
             "feasible": False,
             "objective": None,
@@ -168,6 +172,8 @@ def _case_setup_error_row(
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": strategy_name,
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="strategy_run"),
+        "model_style": model_style_from_program(None, family=case["family"]),
         "status": "error",
         "feasible": False,
         "objective": None,

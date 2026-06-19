@@ -11,6 +11,7 @@ from benchmarks.loaders.sequence_quadratic_assignment import QapInstance
 @dataclass(frozen=True)
 class QapBenchmarkModel:
     program: Any
+    program_spec: Any
     assignment_node_id: int
     default_assignment: list[int]
     instance: QapInstance
@@ -25,9 +26,12 @@ def build_qap_model(case: dict[str, Any], instance: QapInstance) -> QapBenchmark
             "model_style": "sequence_var_external_call",
             "source": "QAPLIB",
             "size": instance.size,
+            "qap_flow_matrix": [list(row) for row in instance.flow],
+            "qap_distance_matrix": [list(row) for row in instance.distance],
         }
     )
     assignment = builder.sequence_var(size=instance.size, default=default_assignment, name="assignment")
+    builder.metadata["qap_assignment_node_id"] = assignment.node_id
 
     def assignment_cost(ctx: ExternalCallbackContext) -> int:
         candidate = [int(item) for item in ctx.value(assignment)]
@@ -45,8 +49,10 @@ def build_qap_model(case: dict[str, Any], instance: QapInstance) -> QapBenchmark
         ),
         name="assignment_cost",
     )
+    program_spec = builder.to_program_spec()
     return QapBenchmarkModel(
         program=builder.freeze(),
+        program_spec=program_spec,
         assignment_node_id=assignment.node_id,
         default_assignment=default_assignment,
         instance=instance,

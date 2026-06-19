@@ -12,7 +12,7 @@ from optagent import MilpConfig, solve_milp
 
 from benchmarks.loaders.exact_linear_mip import load_miplib_case
 from benchmarks.models.exact_linear_mip import MipBenchmarkModel, build_mip_model
-from benchmarks.runners.common import objective_gap
+from benchmarks.runners.common import model_style_from_program, objective_gap, strategy_profile_name
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,6 @@ def run_mip_case(
     data_cache_dir: str | None = None,
     allow_download: bool = True,
 ) -> list[dict[str, Any]]:
-    del strategies
     load_kwargs: dict[str, Any] = {"allow_download": allow_download}
     if data_cache_dir is not None:
         load_kwargs["cache_dir"] = data_cache_dir
@@ -41,8 +40,8 @@ def run_mip_case(
         instance = load_miplib_case(case, **load_kwargs)
         model = build_mip_model(case, instance)
     except Exception as exc:
-        return [_case_setup_error_row(case=case, exc=exc)]
-    return [_run_exact(case=case, model=model, budget=budget)]
+        return [_case_setup_error_row(case=case, exc=exc, requested_strategies=strategies)]
+    return [_run_exact(case=case, model=model, budget=budget, requested_strategies=strategies)]
 
 
 def _run_exact(
@@ -50,6 +49,7 @@ def _run_exact(
     case: dict[str, Any],
     model: MipBenchmarkModel,
     budget: MipExactBudget,
+    requested_strategies: tuple[str, ...],
 ) -> dict[str, Any]:
     started = perf_counter()
     try:
@@ -73,6 +73,8 @@ def _run_exact(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": budget.backend,
+            "strategy_profile": strategy_profile_name(family=case["family"], strategy=budget.backend, kind="exact_baseline"),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "strategy_config": {
                 "backend": budget.backend,
                 "time_limit_s": budget.time_limit_s,
@@ -92,14 +94,25 @@ def _run_exact(
             "time_to_first_feasible_seconds": elapsed_seconds if solution.feasible else None,
             "dimension": model.instance.variable_count,
             "edge_weight_type": "mps_linear_mip",
-            "metadata": _exact_metadata(solution.metadata, model),
+            "metadata": _exact_metadata(solution.metadata, model, requested_strategies=requested_strategies),
         }
     except Exception as exc:
         elapsed_seconds = perf_counter() - started
-        return _error_row(case=case, model=model, exc=exc, elapsed_seconds=elapsed_seconds)
+        return _error_row(
+            case=case,
+            model=model,
+            exc=exc,
+            elapsed_seconds=elapsed_seconds,
+            requested_strategies=requested_strategies,
+        )
 
 
-def _case_setup_error_row(*, case: dict[str, Any], exc: Exception) -> dict[str, Any]:
+def _case_setup_error_row(
+    *,
+    case: dict[str, Any],
+    exc: Exception,
+    requested_strategies: tuple[str, ...],
+) -> dict[str, Any]:
     return {
         "kind": "exact_baseline",
         "benchmark_id": case["benchmark_id"],
@@ -107,6 +120,8 @@ def _case_setup_error_row(*, case: dict[str, Any], exc: Exception) -> dict[str, 
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": "optx",
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy="optx", kind="exact_baseline"),
+        "model_style": model_style_from_program(None, family=case["family"]),
         "status": "error",
         "feasible": False,
         "objective": None,
@@ -120,6 +135,7 @@ def _case_setup_error_row(*, case: dict[str, Any], exc: Exception) -> dict[str, 
         "time_to_first_feasible_seconds": None,
         "dimension": case.get("size", {}).get("variables"),
         "edge_weight_type": "mps_linear_mip",
+        "metadata": _mip_heuristic_route_metadata(requested_strategies=requested_strategies),
         "error": {"type": type(exc).__name__, "message": str(exc)},
     }
 
@@ -130,6 +146,7 @@ def _error_row(
     model: MipBenchmarkModel,
     exc: Exception,
     elapsed_seconds: float,
+    requested_strategies: tuple[str, ...],
 ) -> dict[str, Any]:
     return {
         "kind": "exact_baseline",
@@ -138,6 +155,8 @@ def _error_row(
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": "optx",
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy="optx", kind="exact_baseline"),
+        "model_style": model_style_from_program(model.program, family=case["family"]),
         "status": "error",
         "feasible": False,
         "objective": None,
@@ -152,6 +171,7 @@ def _error_row(
         "dimension": model.instance.variable_count,
         "edge_weight_type": "mps_linear_mip",
         "metadata": {
+            **_mip_heuristic_route_metadata(requested_strategies=requested_strategies),
             "variables": model.instance.variable_count,
             "constraints": model.instance.constraint_count,
             "nonzeros": model.instance.nonzero_count,
@@ -165,7 +185,12 @@ def _reference_objective(case: dict[str, Any]) -> float | None:
     return float(objective) if objective is not None else None
 
 
-def _exact_metadata(metadata: dict[str, Any], model: MipBenchmarkModel) -> dict[str, Any]:
+def _exact_metadata(
+    metadata: dict[str, Any],
+    model: MipBenchmarkModel,
+    *,
+    requested_strategies: tuple[str, ...],
+) -> dict[str, Any]:
     keys = (
         "backend",
         "solver_status",
@@ -179,6 +204,7 @@ def _exact_metadata(metadata: dict[str, Any], model: MipBenchmarkModel) -> dict[
         "max_constraint_violation",
     )
     return {
+        **_mip_heuristic_route_metadata(requested_strategies=requested_strategies),
         **{key: metadata[key] for key in keys if key in metadata},
         "variables": model.instance.variable_count,
         "binary_variables": model.instance.binary_count,
@@ -186,4 +212,15 @@ def _exact_metadata(metadata: dict[str, Any], model: MipBenchmarkModel) -> dict[
         "continuous_variables": model.instance.continuous_count,
         "constraints": model.instance.constraint_count,
         "nonzeros": model.instance.nonzero_count,
+    }
+
+
+def _mip_heuristic_route_metadata(*, requested_strategies: tuple[str, ...]) -> dict[str, Any]:
+    return {
+        "mip_heuristic_route_enabled": False,
+        "mip_heuristic_route_decision": "exact_only",
+        "mip_heuristic_route_reason": "no_dedicated_milp_native_heuristic",
+        "exact_baseline_required": True,
+        "requested_strategies": list(requested_strategies),
+        "ignored_requested_strategies": list(requested_strategies),
     }

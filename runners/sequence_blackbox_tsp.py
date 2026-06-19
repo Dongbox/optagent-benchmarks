@@ -10,9 +10,14 @@ prefer_local_development_paths()
 
 from optagent import AlnsConfig, GaConfig, SolveOptions, TabuConfig, solve
 
-from benchmarks.loaders.sequence_blackbox_tsp import load_tsp_case
+from benchmarks.loaders.sequence_blackbox_tsp import TspInstance, load_tsp_case
 from benchmarks.models.sequence_blackbox_tsp import TspBenchmarkModel, build_tsp_model
-from benchmarks.runners.common import objective_gap, summarize_solution_metadata
+from benchmarks.models.sequence_graph_tsp import GRAPH_TSP_MODEL_STYLE, build_tsp_graph_model
+from benchmarks.runners.common import model_style_from_program, objective_gap, strategy_profile_name, summarize_solution_metadata
+
+BLACKBOX_TSP_MODEL_STYLE = "sequence_var_external_call"
+DEFAULT_TSP_MODEL_STYLES = (BLACKBOX_TSP_MODEL_STYLE,)
+SUPPORTED_TSP_MODEL_STYLES = (BLACKBOX_TSP_MODEL_STYLE, GRAPH_TSP_MODEL_STYLE)
 
 
 @dataclass(frozen=True)
@@ -31,20 +36,37 @@ def run_tsp_case(
     budget: TspStrategyBudget = TspStrategyBudget(),
     data_cache_dir: str | None = None,
     allow_download: bool = True,
+    model_styles: tuple[str, ...] = DEFAULT_TSP_MODEL_STYLES,
 ) -> list[dict[str, Any]]:
+    requested_model_styles = model_styles or DEFAULT_TSP_MODEL_STYLES
     load_kwargs: dict[str, Any] = {"allow_download": allow_download}
     if data_cache_dir is not None:
         load_kwargs["cache_dir"] = data_cache_dir
     try:
         instance = load_tsp_case(case, **load_kwargs)
-        model = build_tsp_model(case, instance)
+        models = [_build_model_for_style(case, instance, model_style) for model_style in requested_model_styles]
     except Exception as exc:
-        return [_case_setup_error_row(case=case, strategy_name=strategy_name, exc=exc) for strategy_name in strategies]
+        rows: list[dict[str, Any]] = []
+        for model_style in requested_model_styles:
+            rows.extend(
+                _case_setup_error_row(case=case, strategy_name=strategy_name, exc=exc, model_style=model_style)
+                for strategy_name in strategies
+            )
+        return rows
 
     rows: list[dict[str, Any]] = []
-    for strategy_name in strategies:
-        rows.append(_run_strategy(case=case, model=model, strategy_name=strategy_name, budget=budget))
+    for model in models:
+        for strategy_name in strategies:
+            rows.append(_run_strategy(case=case, model=model, strategy_name=strategy_name, budget=budget))
     return rows
+
+
+def _build_model_for_style(case: dict[str, Any], instance: TspInstance, model_style: str) -> TspBenchmarkModel:
+    if model_style == BLACKBOX_TSP_MODEL_STYLE:
+        return build_tsp_model(case, instance)
+    if model_style == GRAPH_TSP_MODEL_STYLE:
+        return build_tsp_graph_model(case, instance)
+    raise ValueError(f"unsupported TSP model style: {model_style}")
 
 
 def _run_strategy(
@@ -80,6 +102,13 @@ def _run_strategy(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": strategy_name,
+            "strategy_profile": strategy_profile_name(
+                family=case["family"],
+                strategy=strategy_name,
+                model_style=model_style_from_program(model.program, family=case["family"]),
+                kind="strategy_run",
+            ),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "strategy_config": asdict(strategy_config),
             "solver_name": solution.solver_name,
             "status": getattr(solution.status, "value", str(solution.status)),
@@ -105,6 +134,13 @@ def _run_strategy(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": strategy_name,
+            "strategy_profile": strategy_profile_name(
+                family=case["family"],
+                strategy=strategy_name,
+                model_style=model_style_from_program(model.program, family=case["family"]),
+                kind="strategy_run",
+            ),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "status": "error",
             "feasible": False,
             "objective": None,
@@ -160,6 +196,7 @@ def _case_setup_error_row(
     case: dict[str, Any],
     strategy_name: str,
     exc: Exception,
+    model_style: str | None = None,
 ) -> dict[str, Any]:
     return {
         "kind": "strategy_run",
@@ -168,6 +205,13 @@ def _case_setup_error_row(
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": strategy_name,
+        "strategy_profile": strategy_profile_name(
+            family=case["family"],
+            strategy=strategy_name,
+            model_style=model_style,
+            kind="strategy_run",
+        ),
+        "model_style": model_style or model_style_from_program(None, family=case["family"]),
         "status": "error",
         "feasible": False,
         "objective": None,

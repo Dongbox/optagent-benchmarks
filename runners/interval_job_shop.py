@@ -8,7 +8,7 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AlnsConfig, CpSatConfig, GaConfig, SolveOptions, TabuConfig, solve, solve_cpsat
+from optagent import AlnsConfig, CpSatConfig, GaConfig, LnsConfig, SolveOptions, TabuConfig, solve, solve_cpsat
 
 from benchmarks.loaders.interval_job_shop import load_job_shop_case
 from benchmarks.models.interval_job_shop import (
@@ -17,7 +17,7 @@ from benchmarks.models.interval_job_shop import (
     machine_order_from_solution,
     makespan_from_solution,
 )
-from benchmarks.runners.common import objective_gap, summarize_solution_metadata
+from benchmarks.runners.common import model_style_from_program, objective_gap, strategy_profile_name, summarize_solution_metadata
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ class JobShopStrategyBudget:
 def run_job_shop_case(
     case: dict[str, Any],
     *,
-    strategies: tuple[str, ...] = ("ga", "alns", "tabu"),
+    strategies: tuple[str, ...] = ("ga", "alns"),
     budget: JobShopStrategyBudget = JobShopStrategyBudget(),
     data_cache_dir: str | None = None,
     allow_download: bool = True,
@@ -95,6 +95,8 @@ def _run_cpsat_baseline(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": "cpsat",
+            "strategy_profile": strategy_profile_name(family=case["family"], strategy="cpsat", kind="exact_baseline"),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "strategy_config": {
                 "time_limit_s": budget.effective_cpsat_time_limit_s,
                 "workers": 1,
@@ -169,6 +171,8 @@ def _run_strategy(
             "tier": case["tier"],
             "instance": case["instance"],
             "strategy": strategy_name,
+            "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="strategy_run"),
+            "model_style": model_style_from_program(model.program, family=case["family"]),
             "strategy_config": asdict(strategy_config),
             "solver_name": solution.solver_name,
             "status": getattr(solution.status, "value", str(solution.status)),
@@ -228,6 +232,12 @@ def _strategy_config(strategy_name: str, budget: JobShopStrategyBudget, operatio
             exact_repair_max_calls=1,
             exact_repair_time_budget_s=min(1.0, max(0.1, budget.time_limit_s / 4.0)),
         )
+    if strategy_name == "lns":
+        return LnsConfig(
+            max_iterations=budget.max_iterations,
+            destroy_count=destroy_count,
+            lns_every=1,
+        )
     if strategy_name == "tabu":
         return TabuConfig(
             max_iterations=budget.max_iterations,
@@ -250,6 +260,8 @@ def _case_setup_error_row(
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": strategy_name,
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="exact_baseline" if strategy_name == "cpsat" else "strategy_run"),
+        "model_style": model_style_from_program(None, family=case["family"]),
         "status": "error",
         "feasible": False,
         "objective": None,
@@ -282,6 +294,8 @@ def _error_row(
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": strategy_name,
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind=kind),
+        "model_style": model_style_from_program(model.program, family=case["family"]),
         "status": "error",
         "feasible": False,
         "objective": None,

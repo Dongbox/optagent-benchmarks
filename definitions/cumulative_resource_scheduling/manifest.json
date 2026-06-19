@@ -3,7 +3,7 @@
   "catalog_version": "modeling-native-catalog-v1",
   "source": "PSPLIB / RCPSP public bounds",
   "modeling_summary": "One interval_var per activity, precedence for project arcs, cumulative constraints for renewable resources, minimize project makespan.",
-  "primary_routes": ["solve_cpsat", "AlnsConfig", "LnsConfig"],
+  "primary_routes": ["solve_cpsat", "AlnsConfig", "GaConfig"],
   "cases": [
     {"benchmark_id": "psplib_j90_1_1", "tier": "calibration", "reference_kind": "optimal", "reference_objective": 73},
     {"benchmark_id": "psplib_j90_1_8", "tier": "calibration", "reference_kind": "optimal", "reference_objective": 95},
