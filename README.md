@@ -17,13 +17,15 @@ Local or CI runs should write immutable artifacts under `docs/evals/benchmark-su
 
 ## Run Status
 
-The suite is runner-ready for:
+The suite is runner-ready for all catalog families:
 
 - `interval_job_shop`: JSPLIB ScheduleOpt JSON, modeled as one `interval_var` per operation, machine `sequence_var` plus `no_overlap`, job `precedence`, and a makespan objective. The runner emits a `solve_cpsat` exact baseline row plus GA/ALNS/Tabu strategy rows.
 - `sequence_blackbox_tsp`: TSPLIB `.tsp` / `.tsp.gz`, modeled as `sequence_var` tour plus deterministic `external_call` tour length.
 - `sequence_quadratic_assignment`: QAPLIB `.dat`, modeled as `sequence_var` facility-to-location assignment plus deterministic `external_call` quadratic cost.
+- `cumulative_resource_scheduling`: PSPLIB `.rcp` / `.sm` resource-constrained project scheduling, modeled with `interval_var`, precedence, cumulative renewable resources, and a makespan objective. The runner emits a `solve_cpsat` exact baseline row plus GA/ALNS/Tabu strategy rows.
+- `exact_linear_mip`: MIPLIB `.mps` / `.mps.gz`, modeled as canonical linear MP with bool/int/float variables, linear constraints, and a linear objective. This family is exact-only and emits an OptX baseline row; GA/ALNS/Tabu are intentionally ignored because the catalog cases are pure linear MIP baselines rather than native search domains.
 
-The runnable strategy families use `GaConfig`, `AlnsConfig`, and `TabuConfig`, and emit `config.json`, `results.jsonl`, `results.csv`, `summary.json`, and `report.md`. JSPLIB additionally emits a `cpsat` exact-baseline route. Other catalog families are selected and described, but their family runners are not implemented yet.
+The strategy families use `GaConfig`, `AlnsConfig`, and `TabuConfig`, and emit `config.json`, `results.jsonl`, `results.csv`, `summary.json`, and `report.md`. JSPLIB and PSPLIB additionally emit `cpsat` exact-baseline rows. MIPLIB emits `optx` exact-baseline rows only.
 
 For local native development, run against the current native build tree so the benchmark does not accidentally load an older editable-install extension:
 
@@ -35,6 +37,22 @@ By default this runs the JSPLIB, TSPLIB, and QAPLIB smoke cases with GA, ALNS, a
 
 ```text
 docs/evals/benchmark-suite/runs/<timestamp>/
+```
+
+Run the remaining exact/scheduling families explicitly:
+
+```bash
+PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+  --family cumulative_resource_scheduling \
+  --tier calibration \
+  --max-iterations 5 \
+  --time-limit-s 2 \
+  --population-size 6
+
+PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+  --family exact_linear_mip \
+  --tier smoke \
+  --time-limit-s 10
 ```
 
 Use tighter budgets for harness smoke checks:

@@ -9,12 +9,20 @@ from typing import Any
 
 from benchmarks.loaders.catalog import DEFAULT_CATALOG_PATH, catalog_cases, select_cases
 from benchmarks.runners.common import DEFAULT_RUN_ROOT, append_jsonl, ensure_run_dir, write_json
+from benchmarks.runners.cumulative_resource_scheduling import RcpspStrategyBudget, run_rcpsp_case
+from benchmarks.runners.exact_linear_mip import MipExactBudget, run_mip_case
 from benchmarks.runners.interval_job_shop import JobShopStrategyBudget, run_job_shop_case
 from benchmarks.runners.sequence_quadratic_assignment import QapStrategyBudget, run_qap_case
 from benchmarks.runners.sequence_blackbox_tsp import TspStrategyBudget, run_tsp_case
 
 
-IMPLEMENTED_FAMILIES = {"interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment"}
+IMPLEMENTED_FAMILIES = {
+    "cumulative_resource_scheduling",
+    "exact_linear_mip",
+    "interval_job_shop",
+    "sequence_blackbox_tsp",
+    "sequence_quadratic_assignment",
+}
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
 
 
@@ -63,6 +71,21 @@ def run_benchmark_suite(
         population_size=population_size,
         trace_limit=trace_limit,
     )
+    rcpsp_budget = RcpspStrategyBudget(
+        seed=seed,
+        max_iterations=max_iterations,
+        time_limit_s=time_limit_s,
+        population_size=population_size,
+        trace_limit=trace_limit,
+    )
+    mip_budget = MipExactBudget(
+        seed=seed,
+        max_iterations=0,
+        time_limit_s=time_limit_s,
+        population_size=0,
+        trace_limit=0,
+        backend="optx",
+    )
     config = {
         "catalog_path": str(catalog_path),
         "families": list(families),
@@ -71,6 +94,8 @@ def run_benchmark_suite(
         "strategies": list(strategies),
         "budget": asdict(budget),
         "family_budgets": {
+            "cumulative_resource_scheduling": asdict(rcpsp_budget),
+            "exact_linear_mip": asdict(mip_budget),
             "interval_job_shop": asdict(job_shop_budget),
             "sequence_blackbox_tsp": asdict(budget),
             "sequence_quadratic_assignment": asdict(qap_budget),
@@ -103,6 +128,27 @@ def run_benchmark_suite(
                 budget=budget,
                 data_cache_dir=data_cache_dir,
                 allow_download=allow_download,
+            )
+            append_jsonl(run_dir / "results.jsonl", case_rows)
+            rows.extend(case_rows)
+        elif family == "exact_linear_mip":
+            case_rows = run_mip_case(
+                case,
+                strategies=strategies,
+                budget=mip_budget,
+                data_cache_dir=data_cache_dir,
+                allow_download=allow_download,
+            )
+            append_jsonl(run_dir / "results.jsonl", case_rows)
+            rows.extend(case_rows)
+        elif family == "cumulative_resource_scheduling":
+            case_rows = run_rcpsp_case(
+                case,
+                strategies=strategies,
+                budget=rcpsp_budget,
+                data_cache_dir=data_cache_dir,
+                allow_download=allow_download,
+                include_exact_baseline=True,
             )
             append_jsonl(run_dir / "results.jsonl", case_rows)
             rows.extend(case_rows)
