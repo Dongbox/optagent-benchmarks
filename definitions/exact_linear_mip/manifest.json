@@ -1,0 +1,15 @@
+{
+  "family": "exact_linear_mip",
+  "catalog_version": "modeling-native-catalog-v1",
+  "source": "MIPLIB 2017 benchmark set",
+  "modeling_summary": "MPS/MP linear model imported or built into OptAgent exact MP form; use as exact backend benchmark, not primary GA/ALNS search benchmark.",
+  "primary_routes": ["solve_milp backend=optx"],
+  "cases": [
+    {"benchmark_id": "miplib2017_50v-10", "tier": "smoke", "reference_kind": "optimal", "reference_objective": 3311.1799841},
+    {"benchmark_id": "miplib2017_ran14x18-disj-8", "tier": "smoke", "reference_kind": "optimal", "reference_objective": 3712.0},
+    {"benchmark_id": "miplib2017_reblock115", "tier": "calibration", "reference_kind": "optimal", "reference_objective": -36800603.2332},
+    {"benchmark_id": "miplib2017_air05", "tier": "calibration", "reference_kind": "optimal", "reference_objective": 26374.0},
+    {"benchmark_id": "miplib2017_fast0507", "tier": "full", "reference_kind": "optimal", "reference_objective": 174.0},
+    {"benchmark_id": "miplib2017_academictimetablesmall", "tier": "full", "reference_kind": "optimal", "reference_objective": 0.0}
+  ]
+}
