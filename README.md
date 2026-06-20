@@ -25,7 +25,7 @@ The suite is runner-ready for all catalog families:
 - `cumulative_resource_scheduling`: PSPLIB `.rcp` / `.sm` resource-constrained project scheduling, modeled with `interval_var`, precedence, cumulative renewable resources, and a makespan objective. The runner emits a `solve_cpsat` exact baseline row plus GA/ALNS strategy rows.
 - `exact_linear_mip`: MIPLIB `.mps` / `.mps.gz`, modeled as canonical linear MP with bool/int/float variables, linear constraints, and a linear objective. This family is exact-only and emits an OptX baseline row; GA/ALNS/Tabu are intentionally ignored because the catalog cases are pure linear MIP baselines rather than native search domains.
 
-The benchmark suite uses family-aware strategy routes and emits `config.json`, `results.jsonl`, `results.csv`, `summary.json`, and `report.md`. Every row includes a stable `strategy_profile`, `budget_profile`, `model_style`, and effective budget fields so runs can be compared after strategy tuning. JSPLIB and PSPLIB use `GaConfig` and `AlnsConfig` plus `cpsat` exact-baseline rows; standalone Tabu and standalone LNS are not scheduling benchmark routes because both currently fall back without producing useful feasible scheduling rows. Requested scheduling `tabu` or `lns` names are replaced by `alns` and recorded in `strategy_substitutions`. TSPLIB and QAPLIB keep `GaConfig`, `AlnsConfig`, and `TabuConfig` sequence/permutation rows. MIPLIB emits `optx` exact-baseline rows only. Requested strategy names on MIPLIB runs are recorded in row metadata as ignored requests while `mip_heuristic_route_enabled=false`; a future MIP heuristic must use a dedicated MILP-native route and must not replace the OptX exact baseline.
+The benchmark suite uses family-aware strategy routes and emits `config.json`, `results.jsonl`, `results.csv`, `summary.json`, and `report.md`. Every row includes a stable `strategy_profile`, `budget_profile`, `model_style`, and effective budget fields so runs can be compared after strategy tuning. JSPLIB and PSPLIB use `LocalSearchConfig`, `GaConfig`, and `AlnsConfig` plus `cpsat` exact-baseline rows; standalone Tabu and standalone LNS are not scheduling benchmark routes because both currently fall back without producing useful feasible scheduling rows. Requested scheduling `tabu` or `lns` names are replaced by `alns` and recorded in `strategy_substitutions`. TSPLIB and QAPLIB keep `LocalSearchConfig`, `GaConfig`, `AlnsConfig`, and `TabuConfig` sequence/permutation rows. MIPLIB emits `optx` exact-baseline rows only. Requested strategy names on MIPLIB runs are recorded in row metadata as ignored requests while `mip_heuristic_route_enabled=false`; a future MIP heuristic must use a dedicated MILP-native route and must not replace the OptX exact baseline.
 
 Named Phase 5 profiles include:
 
@@ -37,6 +37,32 @@ Named Phase 5 profiles include:
 - `optx_mip_exact_v1`
 
 Budgets are resolved by family and tier with a ceiling policy. CLI budget flags remain upper bounds; smoke runs stay short, calibration runs allow more optimization comparison, and full runs provide the performance baseline. Reports show both strategy rows and exact-baseline rows explicitly.
+
+## Default Strategy Candidate Matrix
+
+Use `--default-candidate-matrix` when the purpose is deciding which strategy should be considered the current default candidate. This mode adds a `default_candidate_matrix` block to `summary.json` and a "Default Strategy Candidate Matrix" section to `report.md`.
+
+When no `--strategy` values are provided, this mode runs:
+
+- `local_search`
+- `alns`
+- `ga`
+- `tabu`
+
+The ranking is data-driven from emitted strategy rows, so future strategies only need to be included in the requested strategy list to appear in the matrix. The selection policy is `feasible_coverage_then_error_then_gap_then_time_v1`: rank by family/case coverage, feasible rate, error/non-feasible rate, average and max relative gap, then average elapsed seconds.
+
+Example:
+
+```bash
+PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+  --tier smoke \
+  --default-candidate-matrix \
+  --max-iterations 5 \
+  --time-limit-s 2 \
+  --population-size 8
+```
+
+For a fuller default-candidate decision, include all implemented families and tiers that have local data available. MIPLIB rows remain exact-baseline rows until a dedicated MILP-native heuristic route exists; they are intentionally excluded from the strategy-candidate ranking because the matrix ranks `kind=strategy_run` rows only.
 
 For local native development, run against the current native build tree so the benchmark does not accidentally load an older editable-install extension:
 

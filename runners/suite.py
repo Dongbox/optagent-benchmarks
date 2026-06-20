@@ -35,6 +35,7 @@ IMPLEMENTED_FAMILIES = {
 }
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
 DEFAULT_STRATEGIES = ("ga", "alns", "tabu")
+DEFAULT_CANDIDATE_STRATEGIES = ("local_search", "alns", "ga", "tabu")
 SCHEDULING_FAMILIES = {"interval_job_shop", "cumulative_resource_scheduling"}
 SCHEDULING_DEFAULT_STRATEGIES = ("ga", "alns")
 SCHEDULING_STRATEGY_REPLACEMENTS = {"tabu": "alns", "lns": "alns"}
@@ -57,6 +58,7 @@ def run_benchmark_suite(
     data_cache_dir: str | None = None,
     allow_download: bool = True,
     model_styles: tuple[str, ...] = (),
+    default_candidate_matrix: bool = False,
     timestamp: str | None = None,
 ) -> dict[str, Any]:
     run_dir = ensure_run_dir(output_root, timestamp=timestamp)
@@ -99,6 +101,7 @@ def run_benchmark_suite(
         "strategies": list(strategies),
         "family_strategy_plan": {family: list(values) for family, values in strategy_plan.items()},
         "strategy_substitutions": strategy_substitutions,
+        "default_candidate_matrix": bool(default_candidate_matrix),
         "model_styles": list(model_styles),
         "budget": asdict(budget_request),
         "budget_policy": "family_tier_ceiling_v1",
@@ -357,6 +360,12 @@ def build_summary(
         "strategies": list(config["strategies"]),
         "family_strategy_plan": config.get("family_strategy_plan", {}),
         "strategy_substitutions": config.get("strategy_substitutions", []),
+        "default_candidate_matrix_enabled": bool(config.get("default_candidate_matrix", False)),
+        "default_candidate_matrix": (
+            build_default_candidate_matrix(rows)
+            if config.get("default_candidate_matrix", False)
+            else {"enabled": False, "reason": "not requested", "ranked_strategies": []}
+        ),
         "budget": dict(config["budget"]),
         "budget_policy": config.get("budget_policy"),
         "family_budgets": config.get("family_budgets", {}),
@@ -384,6 +393,99 @@ def build_summary(
             "report": str(run_dir / "report.md"),
         },
     }
+
+
+def build_default_candidate_matrix(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Rank strategy candidates by coverage, feasibility, quality, and runtime."""
+
+    strategy_rows = [row for row in rows if row.get("kind") == "strategy_run"]
+    by_strategy: dict[str, list[dict[str, Any]]] = {}
+    for row in strategy_rows:
+        strategy = str(row.get("strategy") or "")
+        if strategy:
+            by_strategy.setdefault(strategy, []).append(row)
+
+    ranked = [
+        _default_candidate_score(strategy, strategy_rows)
+        for strategy, strategy_rows in sorted(by_strategy.items())
+    ]
+    ranked.sort(key=_default_candidate_sort_key)
+    for index, row in enumerate(ranked, start=1):
+        row["rank"] = index
+        row["recommended"] = index == 1
+    return {
+        "enabled": True,
+        "selection_policy": "feasible_coverage_then_error_then_gap_then_time_v1",
+        "ranked_strategies": ranked,
+        "recommended_strategy": ranked[0]["strategy"] if ranked else None,
+        "strategy_count": len(ranked),
+        "row_count": len(strategy_rows),
+    }
+
+
+def _default_candidate_score(strategy: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    successful = [
+        row
+        for row in rows
+        if row.get("status") != "error" and row.get("feasible") is True and row.get("objective") is not None
+    ]
+    error_rows = [row for row in rows if row.get("status") == "error"]
+    non_feasible = [row for row in rows if row.get("status") != "error" and row.get("feasible") is not True]
+    gap_values = [
+        float(row["gap_rel"])
+        for row in successful
+        if row.get("gap_rel") is not None
+    ]
+    elapsed_values = [
+        float(row["elapsed_seconds"])
+        for row in rows
+        if row.get("elapsed_seconds") is not None
+    ]
+    row_count = len(rows)
+    successful_count = len(successful)
+    feasible_rate = successful_count / row_count if row_count else 0.0
+    error_rate = len(error_rows) / row_count if row_count else 0.0
+    non_feasible_rate = len(non_feasible) / row_count if row_count else 0.0
+    return {
+        "strategy": strategy,
+        "row_count": row_count,
+        "successful_count": successful_count,
+        "error_count": len(error_rows),
+        "non_feasible_count": len(non_feasible),
+        "feasible_rate": feasible_rate,
+        "error_rate": error_rate,
+        "non_feasible_rate": non_feasible_rate,
+        "families_covered": sorted({str(row.get("family")) for row in rows if row.get("family")}),
+        "family_count": len({str(row.get("family")) for row in rows if row.get("family")}),
+        "cases_covered": sorted({str(row.get("benchmark_id")) for row in rows if row.get("benchmark_id")}),
+        "case_count": len({str(row.get("benchmark_id")) for row in rows if row.get("benchmark_id")}),
+        "tiers_covered": sorted({str(row.get("tier")) for row in rows if row.get("tier")}),
+        "avg_gap_rel": sum(gap_values) / len(gap_values) if gap_values else None,
+        "max_gap_rel": max(gap_values) if gap_values else None,
+        "avg_elapsed_seconds": sum(elapsed_values) / len(elapsed_values) if elapsed_values else None,
+        "total_elapsed_seconds": sum(elapsed_values) if elapsed_values else None,
+    }
+
+
+def _default_candidate_sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    avg_gap = float("inf") if row.get("avg_gap_rel") is None else float(row["avg_gap_rel"])
+    max_gap = float("inf") if row.get("max_gap_rel") is None else float(row["max_gap_rel"])
+    avg_elapsed = (
+        float("inf")
+        if row.get("avg_elapsed_seconds") is None
+        else float(row["avg_elapsed_seconds"])
+    )
+    return (
+        -int(row.get("family_count", 0)),
+        -int(row.get("case_count", 0)),
+        -float(row.get("feasible_rate", 0.0)),
+        float(row.get("error_rate", 0.0)),
+        float(row.get("non_feasible_rate", 0.0)),
+        avg_gap,
+        max_gap,
+        avg_elapsed,
+        str(row.get("strategy") or ""),
+    )
 
 
 def write_results_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -509,6 +611,41 @@ def render_report(summary: dict[str, Any], rows: list[dict[str, Any]]) -> str:
     )
     for profile, count in sorted(summary.get("profile_counts", {}).items()):
         lines.append(f"| `{profile}` | {count} |")
+    if summary.get("default_candidate_matrix_enabled"):
+        matrix = summary.get("default_candidate_matrix", {})
+        lines.extend(
+            [
+                "",
+                "## Default Strategy Candidate Matrix",
+                "",
+                f"- Selection policy: `{matrix.get('selection_policy', '')}`",
+                f"- Recommended strategy: `{matrix.get('recommended_strategy') or ''}`",
+                "",
+                "| Rank | Strategy | Recommended | Rows | Families | Cases | Feasible % | Errors | Non-feasible | Avg gap % | Max gap % | Avg seconds |",
+                "| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for row in matrix.get("ranked_strategies", []):
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        _fmt(row.get("rank")),
+                        f"`{row.get('strategy')}`",
+                        "yes" if row.get("recommended") else "",
+                        _fmt(row.get("row_count")),
+                        _fmt(row.get("family_count")),
+                        _fmt(row.get("case_count")),
+                        _fmt_pct(row.get("feasible_rate")),
+                        _fmt(row.get("error_count")),
+                        _fmt(row.get("non_feasible_count")),
+                        _fmt_pct(row.get("avg_gap_rel")),
+                        _fmt_pct(row.get("max_gap_rel")),
+                        _fmt(row.get("avg_elapsed_seconds")),
+                    ]
+                )
+                + " |"
+            )
     lines.extend(
         [
             "",

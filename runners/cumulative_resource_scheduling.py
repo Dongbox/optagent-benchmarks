@@ -8,7 +8,7 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AlnsConfig, CpSatConfig, GaConfig, LnsConfig, SolveOptions, TabuConfig, solve, solve_cpsat
+from optagent import AlnsConfig, CpSatConfig, GaConfig, LnsConfig, LocalSearchConfig, SolveOptions, TabuConfig, solve, solve_cpsat
 
 from benchmarks.loaders.cumulative_resource_scheduling import load_rcpsp_case
 from benchmarks.models.cumulative_resource_scheduling import (
@@ -240,6 +240,8 @@ def _strategy_config(strategy_name: str, budget: RcpspStrategyBudget, activity_c
             tabu_tenure=max(4, min(30, activity_count // 4)),
             unimproved_iteration_limit=None,
         )
+    if strategy_name == "local_search":
+        return LocalSearchConfig(max_iterations=budget.max_iterations)
     raise ValueError(f"unsupported RCPSP strategy: {strategy_name}")
 
 

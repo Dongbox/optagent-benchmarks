@@ -8,7 +8,7 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AlnsConfig, GaConfig, SolveOptions, TabuConfig, solve
+from optagent import AlnsConfig, GaConfig, LocalSearchConfig, SolveOptions, TabuConfig, solve
 
 from benchmarks.loaders.sequence_quadratic_assignment import load_qap_case
 from benchmarks.models.sequence_quadratic_assignment import QapBenchmarkModel, build_qap_model
@@ -156,6 +156,8 @@ def _strategy_config(strategy_name: str, budget: QapStrategyBudget, dimension: i
             tabu_tenure=max(4, min(16, dimension)),
             unimproved_iteration_limit=None,
         )
+    if strategy_name == "local_search":
+        return LocalSearchConfig(max_iterations=budget.max_iterations)
     raise ValueError(f"unsupported QAP strategy: {strategy_name}")
 
 

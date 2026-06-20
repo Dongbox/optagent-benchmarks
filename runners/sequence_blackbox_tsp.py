@@ -8,7 +8,7 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AlnsConfig, GaConfig, SolveOptions, TabuConfig, solve
+from optagent import AlnsConfig, GaConfig, LocalSearchConfig, SolveOptions, TabuConfig, solve
 
 from benchmarks.loaders.sequence_blackbox_tsp import TspInstance, load_tsp_case
 from benchmarks.models.sequence_blackbox_tsp import TspBenchmarkModel, build_tsp_model
@@ -188,6 +188,8 @@ def _strategy_config(strategy_name: str, budget: TspStrategyBudget, dimension: i
             tabu_tenure=max(5, min(25, dimension // 3)),
             unimproved_iteration_limit=None,
         )
+    if strategy_name == "local_search":
+        return LocalSearchConfig(max_iterations=budget.max_iterations)
     raise ValueError(f"unsupported TSP strategy: {strategy_name}")
 
 

@@ -8,7 +8,12 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 def main() -> int:
     prefer_local_development_paths()
-    from benchmarks.runners.suite import DEFAULT_RUNNABLE_FAMILIES, DEFAULT_STRATEGIES, run_benchmark_suite
+    from benchmarks.runners.suite import (
+        DEFAULT_CANDIDATE_STRATEGIES,
+        DEFAULT_RUNNABLE_FAMILIES,
+        DEFAULT_STRATEGIES,
+        run_benchmark_suite,
+    )
 
     parser = argparse.ArgumentParser(description="Run the OptAgent modeling-native benchmark suite.")
     parser.add_argument("--family", action="append", dest="families", help="Benchmark family to run. Defaults to runnable smoke families.")
@@ -19,6 +24,14 @@ def main() -> int:
         action="append",
         dest="strategies",
         help="Strategy to run. Defaults to family-aware ga/alns/tabu; scheduling tabu/lns requests are replaced by alns.",
+    )
+    parser.add_argument(
+        "--default-candidate-matrix",
+        action="store_true",
+        help=(
+            "Emit a default strategy candidate ranking from strategy rows. "
+            "When no --strategy is provided, runs local_search/alns/ga/tabu candidates."
+        ),
     )
     parser.add_argument(
         "--model-style",
@@ -40,7 +53,10 @@ def main() -> int:
         families=tuple(args.families or DEFAULT_RUNNABLE_FAMILIES),
         tiers=tuple(args.tiers or ("smoke",)),
         benchmark_ids=tuple(args.cases or ()),
-        strategies=tuple(args.strategies or DEFAULT_STRATEGIES),
+        strategies=tuple(
+            args.strategies
+            or (DEFAULT_CANDIDATE_STRATEGIES if args.default_candidate_matrix else DEFAULT_STRATEGIES)
+        ),
         seed=args.seed,
         max_iterations=args.max_iterations,
         time_limit_s=args.time_limit_s,
@@ -49,6 +65,7 @@ def main() -> int:
         data_cache_dir=args.data_cache_dir,
         allow_download=not args.no_download,
         model_styles=tuple(args.model_styles or ()),
+        default_candidate_matrix=args.default_candidate_matrix,
         timestamp=args.timestamp,
     )
     print(json.dumps(summary, indent=2, ensure_ascii=True, sort_keys=True))
