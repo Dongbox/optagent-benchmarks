@@ -22,6 +22,7 @@ class MipExactBudget:
     time_limit_s: float = 5.0
     population_size: int = 0
     trace_limit: int = 0
+    thread_count: int = 1
     backend: str = "optx"
 
 
@@ -58,7 +59,7 @@ def _run_exact(
             config=MilpConfig(
                 backend=budget.backend,
                 time_limit_s=budget.time_limit_s,
-                threads=1,
+                threads=budget.thread_count,
             ),
         )
         elapsed_seconds = perf_counter() - started
@@ -78,7 +79,7 @@ def _run_exact(
             "strategy_config": {
                 "backend": budget.backend,
                 "time_limit_s": budget.time_limit_s,
-                "threads": 1,
+                "threads": budget.thread_count,
             },
             "solver_name": solution.solver_name,
             "status": getattr(solution.status, "value", str(solution.status)),

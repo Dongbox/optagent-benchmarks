@@ -8,7 +8,7 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AlnsConfig, GaConfig, LocalSearchConfig, SolveOptions, TabuConfig, solve
+from optagent import AlnsConfig, GaConfig, LocalSearchConfig, TabuConfig, solve
 
 from benchmarks.loaders.sequence_quadratic_assignment import load_qap_case
 from benchmarks.models.sequence_quadratic_assignment import QapBenchmarkModel, build_qap_model
@@ -22,6 +22,7 @@ class QapStrategyBudget:
     time_limit_s: float = 5.0
     population_size: int = 10
     trace_limit: int = 8
+    thread_count: int = 1
 
 
 def run_qap_case(
@@ -59,14 +60,12 @@ def _run_strategy(
     try:
         solution = solve(
             model.program,
-            SolveOptions(
-                strategy=strategy_config,
-                seed=budget.seed,
-                time_limit_s=budget.time_limit_s,
-                log_level="off",
-                trace_output="summary",
-                trace_limit=budget.trace_limit,
-            ),
+            strategy=strategy_config,
+            seed=budget.seed,
+            time_limit_s=budget.time_limit_s,
+            log_level="off",
+            trace_output="full",
+            trace_limit=budget.trace_limit,
         )
         elapsed_seconds = perf_counter() - started
         assignment = [int(item) for item in solution.variable_values[model.assignment_node_id]]
@@ -132,7 +131,7 @@ def _strategy_config(strategy_name: str, budget: QapStrategyBudget, dimension: i
             population_size=population_size,
             mutation_count=max(2, population_size // 3),
             search_width=population_size,
-            parallel_workers=1,
+            parallel_workers=budget.thread_count,
             duplicate_filter=True,
             mutation_portfolio=(
                 "sequence_two_opt",

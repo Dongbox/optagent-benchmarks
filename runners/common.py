@@ -40,6 +40,11 @@ SEARCH_DIAGNOSTIC_KEYS = (
     "qap_swap_improvement_count",
     "qap_repair_assignment_count",
     "qap_common_assignment_preservation_ratio",
+    "thread_count",
+    "parallel_matrix_enabled",
+    "ga_parallel_worker_count",
+    "ga_parallel_batches",
+    "ga_parallel_candidates_evaluated",
 )
 
 
@@ -50,6 +55,7 @@ class StrategyBudgetRequest:
     time_limit_s: float = 5.0
     population_size: int = 10
     trace_limit: int = 8
+    thread_count: int = 1
 
 
 @dataclass(frozen=True)
@@ -62,6 +68,7 @@ class EffectiveStrategyBudget:
     time_limit_s: float
     population_size: int
     trace_limit: int
+    thread_count: int = 1
     exact_time_limit_s: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -163,6 +170,7 @@ def resolve_family_tier_budget(
     default_trace = max(0, int(defaults["trace_limit"]))
     requested_time = max(0.0, float(request.time_limit_s))
     default_time = max(0.0, float(defaults["time_limit_s"]))
+    requested_thread_count = max(1, int(request.thread_count))
     exact_default = defaults.get("exact_time_limit_s")
     exact_time_limit_s = (
         min(requested_time, max(0.0, float(exact_default)))
@@ -178,6 +186,7 @@ def resolve_family_tier_budget(
         time_limit_s=min(requested_time, default_time),
         population_size=min(requested_population, default_population),
         trace_limit=min(requested_trace, default_trace),
+        thread_count=requested_thread_count,
         exact_time_limit_s=exact_time_limit_s,
     )
 
@@ -260,6 +269,10 @@ def summarize_solution_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         "iterations",
         "attempted_moves",
         "accepted_moves",
+        "improved_moves",
+        "rejected_moves",
+        "trace",
+        "trace_entry_count",
         "domain_best_sequence_penalty",
         "domain_sequence_graph_provenance",
         "domain_sequence_graph_objective_ids_json",
@@ -302,6 +315,11 @@ def summarize_solution_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         "qap_swap_improvement_count",
         "qap_repair_assignment_count",
         "qap_common_assignment_preservation_ratio",
+        "thread_count",
+        "parallel_matrix_enabled",
+        "ga_parallel_worker_count",
+        "ga_parallel_batches",
+        "ga_parallel_candidates_evaluated",
         "domain_qap_supported",
         "domain_qap_move_count",
         "budget",
@@ -339,6 +357,11 @@ def metadata_highlights(metadata: dict[str, Any]) -> list[str]:
         "qap_swap_improvement_count",
         "qap_repair_assignment_count",
         "qap_common_assignment_preservation_ratio",
+        "thread_count",
+        "parallel_matrix_enabled",
+        "ga_parallel_worker_count",
+        "ga_parallel_batches",
+        "ga_parallel_candidates_evaluated",
         "domain_qap_supported",
         "domain_qap_move_count",
         "external_rows_requested",

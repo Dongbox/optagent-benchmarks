@@ -8,7 +8,7 @@ from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AlnsConfig, CpSatConfig, GaConfig, LnsConfig, LocalSearchConfig, SolveOptions, TabuConfig, solve, solve_cpsat
+from optagent import AlnsConfig, CpSatConfig, GaConfig, LnsConfig, LocalSearchConfig, TabuConfig, solve, solve_cpsat
 
 from benchmarks.loaders.interval_job_shop import load_job_shop_case
 from benchmarks.models.interval_job_shop import (
@@ -27,6 +27,7 @@ class JobShopStrategyBudget:
     time_limit_s: float = 5.0
     population_size: int = 10
     trace_limit: int = 8
+    thread_count: int = 1
     cpsat_time_limit_s: float | None = None
 
     @property
@@ -76,7 +77,7 @@ def _run_cpsat_baseline(
             model.program,
             config=CpSatConfig(
                 time_limit_s=budget.effective_cpsat_time_limit_s,
-                workers=1,
+                workers=budget.thread_count,
                 random_seed=budget.seed,
                 log_to_stdout=False,
                 enable_solution_callback=True,
@@ -99,7 +100,7 @@ def _run_cpsat_baseline(
             "model_style": model_style_from_program(model.program, family=case["family"]),
             "strategy_config": {
                 "time_limit_s": budget.effective_cpsat_time_limit_s,
-                "workers": 1,
+                "workers": budget.thread_count,
                 "random_seed": budget.seed,
                 "solution_event_limit": budget.trace_limit,
             },
@@ -149,15 +150,13 @@ def _run_strategy(
     try:
         solution = solve(
             model.program,
-            SolveOptions(
-                strategy=strategy_config,
-                seed=budget.seed,
-                time_limit_s=budget.time_limit_s,
-                log_level="off",
-                trace_output="summary",
-                trace_limit=budget.trace_limit,
-                exact_repair=strategy_name == "alns",
-            ),
+            strategy=strategy_config,
+            seed=budget.seed,
+            time_limit_s=budget.time_limit_s,
+            log_level="off",
+            trace_output="full",
+            trace_limit=budget.trace_limit,
+            exact_repair=strategy_name == "alns",
         )
         elapsed_seconds = perf_counter() - started
         raw_objective = _solution_objective(model, solution.variable_values, solution.objective_value)
@@ -212,7 +211,7 @@ def _strategy_config(strategy_name: str, budget: JobShopStrategyBudget, operatio
             population_size=population_size,
             mutation_count=max(2, population_size // 3),
             search_width=population_size,
-            parallel_workers=1,
+            parallel_workers=budget.thread_count,
             duplicate_filter=True,
             mutation_portfolio=(
                 "scheduling_lns",

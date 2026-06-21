@@ -10,6 +10,7 @@ def main() -> int:
     prefer_local_development_paths()
     from benchmarks.runners.suite import (
         DEFAULT_CANDIDATE_STRATEGIES,
+        DEFAULT_PARALLEL_THREAD_COUNTS,
         DEFAULT_RUNNABLE_FAMILIES,
         DEFAULT_STRATEGIES,
         run_benchmark_suite,
@@ -39,6 +40,18 @@ def main() -> int:
         dest="model_styles",
         help="TSP model style to run. Repeat to compare blackbox and graph-native rows.",
     )
+    parser.add_argument(
+        "--parallel-matrix",
+        action="store_true",
+        help="Run the default benchmark thread matrix: 1, 2, 4, 8, 16.",
+    )
+    parser.add_argument(
+        "--thread-count",
+        action="append",
+        type=int,
+        dest="thread_counts",
+        help="Thread count for a parallel matrix run. Repeat to override the default matrix.",
+    )
     parser.add_argument("--seed", type=int, default=11)
     parser.add_argument("--max-iterations", type=int, default=40)
     parser.add_argument("--time-limit-s", type=float, default=5.0)
@@ -66,6 +79,10 @@ def main() -> int:
         allow_download=not args.no_download,
         model_styles=tuple(args.model_styles or ()),
         default_candidate_matrix=args.default_candidate_matrix,
+        parallel_thread_counts=tuple(
+            args.thread_counts
+            or (DEFAULT_PARALLEL_THREAD_COUNTS if args.parallel_matrix else ())
+        ),
         timestamp=args.timestamp,
     )
     print(json.dumps(summary, indent=2, ensure_ascii=True, sort_keys=True))

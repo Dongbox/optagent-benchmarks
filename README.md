@@ -25,7 +25,7 @@ The suite is runner-ready for all catalog families:
 - `cumulative_resource_scheduling`: PSPLIB `.rcp` / `.sm` resource-constrained project scheduling, modeled with `interval_var`, precedence, cumulative renewable resources, and a makespan objective. The runner emits a `solve_cpsat` exact baseline row plus GA/ALNS strategy rows.
 - `exact_linear_mip`: MIPLIB `.mps` / `.mps.gz`, modeled as canonical linear MP with bool/int/float variables, linear constraints, and a linear objective. This family is exact-only and emits an OptX baseline row; GA/ALNS/Tabu are intentionally ignored because the catalog cases are pure linear MIP baselines rather than native search domains.
 
-The benchmark suite uses family-aware strategy routes and emits `config.json`, `results.jsonl`, `results.csv`, `summary.json`, and `report.md`. Every row includes a stable `strategy_profile`, `budget_profile`, `model_style`, and effective budget fields so runs can be compared after strategy tuning. JSPLIB and PSPLIB use `LocalSearchConfig`, `GaConfig`, and `AlnsConfig` plus `cpsat` exact-baseline rows; standalone Tabu and standalone LNS are not scheduling benchmark routes because both currently fall back without producing useful feasible scheduling rows. Requested scheduling `tabu` or `lns` names are replaced by `alns` and recorded in `strategy_substitutions`. TSPLIB and QAPLIB keep `LocalSearchConfig`, `GaConfig`, `AlnsConfig`, and `TabuConfig` sequence/permutation rows. MIPLIB emits `optx` exact-baseline rows only. Requested strategy names on MIPLIB runs are recorded in row metadata as ignored requests while `mip_heuristic_route_enabled=false`; a future MIP heuristic must use a dedicated MILP-native route and must not replace the OptX exact baseline.
+The benchmark suite uses family-aware strategy routes and emits `config.json`, `results.jsonl`, `results.csv`, `anytime.jsonl`, `throughput.jsonl`, `summary.json`, and `report.md`. Every row includes a stable `strategy_profile`, `budget_profile`, `model_style`, effective budget fields, and `benchmark_schema_version = 2` observability fields so runs can be compared after strategy tuning. Schema v2 rows expose `best_cost`, `reference_cost`, `runtime_s`, normalized search counters/rates when source metadata exists, and an `anytime` checkpoint array derived from native search trace events or CP-SAT incumbent callback samples. Scoreable heuristic rows with a known first trace cost also expose `initial_cost`, absolute/relative improvement, improvement/sec, improvement/evaluation, and improvement/move; `summary.json` and `report.md` aggregate family-level improvement/sec. JSPLIB and PSPLIB use `LocalSearchConfig`, `GaConfig`, and `AlnsConfig` plus `cpsat` exact-baseline rows; standalone Tabu and standalone LNS are not scheduling benchmark routes because both currently fall back without producing useful feasible scheduling rows. Requested scheduling `tabu` or `lns` names are replaced by `alns` and recorded in `strategy_substitutions`. TSPLIB and QAPLIB keep `LocalSearchConfig`, `GaConfig`, `AlnsConfig`, and `TabuConfig` sequence/permutation rows. MIPLIB emits `optx` exact-baseline rows only. Requested strategy names on MIPLIB runs are recorded in row metadata as ignored requests while `mip_heuristic_route_enabled=false`; a future MIP heuristic must use a dedicated MILP-native route and must not replace the OptX exact baseline.
 
 Named Phase 5 profiles include:
 
@@ -49,7 +49,7 @@ When no `--strategy` values are provided, this mode runs:
 - `ga`
 - `tabu`
 
-The ranking is data-driven from emitted strategy rows, so future strategies only need to be included in the requested strategy list to appear in the matrix. The selection policy is `feasible_coverage_then_error_then_gap_then_time_v1`: rank by family/case coverage, feasible rate, error/non-feasible rate, average and max relative gap, then average elapsed seconds.
+The ranking is data-driven from emitted strategy rows, so future strategies only need to be included in the requested strategy list to appear in the matrix. The selection policy is `feasible_coverage_then_error_then_gap_then_time_then_improvement_v1`: rank by family/case coverage, feasible rate, error/non-feasible rate, average and max relative gap, average elapsed seconds, then average improvement/sec as speed-to-quality evidence.
 
 Example:
 
@@ -63,6 +63,22 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 ```
 
 For a fuller default-candidate decision, include all implemented families and tiers that have local data available. MIPLIB rows remain exact-baseline rows until a dedicated MILP-native heuristic route exists; they are intentionally excluded from the strategy-candidate ranking because the matrix ranks `kind=strategy_run` rows only.
+
+## Parallel Matrix
+
+Use `--parallel-matrix` when the purpose is comparing thread-count scaling. The default matrix is `1`, `2`, `4`, `8`, and `16` threads. Use repeated `--thread-count` values to run a smaller local matrix.
+
+```bash
+PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+  --family sequence_blackbox_tsp \
+  --tier smoke \
+  --strategy ga \
+  --parallel-matrix \
+  --max-iterations 5 \
+  --time-limit-s 2
+```
+
+Parallel matrix rows record `thread_count` and `parallel_matrix_enabled`; `summary.json` and `report.md` include speedup, efficiency, quality delta, and throughput speedup against the 1-thread row. Default strategy candidate ranking uses only 1-thread strategy rows so parallel rows do not distort default single-thread strategy selection.
 
 For local native development, run against the current native build tree so the benchmark does not accidentally load an older editable-install extension:
 
@@ -110,6 +126,34 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.compa
   docs/evals/benchmark-suite/runs/<candidate> \
   --format markdown
 ```
+
+To write a curated ledger entry and report under `docs/evals/benchmark-suite/reports/`, add `--report-id` and the accepted commit ids:
+
+```bash
+PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.compare \
+  docs/evals/benchmark-suite/runs/<baseline> \
+  docs/evals/benchmark-suite/runs/<candidate> \
+  --report-id <stable-id> \
+  --baseline-commit <baseline-commit> \
+  --candidate-commit <candidate-commit> \
+  --decision accepted \
+  --follow-up "<action>"
+```
+
+Generate a static dashboard from existing run artifacts without re-running benchmarks:
+
+```bash
+PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.dashboard \
+  docs/evals/benchmark-suite/runs/<candidate> \
+  --baseline-dir docs/evals/benchmark-suite/runs/<baseline> \
+  --dashboard-id <stable-id>
+```
+
+Dashboard artifacts are written under `docs/evals/benchmark-suite/dashboards/<stable-id>/`:
+
+- `dashboard.json`
+- `anytime-curves.json`
+- `dashboard.md`
 
 ## Structure
 
