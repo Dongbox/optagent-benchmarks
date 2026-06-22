@@ -1,6 +1,10 @@
 # OptAgent Modeling-Native Benchmarks
 
-This directory owns performance benchmark inputs and harness code. It is separate from `examples/`: examples teach API usage, while benchmarks provide repeatable evidence for strategy and backend optimization.
+This repository owns performance benchmark inputs and harness code for OptAgent. In the parent `optagent` repository it is checked out at `benchmarks/` as a Git submodule from `https://github.com/Dongbox/optagent-benckmarks.git`.
+
+Branch names should match the parent `optagent` branch name. For example, parent branch `cpp-python-boundary-redesign` consumes the benchmark submodule branch `cpp-python-boundary-redesign`.
+
+The benchmark harness is separate from `examples/`: examples teach API usage, while benchmarks provide repeatable evidence for strategy and backend optimization.
 
 The first catalog is generated from public benchmark metadata and external objective references:
 
