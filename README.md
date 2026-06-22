@@ -313,13 +313,28 @@ python -m benchmarks.cli validate-case --case my_case
 
 ### 结果 JSON 契约
 
-Dashboard 使用的长期事实文件不是 Markdown 报告，而是 `results/` 下的 JSON。Phase 1 已固定：
+Dashboard 使用的长期事实文件不是 Markdown 报告，而是 `results/` 下的 JSON。当前固定：
 
 - 契约文档：`docs/result-json-contract.md`
+- Dashboard 数据契约：`docs/dashboard-data-contract.md`
 - JSON Schema：`results/schema/run-v1.schema.json`
 - tiny sample：`results/sample/`
+- 入口索引：`results/index.json`
+- 聚合数据：`aggregates/*.json`
 
 新增结果字段或 artifact 时，先更新契约和 sample，再更新生成逻辑。不要直接让 Dashboard 读取 runner 私有字段。
+
+新增 run summary 后，重新生成 dashboard 数据：
+
+```bash
+python -m benchmarks.runners.generate_dashboard_data
+```
+
+提交前可以只做检查：
+
+```bash
+python -m benchmarks.runners.generate_dashboard_data --check
+```
 
 ## 按场景选择评测
 
@@ -542,6 +557,26 @@ benchmark_id + family + strategy + strategy_profile + model_style + kind
 - gate status
 
 ## 静态 dashboard
+
+面向独立 `optagent-dashboard` 仓库的长期数据入口是：
+
+```bash
+python -m benchmarks.runners.generate_dashboard_data
+```
+
+该命令从 `results/` 的不可变 run summary 生成：
+
+```text
+results/index.json
+aggregates/leaderboard.json
+aggregates/commit-history.json
+aggregates/strategy-comparison.json
+aggregates/runtime-quality.json
+```
+
+`optagent-dashboard` 应优先读取这些文件；进入单次运行详情时，再按 `summary_path` 读取 run summary 和 artifacts。
+
+旧的 run artifact dashboard 用于对比本地 `docs/evals/benchmark-suite/runs/<timestamp>/` 目录，不是长期事实层入口。
 
 从已有 run artifact 生成 dashboard，不重新运行 benchmark：
 

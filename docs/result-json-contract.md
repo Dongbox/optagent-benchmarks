@@ -4,6 +4,12 @@ This document defines Phase 1 benchmark result files for `optagent-benchmarks`.
 
 The current fact layer is Git-managed JSON. Each benchmark run writes a new immutable summary file and, when useful, a sibling artifact directory. Generated indexes and aggregates are Phase 2 concerns.
 
+Dashboard-facing generated data is defined in:
+
+```text
+docs/dashboard-data-contract.md
+```
+
 ## Run Summary Path
 
 Run summaries live at:
@@ -115,3 +121,23 @@ results/schema/run-v1.schema.json
 ```
 
 The schema is intentionally conservative. It validates required identity and metric fields but still allows benchmark-family-specific extension fields.
+
+## Generated Indexes
+
+After adding run summary files, regenerate static dashboard data:
+
+```bash
+python -m benchmarks.runners.generate_dashboard_data
+```
+
+The generator rewrites:
+
+```text
+results/index.json
+aggregates/leaderboard.json
+aggregates/commit-history.json
+aggregates/strategy-comparison.json
+aggregates/runtime-quality.json
+```
+
+These files are derived from run summaries and can be regenerated deterministically.

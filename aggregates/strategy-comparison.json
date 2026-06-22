@@ -1,0 +1,47 @@
+{
+  "comparisons": [
+    {
+      "benchmark_group": "sample",
+      "benchmark_id": "sample_tiny_sequence",
+      "strategies": [
+        {
+          "avg_runtime_ms": 532,
+          "best_cost": 125.2,
+          "best_gap_rel": 0.0433333333,
+          "best_objective": 125.2,
+          "best_run_id": "sample-ga-20260622-000000-3f8a1d2",
+          "best_summary_path": "/results/sample/ga/2026/06/sample-ga-20260622-000000-3f8a1d2.json",
+          "feasible_rate": 1.0,
+          "latest_created_at": "2026-06-22T00:00:00Z",
+          "latest_feasible": true,
+          "latest_run_id": "sample-ga-20260622-000000-3f8a1d2",
+          "latest_status": "success",
+          "latest_summary_path": "/results/sample/ga/2026/06/sample-ga-20260622-000000-3f8a1d2.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 1.0
+        },
+        {
+          "avg_runtime_ms": 17,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "sample-alns-20260622-000100-3f8a1d2",
+          "best_summary_path": "/results/sample/alns/2026/06/sample-alns-20260622-000100-3f8a1d2.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-06-22T00:01:00Z",
+          "latest_feasible": false,
+          "latest_run_id": "sample-alns-20260622-000100-3f8a1d2",
+          "latest_status": "error",
+          "latest_summary_path": "/results/sample/alns/2026/06/sample-alns-20260622-000100-3f8a1d2.json",
+          "run_count": 1,
+          "strategy": "alns",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    }
+  ],
+  "generated_at": "2026-06-22T00:01:00Z",
+  "schema_version": 1
+}

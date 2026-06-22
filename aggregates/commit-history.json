@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-06-22T00:01:00Z",
+  "schema_version": 1,
+  "series": [
+    {
+      "benchmark_group": "sample",
+      "benchmark_id": "sample_tiny_sequence",
+      "key": "sample/sample_tiny_sequence/alns/seed-123",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": null,
+          "commit": "3f8a1d2",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/3f8a1d2",
+          "created_at": "2026-06-22T00:01:00Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "sample-alns-20260622-000100-3f8a1d2",
+          "runtime_ms": 17,
+          "status": "error",
+          "summary_path": "/results/sample/alns/2026/06/sample-alns-20260622-000100-3f8a1d2.json"
+        }
+      ],
+      "seed": 123,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "sample",
+      "benchmark_id": "sample_tiny_sequence",
+      "key": "sample/sample_tiny_sequence/ga/seed-123",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 125.2,
+          "commit": "3f8a1d2",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/3f8a1d2",
+          "created_at": "2026-06-22T00:00:00Z",
+          "feasible": true,
+          "gap_rel": 0.0433333333,
+          "objective": 125.2,
+          "run_id": "sample-ga-20260622-000000-3f8a1d2",
+          "runtime_ms": 532,
+          "status": "success",
+          "summary_path": "/results/sample/ga/2026/06/sample-ga-20260622-000000-3f8a1d2.json"
+        }
+      ],
+      "seed": 123,
+      "strategy": "ga"
+    }
+  ]
+}

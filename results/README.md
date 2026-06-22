@@ -6,12 +6,13 @@ Current Phase:
 
 - Phase 1 result JSON contract is present.
 - Tiny sample runs are present.
-- Generated `index.json` and aggregate files are planned for Phase 2.
+- Phase 2 generated `index.json` and aggregate files are present.
 
 Layout:
 
 ```text
 results/
+  index.json
   schema/
     run-v1.schema.json
   sample/
@@ -32,3 +33,25 @@ results/
 ```
 
 Do not append new facts to a shared `history.json`. Add a new run file instead.
+
+After adding or changing run summary files, regenerate dashboard data:
+
+```bash
+python -m benchmarks.runners.generate_dashboard_data
+```
+
+Generated outputs:
+
+```text
+results/index.json
+aggregates/leaderboard.json
+aggregates/commit-history.json
+aggregates/strategy-comparison.json
+aggregates/runtime-quality.json
+```
+
+Use validation-only mode in review or CI:
+
+```bash
+python -m benchmarks.runners.generate_dashboard_data --check
+```
