@@ -236,7 +236,7 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 | 调整公开 API 建模方式 | `models/<family>.py`、对应 model/runner tests | catalog reference objective |
 | 新增或调整策略评测 | `runners/<family>.py`、`runners/suite.py` | loader 数据语义 |
 | 新增完整 family | `definitions/`、`loaders/`、`models/`、`runners/`、tests、README | Dashboard 页面 |
-| 调整结果字段 | `runners/telemetry.py`、`runners/common.py`、schema 文档 | 单个 family 私有字段 |
+| 调整结果字段 | `runners/telemetry.py`、`runners/common.py`、`docs/result-json-contract.md` | 单个 family 私有字段 |
 
 ### 加已有 family 的新 case
 
@@ -310,6 +310,16 @@ python -m benchmarks.cli validate-case --case my_case
 ```
 
 这些命令的目标不是替代代码审查，而是让开发者快速知道“下一步该改哪个文件”。
+
+### 结果 JSON 契约
+
+Dashboard 使用的长期事实文件不是 Markdown 报告，而是 `results/` 下的 JSON。Phase 1 已固定：
+
+- 契约文档：`docs/result-json-contract.md`
+- JSON Schema：`results/schema/run-v1.schema.json`
+- tiny sample：`results/sample/`
+
+新增结果字段或 artifact 时，先更新契约和 sample，再更新生成逻辑。不要直接让 Dashboard 读取 runner 私有字段。
 
 ## 按场景选择评测
 

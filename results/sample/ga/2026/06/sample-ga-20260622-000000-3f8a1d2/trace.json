@@ -1,0 +1,16 @@
+{
+  "events": [
+    {
+      "best_cost": 180.0,
+      "elapsed_ms": 80,
+      "event_type": "first_feasible",
+      "phase": "construct"
+    },
+    {
+      "best_cost": 125.2,
+      "elapsed_ms": 410,
+      "event_type": "improvement",
+      "phase": "improve"
+    }
+  ]
+}

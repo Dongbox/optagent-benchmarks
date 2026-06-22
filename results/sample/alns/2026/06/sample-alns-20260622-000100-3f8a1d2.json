@@ -1,0 +1,41 @@
+{
+  "artifacts": {
+    "metrics": "results/sample/alns/2026/06/sample-alns-20260622-000100-3f8a1d2/metrics.json"
+  },
+  "benchmark_group": "sample",
+  "benchmark_id": "sample_tiny_sequence",
+  "benchmarks": {
+    "commit": "7a91e4f",
+    "commit_url": "https://github.com/Dongbox/optagent-benckmarks/commit/7a91e4f"
+  },
+  "created_at": "2026-06-22T00:01:00Z",
+  "environment": {
+    "platform": "ubuntu-22.04",
+    "python": "3.12.4",
+    "runner": "sample"
+  },
+  "family": "sequence_blackbox_tsp",
+  "metrics": {
+    "error_message": "sample error row for contract validation",
+    "error_type": "SampleError",
+    "feasible": false,
+    "runtime_ms": 17,
+    "status": "error"
+  },
+  "optagent": {
+    "commit": "3f8a1d2",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/3f8a1d2",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256-sample"
+  },
+  "run_id": "sample-alns-20260622-000100-3f8a1d2",
+  "schema_version": 1,
+  "seed": 123,
+  "strategy": "alns",
+  "strategy_config": {
+    "destroy_count": 2,
+    "max_iterations": 20
+  },
+  "strategy_profile": "alns_sample_v1",
+  "tier": "smoke"
+}

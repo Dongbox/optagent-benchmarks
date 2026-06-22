@@ -1,0 +1,7 @@
+{
+  "error_message": "sample error row for contract validation",
+  "error_type": "SampleError",
+  "feasible": false,
+  "runtime_ms": 17,
+  "status": "error"
+}
