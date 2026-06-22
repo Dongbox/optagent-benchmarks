@@ -68,19 +68,26 @@ jobs:
       BENCHMARK_MAX_ITERATIONS: ${{ inputs.max_iterations || '5' }}
       BENCHMARK_TIME_LIMIT_S: ${{ inputs.time_limit_s || '2' }}
       BENCHMARK_POPULATION_SIZE: ${{ inputs.population_size || '6' }}
+      OPTAGENT_REPOSITORY_TOKEN: ${{ secrets.OPTAGENT_REPOSITORY_TOKEN }}
     steps:
       - name: Checkout optagent-benchmarks
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: benchmarks
 
+      - name: Validate private OptAgent checkout token
+        if: ${{ env.OPTAGENT_REPOSITORY != github.repository && env.OPTAGENT_REPOSITORY_TOKEN == '' }}
+        run: |
+          echo "OPTAGENT_REPOSITORY_TOKEN is required when benchmarking a private or cross-repository OptAgent checkout: ${OPTAGENT_REPOSITORY}" >&2
+          exit 1
+
       - name: Checkout OptAgent
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.OPTAGENT_REPOSITORY }}
           ref: ${{ env.OPTAGENT_REF }}
           path: optagent
-          token: ${{ secrets.OPTAGENT_REPOSITORY_TOKEN || github.token }}
+          token: ${{ env.OPTAGENT_REPOSITORY_TOKEN || github.token }}
           submodules: false
 
       - name: Set up Python

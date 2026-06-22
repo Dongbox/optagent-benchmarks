@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import csv
+import json
 import platform
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,19 +13,18 @@ from benchmarks.loaders.catalog import DEFAULT_CATALOG_PATH, catalog_cases, sele
 from benchmarks.runners.common import (
     DEFAULT_RUN_ROOT,
     EffectiveStrategyBudget,
+    MODEL_STYLE_BY_FAMILY,
+    SEARCH_DIAGNOSTIC_KEYS,
     StrategyBudgetRequest,
     append_jsonl,
     ensure_run_dir,
     metadata_highlights,
     normalize_result_row,
     resolve_family_tier_budget,
+    strategy_profile_name,
+    utc_timestamp,
     write_json,
 )
-from benchmarks.runners.cumulative_resource_scheduling import RcpspStrategyBudget, run_rcpsp_case
-from benchmarks.runners.exact_linear_mip import MipExactBudget, run_mip_case
-from benchmarks.runners.interval_job_shop import JobShopStrategyBudget, run_job_shop_case
-from benchmarks.runners.sequence_quadratic_assignment import QapStrategyBudget, run_qap_case
-from benchmarks.runners.sequence_blackbox_tsp import TspStrategyBudget, run_tsp_case
 from benchmarks.runners.telemetry import normalize_telemetry, write_anytime_jsonl, write_throughput_jsonl
 
 
@@ -42,6 +43,57 @@ SCHEDULING_FAMILIES = {"interval_job_shop", "cumulative_resource_scheduling"}
 SCHEDULING_DEFAULT_STRATEGIES = ("ga", "alns")
 SCHEDULING_STRATEGY_REPLACEMENTS = {"tabu": "alns", "lns": "alns"}
 SEQUENCE_DEFAULT_STRATEGIES = ("ga", "alns", "tabu")
+PUBLIC_STRATEGY_CONFIGS = (
+    "LocalSearchConfig",
+    "TabuConfig",
+    "LnsConfig",
+    "AlnsConfig",
+    "GaConfig",
+)
+DIRECT_EXACT_APIS = ("solve_milp", "solve_cpsat")
+CORE_ROW_FIELDS = (
+    "benchmark_schema_version",
+    "benchmark_id",
+    "family",
+    "tier",
+    "instance",
+    "kind",
+    "strategy",
+    "strategy_profile",
+    "budget_profile",
+    "model_style",
+    "status",
+    "feasible",
+    "objective",
+    "best_cost",
+    "reference_objective",
+    "reference_cost",
+    "reference_kind",
+    "gap_abs",
+    "gap_rel",
+    "elapsed_seconds",
+    "runtime_s",
+    "time_to_best_seconds",
+    "thread_count",
+    "parallel_matrix_enabled",
+    "effective_budget",
+)
+STRATEGY_ROW_OPTIONAL_FIELDS = (
+    "strategy_config",
+    "initial_cost",
+    "improvement_abs",
+    "improvement_rel",
+    "improvement_per_second",
+    "improvement_per_evaluation",
+    "improvement_per_move",
+    "moves_attempted",
+    "moves_accepted",
+    "evaluations",
+    "delta_evaluations",
+    "full_evaluations",
+    "repairs_attempted",
+    "repairs_succeeded",
+)
 
 
 def run_benchmark_suite(
@@ -81,19 +133,17 @@ def run_benchmark_suite(
         thread_count=1,
     )
     budget_matrix = _budget_matrix(families=families, tiers=tiers, request=budget_request)
+    strategy_matrix = resolve_family_strategy_matrix(families=families, requested_strategies=strategies)
     strategy_plan = {
-        family: _effective_strategies_for_family(family, strategies)
-        for family in families
+        family: tuple(item["strategy"] for item in item_plan["effective_strategies"])
+        for family, item_plan in strategy_matrix.items()
     }
     strategy_substitutions = [
         {
             "family": family,
             "requested": list(strategies),
             "effective": list(effective),
-            "reason": (
-                "standalone tabu/lns do not currently produce feasible scheduling benchmark rows; "
-                "alns is the repairable scheduling search route"
-            ),
+            "reason": _strategy_plan_change_reason(family, strategy_matrix[family]),
         }
         for family, effective in strategy_plan.items()
         if tuple(strategies) != tuple(effective)
@@ -105,6 +155,7 @@ def run_benchmark_suite(
         "benchmark_ids": list(benchmark_ids),
         "strategies": list(strategies),
         "family_strategy_plan": {family: list(values) for family, values in strategy_plan.items()},
+        "family_strategy_matrix": strategy_matrix,
         "strategy_substitutions": strategy_substitutions,
         "default_candidate_matrix": bool(default_candidate_matrix),
         "parallel_matrix_enabled": bool(thread_counts),
@@ -116,10 +167,25 @@ def run_benchmark_suite(
         "allow_download": allow_download,
         "data_cache_dir": data_cache_dir,
         "implemented_families": sorted(IMPLEMENTED_FAMILIES),
+        "environment": build_run_environment_metadata(),
         "python": sys.version,
         "platform": platform.platform(),
     }
     write_json(run_dir / "config.json", config)
+    write_json(run_dir / "inventory.json", build_benchmark_inventory(
+        catalog_path=catalog_path,
+        families=families,
+        tiers=tiers,
+        benchmark_ids=benchmark_ids,
+        strategies=strategies,
+        seed=seed,
+        max_iterations=max_iterations,
+        time_limit_s=time_limit_s,
+        population_size=population_size,
+        trace_limit=trace_limit,
+        thread_counts=thread_counts or (1,),
+    ))
+    write_json(run_dir / "run_metadata.json", config["environment"])
 
     rows: list[dict[str, Any]] = []
     skipped_cases: list[dict[str, Any]] = []
@@ -148,6 +214,8 @@ def run_benchmark_suite(
                 ),
             )
             if family == "sequence_blackbox_tsp":
+                from benchmarks.runners.sequence_blackbox_tsp import run_tsp_case
+
                 case_rows = run_tsp_case(
                     case,
                     strategies=strategy_plan[family],
@@ -157,14 +225,18 @@ def run_benchmark_suite(
                     model_styles=model_styles,
                 )
             elif family == "exact_linear_mip":
+                from benchmarks.runners.exact_linear_mip import run_mip_case
+
                 case_rows = run_mip_case(
                     case,
-                    strategies=strategy_plan[family],
+                    strategies=strategies,
                     budget=_mip_budget(effective_budget),
                     data_cache_dir=data_cache_dir,
                     allow_download=allow_download,
                 )
             elif family == "cumulative_resource_scheduling":
+                from benchmarks.runners.cumulative_resource_scheduling import run_rcpsp_case
+
                 case_rows = run_rcpsp_case(
                     case,
                     strategies=strategy_plan[family],
@@ -174,6 +246,8 @@ def run_benchmark_suite(
                     include_exact_baseline=True,
                 )
             elif family == "interval_job_shop":
+                from benchmarks.runners.interval_job_shop import run_job_shop_case
+
                 case_rows = run_job_shop_case(
                     case,
                     strategies=strategy_plan[family],
@@ -183,6 +257,8 @@ def run_benchmark_suite(
                     include_exact_baseline=True,
                 )
             elif family == "sequence_quadratic_assignment":
+                from benchmarks.runners.sequence_quadratic_assignment import run_qap_case
+
                 case_rows = run_qap_case(
                     case,
                     strategies=strategy_plan[family],
@@ -197,10 +273,12 @@ def run_benchmark_suite(
                     row,
                     effective_budget,
                     parallel_matrix_enabled=bool(thread_counts),
+                    route_plan=strategy_matrix.get(family, {}),
                 )
                 for row in case_rows
             ]
             append_jsonl(run_dir / "results.jsonl", case_rows)
+            append_jsonl(run_dir / "rows.jsonl", case_rows)
             rows.extend(case_rows)
 
     summary = build_summary(
@@ -213,9 +291,73 @@ def run_benchmark_suite(
     write_json(run_dir / "summary.json", summary)
     write_results_csv(run_dir / "results.csv", rows)
     write_anytime_jsonl(run_dir / "anytime.jsonl", rows)
+    write_anytime_jsonl(run_dir / "curves.jsonl", rows)
     write_throughput_jsonl(run_dir / "throughput.jsonl", rows)
+    write_json(run_dir / "strategy_feedback.json", summary["strategy_feedback"])
     (run_dir / "report.md").write_text(render_report(summary, rows), encoding="utf-8")
     return summary
+
+
+def run_calibration_suite(
+    *,
+    seeds: tuple[int, ...],
+    catalog_path: str | Path = DEFAULT_CATALOG_PATH,
+    output_root: str | Path = DEFAULT_RUN_ROOT,
+    families: tuple[str, ...] = DEFAULT_RUNNABLE_FAMILIES,
+    tiers: tuple[str, ...] = ("calibration",),
+    benchmark_ids: tuple[str, ...] = (),
+    strategies: tuple[str, ...] = DEFAULT_STRATEGIES,
+    max_iterations: int = 40,
+    time_limit_s: float = 5.0,
+    population_size: int = 10,
+    trace_limit: int = 8,
+    data_cache_dir: str | None = None,
+    allow_download: bool = True,
+    model_styles: tuple[str, ...] = (),
+    default_candidate_matrix: bool = False,
+    parallel_thread_counts: tuple[int, ...] = (),
+    timestamp: str | None = None,
+) -> dict[str, Any]:
+    if not seeds:
+        raise ValueError("calibration seeds must not be empty")
+    calibration_dir = ensure_run_dir(output_root, timestamp=timestamp)
+    seed_summaries: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    for seed in seeds:
+        summary = run_benchmark_suite(
+            catalog_path=catalog_path,
+            output_root=calibration_dir,
+            families=families,
+            tiers=tiers,
+            benchmark_ids=benchmark_ids,
+            strategies=strategies,
+            seed=seed,
+            max_iterations=max_iterations,
+            time_limit_s=time_limit_s,
+            population_size=population_size,
+            trace_limit=trace_limit,
+            data_cache_dir=data_cache_dir,
+            allow_download=allow_download,
+            model_styles=model_styles,
+            default_candidate_matrix=default_candidate_matrix,
+            parallel_thread_counts=parallel_thread_counts,
+            timestamp=f"seed-{seed}",
+        )
+        seed_summaries.append(summary)
+        rows.extend(_load_run_rows(Path(summary["run_dir"])))
+    calibration = build_calibration_summary(
+        calibration_dir=calibration_dir,
+        seed_summaries=seed_summaries,
+        rows=rows,
+        seeds=seeds,
+        families=families,
+        tiers=tiers,
+        strategies=strategies,
+    )
+    append_jsonl(calibration_dir / "rows.jsonl", rows)
+    write_json(calibration_dir / "calibration_summary.json", calibration)
+    write_json(calibration_dir / "strategy_feedback.json", calibration["strategy_feedback"])
+    return calibration
 
 
 def _budget_matrix(
@@ -263,7 +405,289 @@ def _effective_strategies_for_family(family: str, requested: tuple[str, ...]) ->
     return tuple(effective)
 
 
-def _tsp_budget(budget: EffectiveStrategyBudget) -> TspStrategyBudget:
+def _strategy_plan_change_reason(family: str, route_plan: dict[str, Any]) -> str:
+    if family == "exact_linear_mip":
+        return "exact_linear_mip is exact-only; heuristic requests are recorded but not executed"
+    reasons = [
+        str(decision.get("reason"))
+        for decision in route_plan.get("route_decisions", [])
+        if decision.get("decision") == "substituted" and decision.get("reason")
+    ]
+    return reasons[0] if reasons else "requested strategies were resolved through the family strategy matrix"
+
+
+def build_benchmark_inventory(
+    *,
+    catalog_path: str | Path = DEFAULT_CATALOG_PATH,
+    families: tuple[str, ...] = DEFAULT_RUNNABLE_FAMILIES,
+    tiers: tuple[str, ...] = ("smoke",),
+    benchmark_ids: tuple[str, ...] = (),
+    strategies: tuple[str, ...] = DEFAULT_STRATEGIES,
+    seed: int = 11,
+    max_iterations: int = 40,
+    time_limit_s: float = 5.0,
+    population_size: int = 10,
+    trace_limit: int = 8,
+    thread_counts: tuple[int, ...] = (1,),
+) -> dict[str, Any]:
+    """Build a no-solve benchmark inventory without importing family runners."""
+
+    all_cases = catalog_cases(catalog_path)
+    selected_cases = select_cases(
+        all_cases,
+        families=families,
+        tiers=tiers,
+        benchmark_ids=benchmark_ids,
+    )
+    budget_request = StrategyBudgetRequest(
+        seed=seed,
+        max_iterations=max_iterations,
+        time_limit_s=time_limit_s,
+        population_size=population_size,
+        trace_limit=trace_limit,
+        thread_count=1,
+    )
+    normalized_thread_counts = _normalize_thread_counts(thread_counts) or (1,)
+    strategy_matrix = resolve_family_strategy_matrix(families=families, requested_strategies=strategies)
+    family_strategy_plan = {
+        family: tuple(item["strategy"] for item in item_plan["effective_strategies"])
+        for family, item_plan in strategy_matrix.items()
+    }
+    return {
+        "catalog_path": str(catalog_path),
+        "catalog_case_count": len(all_cases),
+        "selected_case_count": len(selected_cases),
+        "implemented_families": sorted(IMPLEMENTED_FAMILIES),
+        "default_runnable_families": list(DEFAULT_RUNNABLE_FAMILIES),
+        "requested_families": list(families),
+        "requested_tiers": list(tiers),
+        "requested_benchmark_ids": list(benchmark_ids),
+        "public_strategy_configs": list(PUBLIC_STRATEGY_CONFIGS),
+        "direct_exact_apis": list(DIRECT_EXACT_APIS),
+        "requested_strategies": list(strategies),
+        "family_strategy_plan": {family: list(values) for family, values in family_strategy_plan.items()},
+        "family_strategy_matrix": strategy_matrix,
+        "strategy_substitution_rules": {
+            "scheduling_families": sorted(SCHEDULING_FAMILIES),
+            "replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
+            "reason": (
+                "standalone tabu/lns do not currently produce feasible scheduling benchmark rows; "
+                "alns is the repairable scheduling search route"
+            ),
+        },
+        "exact_only_families": ["exact_linear_mip"],
+        "family_route_matrix": _family_route_matrix(),
+        "families": _inventory_family_rows(all_cases),
+        "selected_cases": [_inventory_case_row(case) for case in selected_cases],
+        "row_schema": {
+            "version": 2,
+            "core_fields": list(CORE_ROW_FIELDS),
+            "strategy_optional_fields": list(STRATEGY_ROW_OPTIONAL_FIELDS),
+            "diagnostic_metadata_fields": list(SEARCH_DIAGNOSTIC_KEYS),
+            "canonical_row_stream": "rows.jsonl",
+            "legacy_row_stream": "results.jsonl",
+        },
+        "budget_policy": "family_tier_ceiling_v1",
+        "family_budgets": _budget_matrix(families=families, tiers=tiers, request=budget_request),
+        "thread_counts": list(normalized_thread_counts),
+        "environment": build_run_environment_metadata(),
+    }
+
+
+def build_run_environment_metadata() -> dict[str, Any]:
+    return {
+        "python": sys.version,
+        "python_executable": sys.executable,
+        "platform": platform.platform(),
+        "native_extension_spec": _find_module_origin("_optagent_native"),
+        "optagent_spec": _find_module_origin("optagent"),
+        "git": _git_metadata(),
+    }
+
+
+def _find_module_origin(module_name: str) -> str | None:
+    try:
+        import importlib.util
+
+        spec = importlib.util.find_spec(module_name)
+    except Exception:
+        return None
+    if spec is None:
+        return None
+    return spec.origin
+
+
+def _git_metadata() -> dict[str, Any]:
+    def run_git(*args: str) -> str | None:
+        try:
+            result = subprocess.run(
+                ["git", *args],
+                cwd=Path(__file__).resolve().parents[2],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except Exception:
+            return None
+        if result.returncode != 0:
+            return None
+        return result.stdout.strip()
+
+    status = run_git("status", "--short")
+    return {
+        "commit": run_git("rev-parse", "HEAD"),
+        "branch": run_git("branch", "--show-current"),
+        "is_dirty": bool(status),
+        "status_short": status,
+    }
+
+
+def _family_route_matrix() -> dict[str, dict[str, Any]]:
+    return {
+        "exact_linear_mip": {
+            "routes": ["solve_milp backend=optx"],
+            "exact_only": True,
+            "ignored_heuristic_metadata": "mip_heuristic_route_enabled=false",
+        },
+        "interval_job_shop": {
+            "routes": ["solve_cpsat", "GaConfig", "AlnsConfig"],
+            "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
+        },
+        "cumulative_resource_scheduling": {
+            "routes": ["solve_cpsat", "GaConfig", "AlnsConfig"],
+            "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
+        },
+        "sequence_blackbox_tsp": {
+            "routes": ["GaConfig", "AlnsConfig", "TabuConfig"],
+            "strategy_replacements": {},
+        },
+        "sequence_quadratic_assignment": {
+            "routes": ["GaConfig", "AlnsConfig", "TabuConfig"],
+            "strategy_replacements": {},
+        },
+    }
+
+
+def resolve_family_strategy_matrix(
+    *,
+    families: tuple[str, ...],
+    requested_strategies: tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    """Resolve requested strategies into family-valid executable routes."""
+
+    matrix: dict[str, dict[str, Any]] = {}
+    for family in families:
+        source = requested_strategies or (
+            SCHEDULING_DEFAULT_STRATEGIES if family in SCHEDULING_FAMILIES else SEQUENCE_DEFAULT_STRATEGIES
+        )
+        effective: list[str] = []
+        decisions: list[dict[str, Any]] = []
+        if family == "exact_linear_mip":
+            for strategy in source:
+                decisions.append(
+                    {
+                        "family": family,
+                        "requested_strategy": strategy,
+                        "effective_strategy": "optx",
+                        "decision": "ignored",
+                        "reason": "exact_linear_mip is exact-only; heuristic requests are recorded but not executed",
+                    }
+                )
+            effective = ["optx"]
+        else:
+            for strategy in source:
+                replacement = (
+                    SCHEDULING_STRATEGY_REPLACEMENTS.get(strategy, strategy)
+                    if family in SCHEDULING_FAMILIES
+                    else strategy
+                )
+                decision = "used" if replacement == strategy else "substituted"
+                decisions.append(
+                    {
+                        "family": family,
+                        "requested_strategy": strategy,
+                        "effective_strategy": replacement,
+                        "decision": decision,
+                        "reason": (
+                            "standalone tabu/lns do not currently produce feasible scheduling benchmark rows; "
+                            "alns is the repairable scheduling search route"
+                            if decision == "substituted"
+                            else "valid family strategy"
+                        ),
+                    }
+                )
+                if replacement not in effective:
+                    effective.append(replacement)
+        matrix[family] = {
+            "family": family,
+            "requested_strategies": list(source),
+            "effective_strategies": [
+                {
+                    "strategy": strategy,
+                    "strategy_profile": strategy_profile_name(
+                        family=family,
+                        strategy=strategy,
+                        kind="exact_baseline" if family == "exact_linear_mip" else "strategy_run",
+                    ),
+                }
+                for strategy in effective
+            ],
+            "route_decisions": decisions,
+            "exact_only": family == "exact_linear_mip",
+            "model_style": MODEL_STYLE_BY_FAMILY.get(family),
+        }
+    return matrix
+
+
+def _inventory_family_rows(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_family: dict[str, dict[str, Any]] = {}
+    for case in cases:
+        family = str(case.get("family") or "")
+        if not family:
+            continue
+        row = by_family.setdefault(
+            family,
+            {
+                "family": family,
+                "implemented": family in IMPLEMENTED_FAMILIES,
+                "case_count": 0,
+                "tiers": set(),
+                "benchmark_ids": [],
+                "model_style": None,
+                "route_matrix": _family_route_matrix().get(family, {}),
+            },
+        )
+        row["case_count"] += 1
+        row["tiers"].add(str(case.get("tier") or ""))
+        row["benchmark_ids"].append(str(case.get("benchmark_id") or ""))
+        row["model_style"] = row["model_style"] or case.get("model_style")
+    rows = []
+    for row in by_family.values():
+        rows.append({
+            **row,
+            "tiers": sorted(value for value in row["tiers"] if value),
+            "benchmark_ids": sorted(value for value in row["benchmark_ids"] if value),
+        })
+    return sorted(rows, key=lambda item: item["family"])
+
+
+def _inventory_case_row(case: dict[str, Any]) -> dict[str, Any]:
+    reference = case.get("reference") if isinstance(case.get("reference"), dict) else {}
+    return {
+        "benchmark_id": case.get("benchmark_id"),
+        "family": case.get("family"),
+        "tier": case.get("tier"),
+        "instance": case.get("instance"),
+        "reference_kind": reference.get("value_kind") or case.get("reference_kind"),
+        "reference_objective": reference.get("objective") or case.get("reference_objective"),
+        "model_style": case.get("model_style"),
+        "implemented": case.get("family") in IMPLEMENTED_FAMILIES,
+    }
+
+
+def _tsp_budget(budget: EffectiveStrategyBudget):
+    from benchmarks.runners.sequence_blackbox_tsp import TspStrategyBudget
+
     return TspStrategyBudget(
         seed=budget.seed,
         max_iterations=budget.max_iterations,
@@ -274,7 +698,9 @@ def _tsp_budget(budget: EffectiveStrategyBudget) -> TspStrategyBudget:
     )
 
 
-def _qap_budget(budget: EffectiveStrategyBudget) -> QapStrategyBudget:
+def _qap_budget(budget: EffectiveStrategyBudget):
+    from benchmarks.runners.sequence_quadratic_assignment import QapStrategyBudget
+
     return QapStrategyBudget(
         seed=budget.seed,
         max_iterations=budget.max_iterations,
@@ -285,7 +711,9 @@ def _qap_budget(budget: EffectiveStrategyBudget) -> QapStrategyBudget:
     )
 
 
-def _job_shop_budget(budget: EffectiveStrategyBudget) -> JobShopStrategyBudget:
+def _job_shop_budget(budget: EffectiveStrategyBudget):
+    from benchmarks.runners.interval_job_shop import JobShopStrategyBudget
+
     return JobShopStrategyBudget(
         seed=budget.seed,
         max_iterations=budget.max_iterations,
@@ -297,7 +725,9 @@ def _job_shop_budget(budget: EffectiveStrategyBudget) -> JobShopStrategyBudget:
     )
 
 
-def _rcpsp_budget(budget: EffectiveStrategyBudget) -> RcpspStrategyBudget:
+def _rcpsp_budget(budget: EffectiveStrategyBudget):
+    from benchmarks.runners.cumulative_resource_scheduling import RcpspStrategyBudget
+
     return RcpspStrategyBudget(
         seed=budget.seed,
         max_iterations=budget.max_iterations,
@@ -309,7 +739,9 @@ def _rcpsp_budget(budget: EffectiveStrategyBudget) -> RcpspStrategyBudget:
     )
 
 
-def _mip_budget(budget: EffectiveStrategyBudget) -> MipExactBudget:
+def _mip_budget(budget: EffectiveStrategyBudget):
+    from benchmarks.runners.exact_linear_mip import MipExactBudget
+
     return MipExactBudget(
         seed=budget.seed,
         max_iterations=0,
@@ -326,7 +758,10 @@ def _normalize_case_row(
     budget: EffectiveStrategyBudget,
     *,
     parallel_matrix_enabled: bool = False,
+    route_plan: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    family = str(row.get("family") or budget.family)
+    row["problem_family"] = family
     row["budget_profile"] = budget.profile
     row["effective_max_iterations"] = budget.max_iterations
     row["effective_time_limit_s"] = budget.time_limit_s
@@ -337,6 +772,13 @@ def _normalize_case_row(
     if budget.exact_time_limit_s is not None:
         row["effective_exact_time_limit_s"] = budget.exact_time_limit_s
     row["effective_budget"] = budget.to_dict()
+    if route_plan:
+        row["route_decision"] = _route_decision_for_row(row, route_plan)
+        row["family_exact_only"] = bool(route_plan.get("exact_only", False))
+        metadata = row.setdefault("metadata", {})
+        if isinstance(metadata, dict):
+            metadata.setdefault("route_decision", row["route_decision"])
+            metadata.setdefault("family_exact_only", row["family_exact_only"])
     metadata = row.get("metadata")
     if isinstance(metadata, dict):
         metadata.setdefault("budget_profile", budget.profile)
@@ -344,6 +786,24 @@ def _normalize_case_row(
         metadata.setdefault("thread_count", budget.thread_count)
         metadata.setdefault("parallel_matrix_enabled", bool(parallel_matrix_enabled))
     return normalize_telemetry(normalize_result_row(row))
+
+
+def _route_decision_for_row(row: dict[str, Any], route_plan: dict[str, Any]) -> dict[str, Any]:
+    strategy = str(row.get("strategy") or "")
+    if route_plan.get("exact_only"):
+        return {
+            "decision": "exact_baseline",
+            "effective_strategy": strategy,
+            "reason": "exact-only family route",
+        }
+    for decision in route_plan.get("route_decisions", []):
+        if decision.get("effective_strategy") == strategy:
+            return dict(decision)
+    return {
+        "decision": "used",
+        "effective_strategy": strategy,
+        "reason": "valid family strategy",
+    }
 
 
 def _profile_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
@@ -397,6 +857,7 @@ def build_summary(
         "strategies": list(config["strategies"]),
         "family_strategy_plan": config.get("family_strategy_plan", {}),
         "strategy_substitutions": config.get("strategy_substitutions", []),
+        "family_strategy_matrix": config.get("family_strategy_matrix", {}),
         "parallel_matrix_enabled": bool(config.get("parallel_matrix_enabled", False)),
         "parallel_thread_counts": list(config.get("parallel_thread_counts", [1])),
         "parallel_matrix": (
@@ -415,6 +876,9 @@ def build_summary(
         "family_budgets": config.get("family_budgets", {}),
         "profile_counts": _profile_counts(rows),
         "family_improvement_summary": _family_improvement_summary(rows),
+        "calibration_summary": build_calibration_row_summary(rows),
+        "regression_gates": build_regression_gate_summary(rows),
+        "strategy_feedback": build_strategy_feedback(rows, config=config),
         "skipped_cases": skipped_cases,
         "best_by_case": {
             key: {
@@ -432,13 +896,161 @@ def build_summary(
         },
         "artifacts": {
             "config": str(run_dir / "config.json"),
+            "inventory": str(run_dir / "inventory.json"),
+            "run_metadata": str(run_dir / "run_metadata.json"),
+            "rows_jsonl": str(run_dir / "rows.jsonl"),
             "results_jsonl": str(run_dir / "results.jsonl"),
             "results_csv": str(run_dir / "results.csv"),
             "anytime_jsonl": str(run_dir / "anytime.jsonl"),
+            "curves_jsonl": str(run_dir / "curves.jsonl"),
             "throughput_jsonl": str(run_dir / "throughput.jsonl"),
+            "strategy_feedback": str(run_dir / "strategy_feedback.json"),
             "summary": str(run_dir / "summary.json"),
             "report": str(run_dir / "report.md"),
         },
+    }
+
+
+def build_calibration_summary(
+    *,
+    calibration_dir: Path,
+    seed_summaries: list[dict[str, Any]],
+    rows: list[dict[str, Any]],
+    seeds: tuple[int, ...],
+    families: tuple[str, ...],
+    tiers: tuple[str, ...],
+    strategies: tuple[str, ...],
+) -> dict[str, Any]:
+    return {
+        "calibration_dir": str(calibration_dir),
+        "seeds": list(seeds),
+        "seed_count": len(seeds),
+        "families": list(families),
+        "tiers": list(tiers),
+        "strategies": list(strategies),
+        "seed_runs": [
+            {
+                "seed": seeds[index],
+                "run_dir": summary["run_dir"],
+                "successful_run_count": summary.get("successful_run_count", 0),
+                "error_run_count": summary.get("error_run_count", 0),
+                "non_feasible_run_count": summary.get("non_feasible_run_count", 0),
+            }
+            for index, summary in enumerate(seed_summaries)
+        ],
+        "row_count": len(rows),
+        "calibration_summary": build_calibration_row_summary(rows),
+        "regression_gates": build_regression_gate_summary(rows),
+        "strategy_feedback": build_strategy_feedback(rows, config={
+            "families": list(families),
+            "tiers": list(tiers),
+            "strategies": list(strategies),
+            "budget_policy": "family_tier_ceiling_v1",
+        }),
+        "artifacts": {
+            "rows_jsonl": str(calibration_dir / "rows.jsonl"),
+            "calibration_summary": str(calibration_dir / "calibration_summary.json"),
+            "strategy_feedback": str(calibration_dir / "strategy_feedback.json"),
+        },
+    }
+
+
+def build_calibration_row_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        key = (
+            str(row.get("family") or ""),
+            str(row.get("model_style") or ""),
+            str(row.get("strategy") or ""),
+            str(row.get("strategy_profile") or ""),
+        )
+        groups.setdefault(key, []).append(row)
+    result = []
+    for (family, model_style, strategy, profile), group_rows in sorted(groups.items()):
+        objectives = _numeric_values(group_rows, "objective")
+        gaps = _numeric_values(group_rows, "gap_rel")
+        elapsed = _numeric_values(group_rows, "elapsed_seconds")
+        result.append(
+            {
+                "family": family,
+                "model_style": model_style,
+                "strategy": strategy,
+                "strategy_profile": profile,
+                "row_count": len(group_rows),
+                "success_count": sum(1 for row in group_rows if row.get("status") != "error" and row.get("feasible") is True),
+                "failure_count": sum(1 for row in group_rows if row.get("status") == "error"),
+                "non_feasible_count": sum(1 for row in group_rows if row.get("status") != "error" and row.get("feasible") is not True),
+                "feasible_rate": _safe_ratio(sum(1 for row in group_rows if row.get("feasible") is True), len(group_rows)),
+                "objective": _distribution(objectives),
+                "gap_rel": _distribution(gaps),
+                "elapsed_seconds": _distribution(elapsed),
+                "best_objective": min(objectives) if objectives else None,
+                "worst_objective": max(objectives) if objectives else None,
+                "median_objective": _median(sorted(objectives)) if objectives else None,
+            }
+        )
+    return {
+        "group_count": len(result),
+        "groups": result,
+    }
+
+
+def build_regression_gate_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    groups = build_calibration_row_summary(rows)["groups"]
+    checks = {
+        "schema_completeness": _single_run_schema_gate(rows),
+        "feasible_rate": _single_run_feasible_gate(groups),
+        "quality": _single_run_quality_gate(groups),
+        "runtime": _single_run_runtime_gate(groups),
+    }
+    return {
+        "overall_status": "pass" if all(check["status"] == "pass" for check in checks.values()) else "fail",
+        "checks": checks,
+        "thresholds": {
+            "min_feasible_rate": 0.5,
+            "max_gap_rel": 10.0,
+            "max_median_runtime_s": None,
+        },
+    }
+
+
+def build_strategy_feedback(rows: list[dict[str, Any]], *, config: dict[str, Any]) -> dict[str, Any]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(
+            (str(row.get("family") or "unknown"), str(row.get("model_style") or "")),
+            [],
+        ).append(row)
+    groups = []
+    for (family, model_style), group_rows in sorted(grouped.items()):
+        candidates = [_feedback_candidate(strategy, rows_for_strategy) for strategy, rows_for_strategy in _rows_by_strategy(group_rows).items()]
+        candidates.sort(key=_feedback_sort_key)
+        for rank, candidate in enumerate(candidates, start=1):
+            candidate["rank"] = rank
+            candidate["recommended"] = rank == 1
+        recommendation = candidates[0] if candidates else None
+        groups.append(
+            {
+                "family": family,
+                "model_style": model_style,
+                "row_count": len(group_rows),
+                "recommendation": recommendation,
+                "candidates": candidates,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "generated_from": "benchmark_suite_summary",
+        "budget_policy": config.get("budget_policy"),
+        "families": list(config.get("families", [])),
+        "tiers": list(config.get("tiers", [])),
+        "explicit_user_strategy_override_policy": "feedback never overrides an explicit user-selected strategy",
+        "reference_policy": "external optimum or catalog best-known references only; local best is diagnostic",
+        "freshness": {
+            "created_at_utc": utc_timestamp(),
+            "source_run_tier": list(config.get("tiers", [])),
+        },
+        "groups": groups,
     }
 
 
@@ -681,6 +1293,136 @@ def _family_improvement_summary(rows: list[dict[str, Any]]) -> dict[str, dict[st
     return summary
 
 
+def _single_run_schema_gate(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    required = ("benchmark_schema_version", "benchmark_id", "family", "strategy", "strategy_profile", "model_style", "kind", "status", "feasible", "runtime_s")
+    issues = []
+    for row in rows:
+        missing = [field for field in required if row.get(field) is None]
+        if missing:
+            issues.append({"benchmark_id": row.get("benchmark_id"), "strategy": row.get("strategy"), "missing": missing})
+    return {"status": "pass" if not issues else "fail", "issue_count": len(issues), "issues": issues}
+
+
+def _single_run_feasible_gate(groups: list[dict[str, Any]]) -> dict[str, Any]:
+    threshold = 0.5
+    failures = [group for group in groups if float(group.get("feasible_rate") or 0.0) < threshold]
+    return {"status": "pass" if not failures else "fail", "threshold": threshold, "failures": failures}
+
+
+def _single_run_quality_gate(groups: list[dict[str, Any]]) -> dict[str, Any]:
+    failures = [
+        group
+        for group in groups
+        if group.get("gap_rel", {}).get("median") is not None and float(group["gap_rel"]["median"]) > 10.0
+    ]
+    return {"status": "pass" if not failures else "fail", "max_gap_rel": 10.0, "failures": failures}
+
+
+def _single_run_runtime_gate(groups: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "status": "pass",
+        "max_median_runtime_s": None,
+        "reason": "no universal runtime threshold is configured for all benchmark families",
+    }
+
+
+def _rows_by_strategy(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(str(row.get("strategy") or ""), []).append(row)
+    return grouped
+
+
+def _feedback_candidate(strategy: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    exact_rows = [row for row in rows if row.get("kind") == "exact_baseline"]
+    feasible_rows = [row for row in rows if row.get("feasible") is True and row.get("status") != "error"]
+    gaps = _numeric_values(feasible_rows, "gap_rel")
+    elapsed = _numeric_values(rows, "elapsed_seconds")
+    strategy_configs = [row.get("strategy_config") for row in rows if isinstance(row.get("strategy_config"), dict)]
+    if exact_rows:
+        recommendation_kind = "exact_api"
+        resolved_config = {
+            "api": "solve_milp" if rows[0].get("family") == "exact_linear_mip" else "solve_cpsat",
+            "strategy": strategy,
+        }
+    else:
+        recommendation_kind = "strategy_config"
+        resolved_config = {
+            "strategy": strategy,
+            "strategy_profile": rows[0].get("strategy_profile") if rows else None,
+            "config": strategy_configs[0] if strategy_configs else None,
+        }
+    return {
+        "strategy": strategy,
+        "recommendation_kind": recommendation_kind,
+        "resolved_config": resolved_config,
+        "row_count": len(rows),
+        "feasible_rate": _safe_ratio(len(feasible_rows), len(rows)),
+        "error_count": sum(1 for row in rows if row.get("status") == "error"),
+        "gap_rel": _distribution(gaps),
+        "elapsed_seconds": _distribution(elapsed),
+    }
+
+
+def _feedback_sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    gap = row.get("gap_rel", {}).get("median")
+    elapsed = row.get("elapsed_seconds", {}).get("median")
+    return (
+        0 if row.get("recommendation_kind") == "exact_api" else 1,
+        -float(row.get("feasible_rate") or 0.0),
+        int(row.get("error_count") or 0),
+        float("inf") if gap is None else float(gap),
+        float("inf") if elapsed is None else float(elapsed),
+        str(row.get("strategy") or ""),
+    )
+
+
+def _numeric_values(rows: list[dict[str, Any]], field: str) -> list[float]:
+    values = []
+    for row in rows:
+        value = _float_or_none(row.get(field))
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def _distribution(values: list[float]) -> dict[str, Any]:
+    if not values:
+        return {"count": 0, "min": None, "median": None, "max": None, "mean": None}
+    ordered = sorted(values)
+    return {
+        "count": len(ordered),
+        "min": ordered[0],
+        "median": _median(ordered),
+        "max": ordered[-1],
+        "mean": sum(ordered) / len(ordered),
+    }
+
+
+def _median(ordered_values: list[float]) -> float:
+    midpoint = len(ordered_values) // 2
+    if len(ordered_values) % 2:
+        return ordered_values[midpoint]
+    return (ordered_values[midpoint - 1] + ordered_values[midpoint]) / 2.0
+
+
+def _safe_ratio(numerator: int, denominator: int) -> float:
+    return numerator / denominator if denominator else 0.0
+
+
+def _load_run_rows(run_dir: Path) -> list[dict[str, Any]]:
+    path = run_dir / "rows.jsonl"
+    if not path.exists():
+        path = run_dir / "results.jsonl"
+    if not path.exists():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rows.append(json.loads(line))
+    return rows
+
+
 def _float_or_none(value: Any) -> float | None:
     if value is None:
         return None
@@ -864,6 +1606,65 @@ def render_report(summary: dict[str, Any], rows: list[dict[str, Any]]) -> str:
                 ]
             )
                 + " |"
+        )
+    gates = summary.get("regression_gates", {})
+    lines.extend(
+        [
+            "",
+            "## Regression Gates",
+            "",
+            f"- Overall status: `{gates.get('overall_status', '')}`",
+            "",
+            "| Gate | Status | Detail |",
+            "| --- | --- | --- |",
+        ]
+    )
+    for gate_name, gate in sorted(gates.get("checks", {}).items()):
+        detail = gate.get("reason")
+        if detail is None:
+            if "issue_count" in gate:
+                detail = f"issues={gate.get('issue_count')}"
+            elif "threshold" in gate:
+                detail = f"threshold={gate.get('threshold')}, failures={len(gate.get('failures', []))}"
+            elif "max_gap_rel" in gate:
+                detail = f"max_gap_rel={gate.get('max_gap_rel')}, failures={len(gate.get('failures', []))}"
+            else:
+                detail = ""
+        lines.append(f"| `{gate_name}` | `{gate.get('status')}` | {detail} |")
+    feedback = summary.get("strategy_feedback", {})
+    lines.extend(
+        [
+            "",
+            "## Strategy Feedback",
+            "",
+            f"- Override policy: {feedback.get('explicit_user_strategy_override_policy', '')}",
+            f"- Reference policy: {feedback.get('reference_policy', '')}",
+            "",
+            "| Family | Style | Recommendation kind | Recommendation | Feasible % | Median gap % | Median seconds |",
+            "| --- | --- | --- | --- | ---: | ---: | ---: |",
+        ]
+    )
+    for group in feedback.get("groups", []):
+        recommendation = group.get("recommendation") or {}
+        resolved = recommendation.get("resolved_config") or {}
+        if recommendation.get("recommendation_kind") == "exact_api":
+            recommendation_text = resolved.get("api") or ""
+        else:
+            recommendation_text = recommendation.get("strategy") or ""
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    f"`{group.get('family')}`",
+                    f"`{group.get('model_style') or ''}`",
+                    f"`{recommendation.get('recommendation_kind') or ''}`",
+                    f"`{recommendation_text}`",
+                    _fmt_pct(recommendation.get("feasible_rate")),
+                    _fmt_pct((recommendation.get("gap_rel") or {}).get("median")),
+                    _fmt((recommendation.get("elapsed_seconds") or {}).get("median")),
+                ]
+            )
+            + " |"
         )
     if summary.get("parallel_matrix_enabled"):
         matrix = summary.get("parallel_matrix", {})

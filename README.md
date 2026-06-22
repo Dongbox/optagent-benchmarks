@@ -121,6 +121,7 @@ from benchmarks.runners.suite import run_benchmark_suite
 | TSP 建模方式 | `--model-style` | `model_styles` | 可比较 blackbox external call 与图表达 model style |
 | 默认策略候选矩阵 | `--default-candidate-matrix` | `default_candidate_matrix` | 用于决定当前默认策略候选 |
 | 并行矩阵 | `--parallel-matrix`、`--thread-count` | `parallel_thread_counts` | 用于比较线程扩展性 |
+| 多 seed 校准 | `--calibration-seed` | `run_calibration_suite(seeds=...)` | 重复传入 seed 后运行 calibration wrapper，默认 tier 为 `calibration` |
 | 预算 | `--max-iterations`、`--time-limit-s`、`--population-size`、`--trace-limit` | 同名参数 | CLI 预算是上限，实际预算按 family/tier ceiling 收敛 |
 | 数据缓存 | `--data-cache-dir`、`--no-download` | `data_cache_dir`、`allow_download` | 控制公开实例下载和离线复现 |
 
@@ -143,18 +144,48 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 | 文件 | 格式 | 用途 |
 | --- | --- | --- |
 | `config.json` | JSON | 本次运行的 family、tier、case、strategy、budget、model style、平台和 Python 信息 |
-| `results.jsonl` | JSONL，一行一个 row | 主结果表；策略 row 和 exact baseline row 都在这里 |
+| `inventory.json` | JSON | 不执行求解器即可读取的 family、case、策略矩阵、row schema 和预算 inventory |
+| `run_metadata.json` | JSON | Python、平台、native extension 路径和 git/worktree 元数据 |
+| `rows.jsonl` | JSONL，一行一个 row | 规范化主结果表；策略 row 和 exact baseline row 都在这里 |
+| `results.jsonl` | JSONL，一行一个 row | `rows.jsonl` 的兼容别名，供旧 dashboard / compare 工具读取 |
 | `results.csv` | CSV | 便于人工快速筛选和表格工具查看 |
 | `anytime.jsonl` | JSONL | 每个 row 的 checkpoint 曲线，来自公开结果 metadata 或 CP-SAT callback samples |
+| `curves.jsonl` | JSONL | `anytime.jsonl` 的规范命名别名 |
 | `throughput.jsonl` | JSONL | moves/evaluations/repairs 等吞吐指标和 per-second rate |
-| `summary.json` | JSON | 聚合统计、best_by_case、profile counts、default candidate matrix、parallel matrix |
-| `report.md` | Markdown | 人类可读报告 |
+| `strategy_feedback.json` | JSON | 按 family / model style 聚合的推荐候选，解析到 typed strategy config 或 direct exact API |
+| `summary.json` | JSON | 聚合统计、best_by_case、profile counts、default candidate matrix、parallel matrix、regression gates、strategy feedback |
+| `report.md` | Markdown | 人类可读报告，包含 budgets、gates 和 feedback 摘要 |
 
-`results.jsonl` row 必须保持 schema v2。稳定核心字段包括：
+多 seed 校准入口会创建一个父目录，父目录下每个 seed 是一次完整 run：
+
+```bash
+python -m benchmarks.runners.run \
+  --family sequence_blackbox_tsp \
+  --tier calibration \
+  --case tsplib_tiny4 \
+  --strategy ga \
+  --calibration-seed 11 \
+  --calibration-seed 12 \
+  --calibration-seed 13
+```
+
+父目录额外写出：
+
+| 文件 | 格式 | 用途 |
+| --- | --- | --- |
+| `rows.jsonl` | JSONL | 所有 seed 子 run 的规范化 row 聚合 |
+| `calibration_summary.json` | JSON | 多 seed median / best / worst / failure count、regression gates 和 artifact 索引 |
+| `strategy_feedback.json` | JSON | 基于多 seed 聚合证据生成的策略反馈 |
+
+`strategy_feedback.json` 只用于推荐和诊断，不覆盖用户显式传入的
+`--strategy` 或 Python `strategy=...`。
+
+`rows.jsonl` row 必须保持 schema v2。`results.jsonl` 在迁移期保持同样内容。稳定核心字段包括：
 
 - `benchmark_schema_version`
 - `benchmark_id`
 - `family`
+- `problem_family`
 - `tier`
 - `instance`
 - `kind`
@@ -177,10 +208,13 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 - `thread_count`
 - `parallel_matrix_enabled`
 - `effective_budget`
+- `route_decision`
+- `curve_summary`
 
 策略 row 可能额外包含：
 
 - `strategy_config`
+- `family_exact_only`
 - `initial_cost`
 - `improvement_abs`
 - `improvement_rel`
@@ -195,6 +229,11 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 - `repairs_attempted`
 - `repairs_succeeded`
 - 对应的 `*_per_s` 速率字段
+- GA / external objective observability fields where available, including
+  `ga_offspring_generated`, `ga_offspring_evaluated`,
+  `ga_duplicate_child_count`, `ga_duplicate_ratio`,
+  `external_rows_requested`, `external_cache_hits`,
+  `external_duplicate_rows_coalesced`, and `external_evaluation_mode`
 
 错误 row 仍必须写入 `results.jsonl`，并带有：
 
@@ -318,7 +357,7 @@ Dashboard 使用的长期事实文件不是 Markdown 报告，而是 `results/` 
 - 契约文档：`docs/result-json-contract.md`
 - Dashboard 数据契约：`docs/dashboard-data-contract.md`
 - JSON Schema：`results/schema/run-v1.schema.json`
-- tiny sample：`results/sample/`
+- 真实 run summary：`results/<group>/<strategy>/<year>/<month>/*.json`
 - 入口索引：`results/index.json`
 - 聚合数据：`aggregates/*.json`
 
@@ -334,6 +373,40 @@ python -m benchmarks.runners.generate_dashboard_data
 
 ```bash
 python -m benchmarks.runners.generate_dashboard_data --check
+```
+
+### GitHub Actions 发布链路
+
+Phase 4 的自动化拆成三个仓库内的 workflow：
+
+| 仓库 | Workflow | 职责 |
+| --- | --- | --- |
+| `optagent` | `.github/workflows/trigger-benchmark-dashboard.yml` | 从 OptAgent commit dispatch `optagent-benchmarks` benchmark run |
+| `optagent-benchmarks` | `.github/workflows/run-benchmarks.yml` | 构建/安装 OptAgent wheel、运行 smoke benchmark、写入 `results/` run summary、重新生成 `results/index.json` 和 `aggregates/*.json` |
+| `optagent-benchmarks` | `.github/workflows/publish-results-index.yml` | 手动或结果变更后重新生成 generated dashboard data |
+| `optagent-dashboard` | `.github/workflows/deploy-dashboard.yml` | 同步 `results/` 和 `aggregates/` 到 `public/data`、执行 `npm run build`、发布 Cloudflare Pages |
+
+`run-benchmarks.yml` 写入事实层时只应新增 run summary / artifact 文件，并更新 generated index / aggregates。不要修改历史 run summary。
+
+跨仓触发需要 GitHub Actions secrets：
+
+- `OPTAGENT_BENCHMARKS_WORKFLOW_TOKEN`：配置在 `optagent`，允许 dispatch `Dongbox/optagent-benckmarks` workflow。
+- `OPTAGENT_REPOSITORY_TOKEN`：配置在 `optagent-benchmarks`，当 OptAgent 仓库 checkout 需要额外权限时使用。
+- `OPTAGENT_DASHBOARD_WORKFLOW_TOKEN`：配置在 `optagent-benchmarks`，允许 dispatch `Dongbox/optagent-dashboard` workflow。
+- `OPTAGENT_BENCHMARKS_READ_TOKEN`：配置在 `optagent-dashboard`，当 benchmark 仓库 checkout 需要额外权限时使用。
+- `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_PAGES_PROJECT`：配置在 `optagent-dashboard`，用于 Cloudflare Pages Direct Upload。
+
+手动验证入口：
+
+```bash
+gh workflow run run-benchmarks.yml \
+  --repo Dongbox/optagent-benckmarks \
+  --ref cpp-python-boundary-redesign \
+  -f optagent_repository=Dongbox/optagent \
+  -f optagent_ref=<optagent-commit> \
+  -f tier=smoke \
+  -f family=sequence_blackbox_tsp \
+  -f strategy=ga
 ```
 
 ## 按场景选择评测
@@ -365,6 +438,38 @@ python -m benchmarks.runners.run \
 排序策略为 `feasible_coverage_then_error_then_gap_then_time_then_improvement_v1`：先看 family/case 覆盖和可行率，再看 error/non-feasible 率、平均/最大 gap、平均耗时，最后看 improvement/sec。MIP exact baseline row 不参与默认策略候选排序。
 
 这是当前最有决策价值的评测需求。涉及默认策略、搜索算子、repair、预算调整时，优先跑这个矩阵，而不是先做全量长跑。
+
+### 内部 GA 优化验证
+
+目的：验证 GA 内部策略优化是否真的提升有效搜索，而不是只提升原始子代生成数。
+
+该入口消费已有 fixed wall-clock FJSP summary，以及 benchmark suite 的
+`rows.jsonl` / `results.jsonl`，生成 Phase 6 报告：
+
+```bash
+python -m benchmarks.runners.phase6_internal_ga \
+  --fjsp-summary baseline=docs/evals/fjsp-ga-wallclock-1s-seed31/summary.json \
+  --fjsp-summary unique_resampling=docs/evals/fjsp-ga-wallclock-1s-unique-resampling/summary.json \
+  --suite-run-dir baseline=docs/evals/benchmark-suite/runs/tsp-qap-baseline \
+  --suite-run-dir unique_resampling=docs/evals/benchmark-suite/runs/tsp-qap-unique-resampling
+```
+
+输出：
+
+- `phase6_internal_ga_report.json`
+- `phase6_internal_ga_report.md`
+
+重点看：
+
+- `unique_offspring_per_s`
+- `offspring_evaluated_per_s`
+- `duplicate_ratio`
+- `external_callback_count`
+- `external_callback_wall_time_ms`
+- `objective_median_delta`
+- `gates.overall_status`
+
+Phase 6 gate 要求覆盖 FJSP、小型非 FJSP sequence、QAP-supported case，并且 unknown external callback 只能保持 serial-safe 路径。
 
 ### 调度可行性和修复能力
 
@@ -575,6 +680,113 @@ aggregates/runtime-quality.json
 ```
 
 `optagent-dashboard` 应优先读取这些文件；进入单次运行详情时，再按 `summary_path` 读取 run summary 和 artifacts。
+
+Dashboard 展示的是 promoted 长期事实，不是所有本地实验目录。进入 Dashboard 的文件范围固定为：
+
+- `results/<group>/<strategy>/<yyyy>/<mm>/<run-id>.json`
+- 可选的同名 artifact 目录：`metrics.json`、`solution.json`、`trace.json`
+- `results/index.json`
+- `aggregates/*.json`
+
+CI 或本地 suite run 目录中的 `config.json`、`inventory.json`、`run_metadata.json`、`rows.jsonl`、`results.jsonl`、`results.csv`、`anytime.jsonl`、`curves.jsonl`、`throughput.jsonl`、`summary.json`、`report.md` 是单次运行审计证据。它们可以作为 CI artifact 或 `docs/evals/` 记录保存，但 Dashboard 不直接读取这些文件；需要通过发布步骤转换成 run summary。
+
+错误也是事实。发布步骤必须保留 `status = "error"`、`feasible = false` 的 row，并写出 `error.type` / `error.message` 对应的 dashboard 字段，便于 Dashboard 区分“求解失败”“不可行”“质量回退”和“数据缺失”。
+
+用于跨 commit 比较、默认策略选择或 release gate 的 Dashboard-worthy 结果应优先在 GitHub Actions 标准环境中产生：固定 Python / OS / wheel / benchmark commit / seed / tier / budget，并在 run summary 的 `environment` 中记录。维护者本地 smoke 可以验证记录链路和复现错误，但默认不作为质量趋势证据；确需 promoted 时，需要在 PR 或任务记录中说明环境和原因。
+
+### 本地 Dashboard 联调
+
+当需要修改 benchmark 输出字段、artifact 结构或 dashboard 展示逻辑时，不应等待一次完整 CI 成功 benchmark。可以使用本地联调链路把任意 suite run 目录转换成 dashboard 静态数据：
+
+```bash
+python scripts/sync_dashboard_local_data.py \
+  docs/evals/benchmark-suite/runs/<timestamp> \
+  --overwrite
+```
+
+该脚本会：
+
+1. 读取 suite run 目录里的 `results.jsonl`。
+2. 发布到本地隔离目录：
+
+   ```text
+   docs/evals/benchmark-suite/dashboard-local/
+   ```
+
+3. 生成 dashboard 需要的：
+
+   ```text
+   results/index.json
+   aggregates/*.json
+   results/<group>/<strategy>/<yyyy>/<mm>/<run-id>.json
+   results/<group>/<strategy>/<yyyy>/<mm>/<run-id>/metrics.json
+   ```
+
+4. 同步到 sibling dashboard 仓库：
+
+   ```text
+   ../optagent-dashboard/public/data/
+   ```
+
+5. 写入 `../optagent-dashboard/public/data/LOCAL_DEV_DATA.md`，标记这份数据是本地联调用途。
+
+然后启动 dashboard：
+
+```bash
+cd ../optagent-dashboard
+npm run dev
+```
+
+这条链路适合联调：
+
+- 新增或重命名 row 字段；
+- 错误 row 在 Dashboard 的展示；
+- `metrics.json`、`solution.json`、`trace.json` 等 artifact 的读取方式；
+- aggregates 是否按预期分组、排序、筛选；
+- Dashboard 页面文案、筛选和详情交互。
+
+这条链路不表示数据已经 promoted。它会覆盖本地 dashboard 的 `public/data/results` 和 `public/data/aggregates`，但不会写入正式 `benchmarks/results` 或 `benchmarks/aggregates`。要恢复 dashboard 仓库中已提交的样例数据，使用 dashboard 仓库的版本控制恢复 `public/data`，或重新从 `optagent-benchmarks` 的正式 `results/` / `aggregates/` 同步。
+
+#### 本地运行 GA / ALNS 非 MIP 全量联调
+
+下面命令覆盖当前非 MIP benchmark families 的 smoke + calibration case，并只请求 GA / ALNS。调度 family 会额外写入 `cpsat` exact baseline row，这是 runner 的自动基线，不是用户请求的启发式策略。
+
+```bash
+python -m benchmarks.runners.run \
+  --family interval_job_shop \
+  --family cumulative_resource_scheduling \
+  --family sequence_blackbox_tsp \
+  --family sequence_quadratic_assignment \
+  --tier smoke \
+  --tier calibration \
+  --strategy ga \
+  --strategy alns \
+  --max-iterations 5 \
+  --time-limit-s 2 \
+  --population-size 6 \
+  --trace-limit 4 \
+  --timestamp local-ga-alns-dashboard-$(date +%Y%m%d-%H%M%S)
+```
+
+同步到本地 dashboard：
+
+```bash
+python scripts/sync_dashboard_local_data.py \
+  docs/evals/benchmark-suite/runs/<timestamp> \
+  --overwrite \
+  --runner local-ga-alns-dashboard
+```
+
+启动 dashboard：
+
+```bash
+cd ../optagent-dashboard
+npm run dev
+```
+
+打开 `http://127.0.0.1:5173/`。如果 `public/data/LOCAL_DEV_DATA.md` 存在，页面会显示“本地联调数据”，提醒这不是 CI 可比历史。
+
+如果本地 native / public route 失败，runner 仍会写出 `status = "error"` rows；这仍可用于联调 dashboard 的错误展示、筛选和 artifact 读取。质量比较结论应等待 GitHub Actions 标准环境产出的 promoted results。
 
 旧的 run artifact dashboard 用于对比本地 `docs/evals/benchmark-suite/runs/<timestamp>/` 目录，不是长期事实层入口。
 

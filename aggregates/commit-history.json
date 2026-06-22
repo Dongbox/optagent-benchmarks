@@ -1,51 +1,925 @@
 {
-  "generated_at": "2026-06-22T00:01:00Z",
+  "generated_at": "2026-06-22T09:20:00Z",
   "schema_version": 1,
   "series": [
     {
-      "benchmark_group": "sample",
-      "benchmark_id": "sample_tiny_sequence",
-      "key": "sample/sample_tiny_sequence/alns/seed-123",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_chr12a",
+      "key": "assignment/qaplib_chr12a/alns/seed-11",
       "metric": "best_cost",
       "points": [
         {
-          "best_cost": null,
-          "commit": "3f8a1d2",
-          "commit_url": "https://github.com/Dongbox/optagent/commit/3f8a1d2",
-          "created_at": "2026-06-22T00:01:00Z",
-          "feasible": false,
-          "gap_rel": null,
-          "objective": null,
-          "run_id": "sample-alns-20260622-000100-3f8a1d2",
-          "runtime_ms": 17,
-          "status": "error",
-          "summary_path": "/results/sample/alns/2026/06/sample-alns-20260622-000100-3f8a1d2.json"
+          "best_cost": 9552.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 9552.0,
+          "run_id": "assignment-alns-qaplib-chr12a-20260622-092000-9d4c2c7-2ca1255",
+          "runtime_ms": 18,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-chr12a-20260622-092000-9d4c2c7-2ca1255.json"
         }
       ],
-      "seed": 123,
+      "seed": 11,
       "strategy": "alns"
     },
     {
-      "benchmark_group": "sample",
-      "benchmark_id": "sample_tiny_sequence",
-      "key": "sample/sample_tiny_sequence/ga/seed-123",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_chr12a",
+      "key": "assignment/qaplib_chr12a/ga/seed-11",
       "metric": "best_cost",
       "points": [
         {
-          "best_cost": 125.2,
-          "commit": "3f8a1d2",
-          "commit_url": "https://github.com/Dongbox/optagent/commit/3f8a1d2",
-          "created_at": "2026-06-22T00:00:00Z",
+          "best_cost": 9552.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
           "feasible": true,
-          "gap_rel": 0.0433333333,
-          "objective": 125.2,
-          "run_id": "sample-ga-20260622-000000-3f8a1d2",
-          "runtime_ms": 532,
+          "gap_rel": 0.0,
+          "objective": 9552.0,
+          "run_id": "assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d",
+          "runtime_ms": 27,
           "status": "success",
-          "summary_path": "/results/sample/ga/2026/06/sample-ga-20260622-000000-3f8a1d2.json"
+          "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d.json"
         }
       ],
-      "seed": 123,
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_had20",
+      "key": "assignment/qaplib_had20/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 6962.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.005778676683039584,
+          "objective": 6962.0,
+          "run_id": "assignment-alns-qaplib-had20-20260622-092000-9d4c2c7-7c905c8",
+          "runtime_ms": 82,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-had20-20260622-092000-9d4c2c7-7c905c8.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_had20",
+      "key": "assignment/qaplib_had20/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 6922.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 6922.0,
+          "run_id": "assignment-ga-qaplib-had20-20260622-092000-9d4c2c7-a5420a3",
+          "runtime_ms": 118,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-had20-20260622-092000-9d4c2c7-a5420a3.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug12",
+      "key": "assignment/qaplib_nug12/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 578.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 578.0,
+          "run_id": "assignment-alns-qaplib-nug12-20260622-092000-9d4c2c7-272d7c2",
+          "runtime_ms": 16,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-nug12-20260622-092000-9d4c2c7-272d7c2.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug12",
+      "key": "assignment/qaplib_nug12/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 578.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 578.0,
+          "run_id": "assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae",
+          "runtime_ms": 25,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug20",
+      "key": "assignment/qaplib_nug20/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 2624.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.021011673151750974,
+          "objective": 2624.0,
+          "run_id": "assignment-alns-qaplib-nug20-20260622-092000-9d4c2c7-9d21086",
+          "runtime_ms": 76,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-nug20-20260622-092000-9d4c2c7-9d21086.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug20",
+      "key": "assignment/qaplib_nug20/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 2612.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.01634241245136187,
+          "objective": 2612.0,
+          "run_id": "assignment-ga-qaplib-nug20-20260622-092000-9d4c2c7-e248f08",
+          "runtime_ms": 115,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug20-20260622-092000-9d4c2c7-e248f08.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_berlin52",
+      "key": "routing/tsplib_berlin52/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 17556.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 1.3277645186953062,
+          "objective": 17556.0,
+          "run_id": "routing-alns-tsplib-berlin52-20260622-092000-9d4c2c7-d187c08",
+          "runtime_ms": 139,
+          "status": "success",
+          "summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-berlin52-20260622-092000-9d4c2c7-d187c08.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_berlin52",
+      "key": "routing/tsplib_berlin52/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 22091.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 1.9290639087775125,
+          "objective": 22091.0,
+          "run_id": "routing-ga-tsplib-berlin52-20260622-092000-9d4c2c7-081ea83",
+          "runtime_ms": 42,
+          "status": "success",
+          "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260622-092000-9d4c2c7-081ea83.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_eil51",
+      "key": "routing/tsplib_eil51/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1150.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 1.699530516431925,
+          "objective": 1150.0,
+          "run_id": "routing-alns-tsplib-eil51-20260622-092000-9d4c2c7-8af79f2",
+          "runtime_ms": 135,
+          "status": "success",
+          "summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-eil51-20260622-092000-9d4c2c7-8af79f2.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_eil51",
+      "key": "routing/tsplib_eil51/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1293.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 2.035211267605634,
+          "objective": 1293.0,
+          "run_id": "routing-ga-tsplib-eil51-20260622-092000-9d4c2c7-ce58f8f",
+          "runtime_ms": 66,
+          "status": "success",
+          "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260622-092000-9d4c2c7-ce58f8f.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_kroa100",
+      "key": "routing/tsplib_kroa100/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 166799.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 6.837562259186167,
+          "objective": 166799.0,
+          "run_id": "routing-alns-tsplib-kroa100-20260622-092000-9d4c2c7-34d2b9e",
+          "runtime_ms": 313,
+          "status": "success",
+          "summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-kroa100-20260622-092000-9d4c2c7-34d2b9e.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_kroa100",
+      "key": "routing/tsplib_kroa100/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 186969.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 7.785311530871159,
+          "objective": 186969.0,
+          "run_id": "routing-ga-tsplib-kroa100-20260622-092000-9d4c2c7-8cfc177",
+          "runtime_ms": 125,
+          "status": "success",
+          "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-kroa100-20260622-092000-9d4c2c7-8cfc177.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_pr76",
+      "key": "routing/tsplib_pr76/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 150781.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.39406799249253416,
+          "objective": 150781.0,
+          "run_id": "routing-alns-tsplib-pr76-20260622-092000-9d4c2c7-c63be0c",
+          "runtime_ms": 151,
+          "status": "success",
+          "summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-pr76-20260622-092000-9d4c2c7-c63be0c.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_pr76",
+      "key": "routing/tsplib_pr76/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 150781.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.39406799249253416,
+          "objective": 150781.0,
+          "run_id": "routing-ga-tsplib-pr76-20260622-092000-9d4c2c7-f7768bc",
+          "runtime_ms": 99,
+          "status": "success",
+          "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-pr76-20260622-092000-9d4c2c7-f7768bc.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_abz5",
+      "key": "scheduling/jsplib_abz5/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1248.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.011345218800648298,
+          "objective": 1248.0,
+          "run_id": "scheduling-alns-jsplib-abz5-20260622-092000-9d4c2c7-5b75afa",
+          "runtime_ms": 1048,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-abz5-20260622-092000-9d4c2c7-5b75afa.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_abz5",
+      "key": "scheduling/jsplib_abz5/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1236.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0016207455429497568,
+          "objective": 1236.0,
+          "run_id": "scheduling-cpsat-jsplib-abz5-20260622-092000-9d4c2c7-fd5d9a4",
+          "runtime_ms": 2016,
+          "status": "success",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-abz5-20260622-092000-9d4c2c7-fd5d9a4.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_abz5",
+      "key": "scheduling/jsplib_abz5/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1555.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.260129659643436,
+          "objective": 1555.0,
+          "run_id": "scheduling-ga-jsplib-abz5-20260622-092000-9d4c2c7-0379015",
+          "runtime_ms": 704,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-abz5-20260622-092000-9d4c2c7-0379015.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft06",
+      "key": "scheduling/jsplib_ft06/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 55.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 55.0,
+          "run_id": "scheduling-alns-jsplib-ft06-20260622-092000-9d4c2c7-8fb4742",
+          "runtime_ms": 107,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft06-20260622-092000-9d4c2c7-8fb4742.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft06",
+      "key": "scheduling/jsplib_ft06/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 55.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 55.0,
+          "run_id": "scheduling-cpsat-jsplib-ft06-20260622-092000-9d4c2c7-78ab3fe",
+          "runtime_ms": 636,
+          "status": "optimal",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft06-20260622-092000-9d4c2c7-78ab3fe.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft06",
+      "key": "scheduling/jsplib_ft06/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 60.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.09090909090909091,
+          "objective": 60.0,
+          "run_id": "scheduling-ga-jsplib-ft06-20260622-092000-9d4c2c7-3e637f4",
+          "runtime_ms": 127,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260622-092000-9d4c2c7-3e637f4.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft10",
+      "key": "scheduling/jsplib_ft10/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 969.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.041935483870967745,
+          "objective": 969.0,
+          "run_id": "scheduling-alns-jsplib-ft10-20260622-092000-9d4c2c7-4fe0bb5",
+          "runtime_ms": 1086,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft10-20260622-092000-9d4c2c7-4fe0bb5.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft10",
+      "key": "scheduling/jsplib_ft10/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 930.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 930.0,
+          "run_id": "scheduling-cpsat-jsplib-ft10-20260622-092000-9d4c2c7-3a612df",
+          "runtime_ms": 2020,
+          "status": "success",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft10-20260622-092000-9d4c2c7-3a612df.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft10",
+      "key": "scheduling/jsplib_ft10/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1319.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.4182795698924731,
+          "objective": 1319.0,
+          "run_id": "scheduling-ga-jsplib-ft10-20260622-092000-9d4c2c7-fe5e01b",
+          "runtime_ms": 671,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft10-20260622-092000-9d4c2c7-fe5e01b.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la16",
+      "key": "scheduling/jsplib_la16/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 962.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.01798941798941799,
+          "objective": 962.0,
+          "run_id": "scheduling-alns-jsplib-la16-20260622-092000-9d4c2c7-14e862a",
+          "runtime_ms": 1061,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-la16-20260622-092000-9d4c2c7-14e862a.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la16",
+      "key": "scheduling/jsplib_la16/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 945.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 945.0,
+          "run_id": "scheduling-cpsat-jsplib-la16-20260622-092000-9d4c2c7-6ab58c8",
+          "runtime_ms": 1145,
+          "status": "optimal",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-la16-20260622-092000-9d4c2c7-6ab58c8.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la16",
+      "key": "scheduling/jsplib_la16/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1327.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.4042328042328042,
+          "objective": 1327.0,
+          "run_id": "scheduling-ga-jsplib-la16-20260622-092000-9d4c2c7-6614964",
+          "runtime_ms": 739,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-la16-20260622-092000-9d4c2c7-6614964.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la21",
+      "key": "scheduling/jsplib_la21/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1276.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.2198852772466539,
+          "objective": 1276.0,
+          "run_id": "scheduling-alns-jsplib-la21-20260622-092000-9d4c2c7-2ca3087",
+          "runtime_ms": 1382,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-la21-20260622-092000-9d4c2c7-2ca3087.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la21",
+      "key": "scheduling/jsplib_la21/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1142.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.09177820267686425,
+          "objective": 1142.0,
+          "run_id": "scheduling-cpsat-jsplib-la21-20260622-092000-9d4c2c7-79fee66",
+          "runtime_ms": 2028,
+          "status": "success",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-la21-20260622-092000-9d4c2c7-79fee66.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la21",
+      "key": "scheduling/jsplib_la21/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 1555.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.48661567877629064,
+          "objective": 1555.0,
+          "run_id": "scheduling-ga-jsplib-la21-20260622-092000-9d4c2c7-737322b",
+          "runtime_ms": 1581,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-la21-20260622-092000-9d4c2c7-737322b.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_1_1",
+      "key": "scheduling/psplib_j90_1_1/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 73.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 73.0,
+          "run_id": "scheduling-alns-psplib-j90-1-1-20260622-092000-9d4c2c7-13d8a24",
+          "runtime_ms": 307,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-psplib-j90-1-1-20260622-092000-9d4c2c7-13d8a24.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_1_1",
+      "key": "scheduling/psplib_j90_1_1/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 73.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 73.0,
+          "run_id": "scheduling-cpsat-psplib-j90-1-1-20260622-092000-9d4c2c7-5461eed",
+          "runtime_ms": 83,
+          "status": "optimal",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-psplib-j90-1-1-20260622-092000-9d4c2c7-5461eed.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_1_1",
+      "key": "scheduling/psplib_j90_1_1/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 102.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.3972602739726027,
+          "objective": 102.0,
+          "run_id": "scheduling-ga-psplib-j90-1-1-20260622-092000-9d4c2c7-a33b731",
+          "runtime_ms": 511,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-psplib-j90-1-1-20260622-092000-9d4c2c7-a33b731.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_1_8",
+      "key": "scheduling/psplib_j90_1_8/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 95.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 95.0,
+          "run_id": "scheduling-alns-psplib-j90-1-8-20260622-092000-9d4c2c7-2dbca6d",
+          "runtime_ms": 260,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-psplib-j90-1-8-20260622-092000-9d4c2c7-2dbca6d.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_1_8",
+      "key": "scheduling/psplib_j90_1_8/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 95.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 95.0,
+          "run_id": "scheduling-cpsat-psplib-j90-1-8-20260622-092000-9d4c2c7-7b7d4de",
+          "runtime_ms": 39,
+          "status": "optimal",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-psplib-j90-1-8-20260622-092000-9d4c2c7-7b7d4de.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_1_8",
+      "key": "scheduling/psplib_j90_1_8/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 126.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.3263157894736842,
+          "objective": 126.0,
+          "run_id": "scheduling-ga-psplib-j90-1-8-20260622-092000-9d4c2c7-00d3fbf",
+          "runtime_ms": 513,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-psplib-j90-1-8-20260622-092000-9d4c2c7-00d3fbf.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "ga"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_2_4",
+      "key": "scheduling/psplib_j90_2_4/alns/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 70.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 70.0,
+          "run_id": "scheduling-alns-psplib-j90-2-4-20260622-092000-9d4c2c7-f8f68bf",
+          "runtime_ms": 213,
+          "status": "success",
+          "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-psplib-j90-2-4-20260622-092000-9d4c2c7-f8f68bf.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "alns"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_2_4",
+      "key": "scheduling/psplib_j90_2_4/cpsat/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 70.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 70.0,
+          "run_id": "scheduling-cpsat-psplib-j90-2-4-20260622-092000-9d4c2c7-c26f21d",
+          "runtime_ms": 17,
+          "status": "optimal",
+          "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-psplib-j90-2-4-20260622-092000-9d4c2c7-c26f21d.json"
+        }
+      ],
+      "seed": 11,
+      "strategy": "cpsat"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "psplib_j90_2_4",
+      "key": "scheduling/psplib_j90_2_4/ga/seed-11",
+      "metric": "best_cost",
+      "points": [
+        {
+          "best_cost": 76.0,
+          "commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
+          "created_at": "2026-06-22T09:20:00Z",
+          "feasible": true,
+          "gap_rel": 0.08571428571428572,
+          "objective": 76.0,
+          "run_id": "scheduling-ga-psplib-j90-2-4-20260622-092000-9d4c2c7-aa5a906",
+          "runtime_ms": 470,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-psplib-j90-2-4-20260622-092000-9d4c2c7-aa5a906.json"
+        }
+      ],
+      "seed": 11,
       "strategy": "ga"
     }
   ]

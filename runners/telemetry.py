@@ -31,10 +31,13 @@ def normalize_telemetry(row: dict[str, Any]) -> dict[str, Any]:
         if initial_cost is not None:
             row["initial_cost"] = initial_cost
         _normalize_search_counters(row, metadata if isinstance(metadata, dict) else {})
+        _normalize_ga_observability(row, metadata if isinstance(metadata, dict) else {})
+        _normalize_external_observability(row, metadata if isinstance(metadata, dict) else {})
         _normalize_counter_rates(row, elapsed_seconds)
         _normalize_improvement_metrics(row, elapsed_seconds)
 
     row["anytime"] = _build_anytime(row, metadata if isinstance(metadata, dict) else {})
+    row["curve_summary"] = _curve_summary(row["anytime"])
     return row
 
 
@@ -55,6 +58,7 @@ def write_anytime_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
                 "model_style": row.get("model_style"),
                 "kind": row.get("kind"),
                 "budget_profile": row.get("budget_profile"),
+                "curve_summary": row.get("curve_summary"),
                 "anytime": anytime,
             }
         )
@@ -89,6 +93,29 @@ def _throughput_entry(row: dict[str, Any]) -> dict[str, Any] | None:
         "full_evaluations_per_s",
         "repairs_attempted_per_s",
         "repairs_succeeded_per_s",
+        "ga_offspring_generated",
+        "ga_offspring_evaluated",
+        "ga_duplicate_child_count",
+        "ga_offspring_attempt_count",
+        "ga_duplicate_offspring_count",
+        "ga_duplicate_ratio",
+        "ga_unique_offspring_count",
+        "ga_duplicate_fallback_generation_count",
+        "ga_unique_offspring_retry_count",
+        "ga_unique_offspring_retry_limit",
+        "ga_generation_duplicate_ratio_mean",
+        "ga_generation_duplicate_ratio_max",
+        "ga_generation_unique_offspring_mean",
+        "ga_external_evaluation_mode",
+        "ga_external_batch_count",
+        "ga_external_batch_rows",
+        "ga_external_parallel_batches",
+        "ga_external_callback_wall_time_ms",
+        "external_rows_requested",
+        "external_cache_hits",
+        "external_cache_misses",
+        "external_duplicate_rows_coalesced",
+        "external_callback_wall_time_ms",
     )
     values = {field: row.get(field) for field in throughput_fields if row.get(field) is not None}
     if not values:
@@ -166,6 +193,68 @@ def _normalize_search_counters(row: dict[str, Any], metadata: dict[str, Any]) ->
             row[key] = value
 
 
+def _normalize_ga_observability(row: dict[str, Any], metadata: dict[str, Any]) -> None:
+    for key in (
+        "ga_offspring_generated",
+        "ga_offspring_evaluated",
+        "ga_duplicate_child_count",
+        "ga_offspring_attempt_count",
+        "ga_unique_offspring_count",
+        "ga_duplicate_offspring_count",
+        "ga_duplicate_fallback_generation_count",
+        "ga_unique_offspring_retry_count",
+        "ga_unique_offspring_retry_limit",
+        "ga_generation_duplicate_ratio_mean",
+        "ga_generation_duplicate_ratio_max",
+        "ga_generation_unique_offspring_mean",
+        "ga_external_batch_count",
+        "ga_external_batch_rows",
+        "ga_external_parallel_batches",
+        "ga_external_callback_wall_time_ms",
+    ):
+        value = _first_number(row, metadata, (key,))
+        if value is not None:
+            row[key] = value
+    mode = row.get("ga_external_evaluation_mode") or metadata.get("ga_external_evaluation_mode")
+    if mode is not None:
+        row["ga_external_evaluation_mode"] = str(mode)
+    attempts = _optional_float(row.get("ga_offspring_attempt_count"))
+    generated = _optional_float(row.get("ga_offspring_generated"))
+    duplicate_offspring = _optional_float(row.get("ga_duplicate_offspring_count"))
+    legacy_duplicate = _optional_float(row.get("ga_duplicate_child_count"))
+    if row.get("ga_unique_offspring_count") is None:
+        denominator = attempts if attempts is not None else generated
+        duplicate = duplicate_offspring if duplicate_offspring is not None else legacy_duplicate
+        if denominator is not None and duplicate is not None:
+            row["ga_unique_offspring_count"] = max(0.0, denominator - duplicate)
+    explicit_ratio = _first_number(row, metadata, ("ga_duplicate_ratio",))
+    if explicit_ratio is not None:
+        row["ga_duplicate_ratio"] = explicit_ratio
+    elif attempts and duplicate_offspring is not None:
+        row["ga_duplicate_ratio"] = duplicate_offspring / attempts
+    elif generated and legacy_duplicate is not None:
+        row["ga_duplicate_ratio"] = legacy_duplicate / generated
+
+
+def _normalize_external_observability(row: dict[str, Any], metadata: dict[str, Any]) -> None:
+    for key in (
+        "external_batch_count",
+        "external_rows_requested",
+        "external_cache_hits",
+        "external_cache_misses",
+        "external_duplicate_rows_coalesced",
+        "external_callback_wall_time_ms",
+    ):
+        value = _first_number(row, metadata, (key,))
+        if value is not None:
+            row[key] = value
+    mode = row.get("external_evaluation_mode") or metadata.get("external_evaluation_mode")
+    if mode is None and any(key in row for key in ("external_rows_requested", "external_batch_count")):
+        mode = "serial_external"
+    if mode is not None:
+        row["external_evaluation_mode"] = str(mode)
+
+
 def _normalize_counter_rates(row: dict[str, Any], elapsed_seconds: float | None) -> None:
     if elapsed_seconds is None or elapsed_seconds <= 0:
         return
@@ -229,6 +318,24 @@ def _build_anytime(row: dict[str, Any], metadata: dict[str, Any]) -> list[dict[s
             }
         )
     return anytime
+
+
+def _curve_summary(anytime: list[dict[str, Any]]) -> dict[str, Any]:
+    if not anytime:
+        return {
+            "checkpoint_count": 0,
+            "first_best_cost": None,
+            "last_best_cost": None,
+            "last_gap_rel": None,
+        }
+    return {
+        "checkpoint_count": len(anytime),
+        "first_time_s": anytime[0].get("time_s"),
+        "last_time_s": anytime[-1].get("time_s"),
+        "first_best_cost": anytime[0].get("best_cost"),
+        "last_best_cost": anytime[-1].get("best_cost"),
+        "last_gap_rel": anytime[-1].get("gap_rel"),
+    }
 
 
 def _candidate_events(row: dict[str, Any], metadata: dict[str, Any]) -> list[tuple[float, float]]:
