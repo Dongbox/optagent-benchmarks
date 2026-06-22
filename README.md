@@ -225,6 +225,92 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 
 不要把 loaders、models、runner 或 run artifact 放进 `examples/`。examples 可以链接 benchmark，但不能成为性能 harness。
 
+## 开发者快速入口
+
+`optagent-benchmarks` 需要持续人工添加数据、建模和求解评测逻辑。文件增多后，不应要求新开发者先理解所有目录。按任务类型选择入口：
+
+| 任务 | 优先阅读/修改 | 不应先改 |
+| --- | --- | --- |
+| 在已有 family 下加一个 case | `definitions/<family>/manifest.json`、`catalog/modeling-native-catalog-v1.json` | `models/`、`runners/` |
+| 新增一种公开数据格式解析 | `loaders/<family>.py`、对应 loader tests | strategy 配置 |
+| 调整公开 API 建模方式 | `models/<family>.py`、对应 model/runner tests | catalog reference objective |
+| 新增或调整策略评测 | `runners/<family>.py`、`runners/suite.py` | loader 数据语义 |
+| 新增完整 family | `definitions/`、`loaders/`、`models/`、`runners/`、tests、README | Dashboard 页面 |
+| 调整结果字段 | `runners/telemetry.py`、`runners/common.py`、schema 文档 | 单个 family 私有字段 |
+
+### 加已有 family 的新 case
+
+优先路径：
+
+1. 在 `definitions/<family>/manifest.json` 增加 case。
+2. 在 catalog 中登记 `benchmark_id`、`family`、`tier`、`instance`、公开来源和 reference。
+3. 用已有 loader 验证数据能读取。
+4. 跑该 family 的 focused runner test 或 smoke run。
+
+只要数据格式和建模方式没有变化，不要改 `models/` 或 `runners/`。
+
+新增 case 必须回答：
+
+- 数据来源是否公开、可复现？
+- reference objective / bound 来自哪里？
+- 该 case 属于 `smoke`、`calibration` 还是 `full`？
+- 是否需要本地缓存，`--no-download` 下行为是否清晰？
+
+### 新增 family
+
+新增 family 时，固定文件清单是：
+
+```text
+definitions/<family>/manifest.json
+loaders/<family>.py
+models/<family>.py
+runners/<family>.py
+tests/test_benchmark_suite_<family>_runner.py
+```
+
+还需要更新：
+
+```text
+runners/suite.py
+README.md
+catalog/modeling-native-catalog-v1.json
+```
+
+新增 family 必须先写清楚：
+
+- 数据格式是什么？
+- 对应哪些公开 OptAgent 建模 API？
+- 哪些 strategy 合理？
+- 哪些 strategy 不应纳入默认比较？
+- exact baseline 是否存在？
+- Dashboard 中应该归到哪个 group，例如 `scheduling`、`routing`、`packing`、`assignment` 或 `exact-regression`？
+
+### 新增策略评测
+
+新增策略评测不等于新增 strategy 名称。必须先确认该策略对当前 family 有业务意义。
+
+策略评测 PR 必须说明：
+
+- 使用哪个公开 strategy config？
+- 与现有 GA / ALNS / Tabu / Local Search / exact baseline 的比较目的是什么？
+- 应看哪些指标：`gap_rel`、`runtime_ms`、`feasible`、`time_to_best`、`evaluations_per_s` 还是 `improvement_per_second`？
+- 是否进入默认策略候选矩阵？
+
+### 推荐后续工具
+
+为降低上手成本，仓库后续应提供轻量 CLI：
+
+```bash
+python -m benchmarks.cli list-families
+python -m benchmarks.cli list-cases --family interval_job_shop
+python -m benchmarks.cli explain-family interval_job_shop
+python -m benchmarks.cli scaffold-case --family interval_job_shop --case my_case
+python -m benchmarks.cli scaffold-family --family my_family
+python -m benchmarks.cli validate-case --case my_case
+```
+
+这些命令的目标不是替代代码审查，而是让开发者快速知道“下一步该改哪个文件”。
+
 ## 按场景选择评测
 
 benchmark 不是为了穷举所有参数组合。优先选择能回答策略决策问题的评测，再扩展到更大的矩阵。
@@ -512,3 +598,10 @@ python -m pytest -q \
 ```bash
 python -m pytest -q <focused-tests>
 ```
+
+新增 case / family 时，最终报告必须写明：
+
+- 修改了哪些 `definitions/`、`loaders/`、`models/`、`runners/` 文件。
+- 是否只新增 case，还是改变了数据格式 / 建模方式 / 策略评测。
+- 跑了哪些 focused tests。
+- 是否验证了安装 wheel 后的 benchmark 命令。
