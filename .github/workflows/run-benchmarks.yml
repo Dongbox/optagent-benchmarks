@@ -11,17 +11,29 @@ on:
         description: OptAgent commit SHA or ref to benchmark
         required: true
       tier:
-        description: Benchmark tier
+        description: Benchmark tier or comma-separated tiers
         required: false
         default: smoke
       family:
-        description: Benchmark family
+        description: Benchmark family or comma-separated families
         required: false
         default: sequence_blackbox_tsp
       strategy:
-        description: Benchmark strategy
+        description: Benchmark strategy or comma-separated strategies
         required: false
         default: ga
+      max_iterations:
+        description: Max iterations budget
+        required: false
+        default: "5"
+      time_limit_s:
+        description: Time limit seconds budget
+        required: false
+        default: "2"
+      population_size:
+        description: Population size budget
+        required: false
+        default: "6"
   push:
     branches:
       - main
@@ -53,6 +65,9 @@ jobs:
       BENCHMARK_TIER: ${{ inputs.tier || 'smoke' }}
       BENCHMARK_FAMILY: ${{ inputs.family || 'sequence_blackbox_tsp' }}
       BENCHMARK_STRATEGY: ${{ inputs.strategy || 'ga' }}
+      BENCHMARK_MAX_ITERATIONS: ${{ inputs.max_iterations || '5' }}
+      BENCHMARK_TIME_LIMIT_S: ${{ inputs.time_limit_s || '2' }}
+      BENCHMARK_POPULATION_SIZE: ${{ inputs.population_size || '6' }}
     steps:
       - name: Checkout optagent-benchmarks
         uses: actions/checkout@v4
@@ -108,15 +123,35 @@ jobs:
           print(f"OPTAGENT_VERSION={importlib.metadata.version('optagent')}")
           PY
 
-      - name: Run smoke benchmark
+      - name: Run benchmark suite
         run: |
+          RUN_ARGS=()
+          IFS=',' read -ra FAMILIES <<< "${BENCHMARK_FAMILY}"
+          for family in "${FAMILIES[@]}"; do
+            family="$(echo "${family}" | xargs)"
+            if [ -n "${family}" ]; then
+              RUN_ARGS+=(--family "${family}")
+            fi
+          done
+          IFS=',' read -ra STRATEGIES <<< "${BENCHMARK_STRATEGY}"
+          for strategy in "${STRATEGIES[@]}"; do
+            strategy="$(echo "${strategy}" | xargs)"
+            if [ -n "${strategy}" ]; then
+              RUN_ARGS+=(--strategy "${strategy}")
+            fi
+          done
+          IFS=',' read -ra TIERS <<< "${BENCHMARK_TIER}"
+          for tier in "${TIERS[@]}"; do
+            tier="$(echo "${tier}" | xargs)"
+            if [ -n "${tier}" ]; then
+              RUN_ARGS+=(--tier "${tier}")
+            fi
+          done
           python -m benchmarks.runners.run \
-            --family "${BENCHMARK_FAMILY}" \
-            --tier "${BENCHMARK_TIER}" \
-            --strategy "${BENCHMARK_STRATEGY}" \
-            --max-iterations 2 \
-            --time-limit-s 1 \
-            --population-size 4 \
+            "${RUN_ARGS[@]}" \
+            --max-iterations "${BENCHMARK_MAX_ITERATIONS}" \
+            --time-limit-s "${BENCHMARK_TIME_LIMIT_S}" \
+            --population-size "${BENCHMARK_POPULATION_SIZE}" \
             --timestamp "gha-${OPTAGENT_REF:0:12}-${GITHUB_RUN_ID}"
           python - <<'PY' >> "$GITHUB_ENV"
           import json
@@ -128,6 +163,7 @@ jobs:
           PY
 
       - name: Publish dashboard JSON
+        working-directory: benchmarks
         run: |
           python -m benchmarks.runners.publish_dashboard_results "${BENCHMARK_RUN_DIR}" \
             --optagent-version "${OPTAGENT_VERSION}" \
@@ -150,9 +186,7 @@ jobs:
           git add results aggregates
           git commit -m "Add benchmark dashboard results for ${OPTAGENT_REF:0:12}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
-          cd ..
           python -m benchmarks.runners.generate_dashboard_data
-          cd benchmarks
           git add results/index.json aggregates
           git commit --amend --no-edit
           git push origin "HEAD:${GITHUB_REF_NAME}"
