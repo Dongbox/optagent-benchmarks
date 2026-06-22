@@ -1,10 +1,55 @@
-# OptAgent 建模原生 Benchmark
+# OptAgent 公共接口 Benchmark
 
-本仓库维护 OptAgent 的性能评测输入、建模适配和离线评测 harness。在父仓库 `optagent` 中，本仓库以 `benchmarks/` 子模块形式检出，来源为 `https://github.com/Dongbox/optagent-benckmarks.git`。
+本仓库维护面向 OptAgent 发布包的性能评测输入、建模适配和离线评测 harness。使用者的默认工作方式是：先在 Python 环境中安装已经打包发布的 `optagent` wheel，再运行本仓库 `benchmarks` 包中的评测脚本。
 
-子模块分支名应与父仓库分支名保持一致。例如父仓库分支 `cpp-python-boundary-redesign` 对应本仓库分支 `cpp-python-boundary-redesign`。
+本仓库也可以作为 `optagent` 主仓库的 `benchmarks/` 子模块检出。作为子模块使用时，分支名应与主仓库分支名保持一致。例如主仓库分支 `cpp-python-boundary-redesign` 对应本仓库分支 `cpp-python-boundary-redesign`。
 
-`examples/` 用于展示 API 用法；`benchmarks/` 用于形成可重复的策略、后端和建模路线证据。benchmark 结果可以指导默认策略、搜索算子、预算和并行配置的调整，但不能反向成为 catalog ground truth。
+`examples/` 用于展示 API 用法；`benchmarks/` 用于形成可重复的策略、后端和建模方式证据。benchmark 结果可以指导默认策略、搜索算子、预算和并行配置的调整，但不能反向成为 catalog ground truth。
+
+## 安装与运行前提
+
+benchmark 面向安装后的 `optagent` Python 库运行，不要求使用 `optagent` 源码 checkout 或开发构建目录。
+
+推荐环境：
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install <path-or-url-to-optagent-wheel>
+python -m pip install pytest
+```
+
+如果从主仓库 checkout 运行，需要先初始化本仓库子模块：
+
+```bash
+git submodule update --init benchmarks
+```
+
+运行命令应从包含 `benchmarks/` 包的工作目录执行：
+
+```bash
+python -m benchmarks.runners.run --tier smoke
+```
+
+不要通过源码路径覆盖已安装的 `optagent` 包来运行本 benchmark。该方式属于开发验证，不是面向发布 wheel 的性能评测入口。
+
+## 公开接口边界
+
+本仓库只通过 `optagent` 的公开 Python 接口交互：
+
+- 建模接口：`ModelBuilder` 暴露的变量、约束、目标和 `external_call` 建模能力。
+- 求解接口：`solve(...)`、`solve_cpsat(...)`、`solve_milp(...)`。
+- 策略配置：`LocalSearchConfig`、`TabuConfig`、`LnsConfig`、`AlnsConfig`、`GaConfig`、`CpSatConfig`、`MilpConfig`。
+- 结果读取：公开 solution 对象上的 `status`、`feasible`、`objective_value`、`variable_values`、`solver_name`、`metadata`。
+
+本仓库自定义模块的边界：
+
+- `loaders/` 负责公开 benchmark 数据的下载、缓存、解析和规范化。
+- `models/` 负责把规范化数据映射成公开 OptAgent 建模接口调用。
+- `runners/` 负责声明策略配置、调用公开求解接口、计算 benchmark 指标和写出结果。
+- `catalog/` 和 `definitions/` 负责记录评测 case、来源、tier、reference objective / bound 和建模声明。
+
+本仓库不依赖也不描述 OptAgent 实现细节。文档中的策略、建模和求解行为应以公开 API 可见行为为准。
 
 ## 固定交互流程
 
@@ -21,17 +66,13 @@ source-of-truth catalog 是：
 
 - `catalog/modeling-native-catalog-v1.json`
 
-在父仓库中，可读快照写到：
+可读 catalog 快照建议写到：
 
 - `docs/evals/benchmark-suite/catalogs/modeling-native-catalog-v1.md`
 
-catalog 只记录公开 benchmark 元数据、实例来源、family、tier、外部 reference objective / bound 和 OptAgent 建模声明。它不运行 OptAgent、CP-SAT、HiGHS、OR-Tools 或 OptX。
+catalog 只记录公开 benchmark 元数据、实例来源、family、tier、外部 reference objective / bound 和公开 OptAgent API 建模声明。它不运行任何求解器。
 
-父仓库中生成 catalog 的命令是：
-
-```bash
-./.venv/bin/python scripts/build_modeling_native_benchmark_catalog.py
-```
+catalog 随本仓库版本维护。普通 wheel 评测使用已提交的 catalog，不需要重新生成；只有维护者调整 case selection、reference 来源或 family manifest 时，才需要通过配套维护脚本重新生成并审查 diff。
 
 运行 benchmark 时，数据由各 family loader 从公开源或本地缓存读取。默认缓存目录是：
 
@@ -43,24 +84,24 @@ data-cache/
 
 ### 2. 与数据对应的模型建模
 
-每个 benchmark family 必须有明确的“数据格式 -> OptAgent 建模方式”映射。当前 runner-ready families 为：
+每个 benchmark family 必须有明确的“数据格式 -> 公开 OptAgent API 建模方式”映射。当前 runner-ready families 为：
 
-| Family | 数据来源/格式 | OptAgent 建模方式 | 主要评测目的 |
+| Family | 数据来源/格式 | 公开 API 建模方式 | 主要评测目的 |
 | --- | --- | --- | --- |
 | `interval_job_shop` | JSPLIB / ScheduleOpt JSON | 每个 operation 一个 `interval_var`，机器 `sequence_var + no_overlap`，工序 `precedence`，目标为 makespan | 调度可行性、修复能力、CP-SAT exact baseline 与 GA/ALNS 的差距 |
 | `cumulative_resource_scheduling` | PSPLIB `.rcp` / `.sm` | `interval_var`、`precedence`、可再生资源 `cumulative`，目标为 makespan | 资源约束调度的可行解生成、repair、时间到首个可行解 |
-| `sequence_blackbox_tsp` | TSPLIB `.tsp` / `.tsp.gz` | `sequence_var` tour 加确定性 `external_call` tour length；也支持 graph-native `sequence_transition_sum` model style 对比 | 序列搜索、delta/full evaluation 比例、黑盒 callback 成本 |
+| `sequence_blackbox_tsp` | TSPLIB `.tsp` / `.tsp.gz` | `sequence_var` tour 加确定性 `external_call` tour length；也支持基于公开建模表达的 graph-style model style 对比 | 序列搜索、求值吞吐、黑盒 callback 成本 |
 | `sequence_quadratic_assignment` | QAPLIB `.dat` | `sequence_var` facility-to-location assignment 加确定性 `external_call` quadratic cost | 排列搜索、swap delta、repair 与局部改进收益 |
-| `exact_linear_mip` | MIPLIB `.mps` / `.mps.gz` | canonical linear MP，bool/int/float 变量、线性约束、线性目标 | exact backend / OptX baseline，不作为 GA/ALNS/Tabu 主评测域 |
+| `exact_linear_mip` | MIPLIB `.mps` / `.mps.gz` | 公开线性 MIP 建模接口，bool/int/float 变量、线性约束、线性目标 | `solve_milp(...)` baseline，不作为 GA/ALNS/Tabu 主评测域 |
 
-建模代码必须放在 `models/`，只负责构造 OptAgent program 和保留必要的 case metadata；数据解析和下载逻辑必须放在 `loaders/`；策略运行逻辑必须放在 `runners/`。
+建模代码必须放在 `models/`，只负责调用公开 OptAgent 建模接口并保留必要的 case metadata；数据解析和下载逻辑必须放在 `loaders/`；策略运行逻辑必须放在 `runners/`。
 
 ### 3. 评测主函数声明
 
 统一主入口是：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run
+python -m benchmarks.runners.run
 ```
 
 主入口对应 Python API：
@@ -77,7 +118,7 @@ from benchmarks.runners.suite import run_benchmark_suite
 | 规模层级 | `--tier` | `tiers` | `smoke` / `calibration` / `full` |
 | 指定 case | `--case` | `benchmark_ids` | 用于聚焦单个实例或回归 case |
 | 策略集合 | `--strategy` | `strategies` | 不传时使用 family-aware 默认策略 |
-| TSP 建模方式 | `--model-style` | `model_styles` | 可比较 blackbox external call 与 graph-native transition sum |
+| TSP 建模方式 | `--model-style` | `model_styles` | 可比较 blackbox external call 与图表达 model style |
 | 默认策略候选矩阵 | `--default-candidate-matrix` | `default_candidate_matrix` | 用于决定当前默认策略候选 |
 | 并行矩阵 | `--parallel-matrix`、`--thread-count` | `parallel_thread_counts` | 用于比较线程扩展性 |
 | 预算 | `--max-iterations`、`--time-limit-s`、`--population-size`、`--trace-limit` | 同名参数 | CLI 预算是上限，实际预算按 family/tier ceiling 收敛 |
@@ -87,7 +128,7 @@ from benchmarks.runners.suite import run_benchmark_suite
 
 - 调度 family：有效策略为 `ga`、`alns`；请求 `tabu` 或 `lns` 会替换为 `alns` 并记录到 `strategy_substitutions`。原因是当前 standalone Tabu/LNS 不能稳定产出有价值的调度 benchmark rows。
 - 序列 / 排列 family：有效策略为 `ga`、`alns`、`tabu`，也可显式加入 `local_search`。
-- MIP family：只输出 `optx` exact baseline row；请求的启发式策略会作为 ignored request metadata 记录。未来如增加 MILP-native heuristic，必须新建专用路线，不能替代 OptX baseline。
+- MIP family：只输出 `solve_milp(...)` exact baseline row；请求的启发式策略会作为 ignored request metadata 记录。未来如增加 MILP 启发式评测，必须新建专用 benchmark 路线，不能替代 exact baseline。
 
 ### 4. 输出结果
 
@@ -104,7 +145,7 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 | `config.json` | JSON | 本次运行的 family、tier、case、strategy、budget、model style、平台和 Python 信息 |
 | `results.jsonl` | JSONL，一行一个 row | 主结果表；策略 row 和 exact baseline row 都在这里 |
 | `results.csv` | CSV | 便于人工快速筛选和表格工具查看 |
-| `anytime.jsonl` | JSONL | 每个 row 的 checkpoint 曲线，来自 native trace 或 CP-SAT callback samples |
+| `anytime.jsonl` | JSONL | 每个 row 的 checkpoint 曲线，来自公开结果 metadata 或 CP-SAT callback samples |
 | `throughput.jsonl` | JSONL | moves/evaluations/repairs 等吞吐指标和 per-second rate |
 | `summary.json` | JSON | 聚合统计、best_by_case、profile counts、default candidate matrix、parallel matrix |
 | `report.md` | Markdown | 人类可读报告 |
@@ -172,7 +213,7 @@ docs/evals/benchmark-suite/runs/<timestamp>/
 | `catalog/` | 版本化 catalog，记录 selected cases、外部 reference 和建模声明 |
 | `definitions/<family>/` | family 级 case manifest、实例选择和建模说明 |
 | `loaders/` | 公共数据格式 loader，负责下载、缓存、本地读取和规范化数据记录 |
-| `models/` | family 级 OptAgent `ModelBuilder` / program 构造 |
+| `models/` | family 级公开 OptAgent 建模接口调用和 program 构造 |
 | `runners/run.py` | CLI 主入口，解析评测声明并调用 suite |
 | `runners/suite.py` | 统一调度器，选择 case、解析预算、分派 family runner、写 artifacts |
 | `runners/<family>.py` | family 级运行器，加载数据、建模、声明策略配置、执行求解、生成 row |
@@ -195,7 +236,7 @@ benchmark 不是为了穷举所有参数组合。优先选择能回答策略决�
 使用：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --tier smoke \
   --default-candidate-matrix \
   --max-iterations 5 \
@@ -221,7 +262,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 使用：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --family interval_job_shop \
   --family cumulative_resource_scheduling \
   --tier smoke \
@@ -251,7 +292,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 使用：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --family sequence_blackbox_tsp \
   --family sequence_quadratic_assignment \
   --tier smoke \
@@ -276,12 +317,12 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 
 ### TSP 建模方式对比
 
-目的：比较 blackbox `external_call` 与 graph-native `sequence_transition_sum` 对搜索性能的影响。
+目的：比较 blackbox `external_call` 与基于公开图表达的 `sequence_transition_sum` model style 对搜索性能的影响。
 
 使用：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --strategy ga \
@@ -308,7 +349,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 使用默认线程矩阵：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --strategy ga \
@@ -320,7 +361,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 使用自定义线程矩阵：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --strategy ga \
@@ -340,12 +381,12 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 
 ### MIP exact backend baseline
 
-目的：验证 canonical MP / MPS exact backend 路线和 OptX 行为，不评估 GA/ALNS/Tabu。
+目的：验证通过公开 `solve_milp(...)` 接口运行线性 MIP / MPS case 的 exact baseline 行为，不评估 GA/ALNS/Tabu。
 
 使用：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
+python -m benchmarks.runners.run \
   --family exact_linear_mip \
   --tier smoke \
   --time-limit-s 10
@@ -367,7 +408,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.run \
 比较两个不可变 run 目录：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.compare \
+python -m benchmarks.runners.compare \
   docs/evals/benchmark-suite/runs/<baseline> \
   docs/evals/benchmark-suite/runs/<candidate> \
   --format markdown
@@ -376,7 +417,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.compa
 写入 curated report 和 ledger：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.compare \
+python -m benchmarks.runners.compare \
   docs/evals/benchmark-suite/runs/<baseline> \
   docs/evals/benchmark-suite/runs/<candidate> \
   --report-id <stable-id> \
@@ -409,13 +450,13 @@ benchmark_id + family + strategy + strategy_profile + model_style + kind
 从已有 run artifact 生成 dashboard，不重新运行 benchmark：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m benchmarks.runners.dashboard \
+python -m benchmarks.runners.dashboard \
   docs/evals/benchmark-suite/runs/<candidate> \
   --baseline-dir docs/evals/benchmark-suite/runs/<baseline> \
   --dashboard-id <stable-id>
 ```
 
-父仓库输出目录：
+默认输出目录：
 
 ```text
 docs/evals/benchmark-suite/dashboards/<stable-id>/
@@ -450,7 +491,7 @@ catalog reference objective 和 bound 必须来自公开 benchmark 来源，不�
 文档或 harness 结构变更后，至少运行：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m pytest -q \
+python -m pytest -q \
   tests/test_benchmark_suite_catalog.py \
   tests/test_benchmark_telemetry.py
 ```
@@ -458,7 +499,7 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m pytest -q \
 涉及 runner 行为、策略 row、输出 schema 或比较报告时，增加：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m pytest -q \
+python -m pytest -q \
   tests/test_benchmark_suite_runner.py \
   tests/test_benchmark_suite_jsplib_runner.py \
   tests/test_benchmark_suite_rcpsp_runner.py \
@@ -466,8 +507,8 @@ PYTHONPATH=build/native-debug:src ./.venv/bin/python -m pytest -q \
   tests/test_benchmark_suite_miplib_runner.py
 ```
 
-涉及 native search、public solve route、trace、metadata 或 C++/Python 边界时，必须同时确认 native build tree 被加载，父仓库推荐入口是：
+涉及发布 wheel 的求解行为、公开 `solve(...)` 路线、trace 或 metadata 时，应在安装该 wheel 的环境中运行 focused tests 或 smoke benchmark，避免通过源码路径覆盖已安装包：
 
 ```bash
-PYTHONPATH=build/native-debug:src ./.venv/bin/python -m pytest -q <focused-tests>
+python -m pytest -q <focused-tests>
 ```
