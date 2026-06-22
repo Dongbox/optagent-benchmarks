@@ -1,0 +1,56 @@
+name: Publish Results Index
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "results/**"
+      - "aggregates/**"
+      - "runners/generate_dashboard_data.py"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  publish-index:
+    name: Regenerate Dashboard Data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout optagent-benchmarks
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate index and aggregates
+        run: python -m benchmarks.runners.generate_dashboard_data
+
+      - name: Commit generated dashboard data
+        run: |
+          if git diff --quiet -- results/index.json aggregates; then
+            echo "Generated dashboard data is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/index.json aggregates
+          git commit -m "Regenerate benchmark dashboard data"
+          git push
+
+      - name: Dispatch dashboard deploy
+        env:
+          GH_TOKEN: ${{ secrets.OPTAGENT_DASHBOARD_WORKFLOW_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "OPTAGENT_DASHBOARD_WORKFLOW_TOKEN is not set; skipping dashboard dispatch."
+            exit 0
+          fi
+          gh workflow run deploy-dashboard.yml \
+            --repo Dongbox/optagent-dashboard \
+            --ref main \
+            -f benchmark_ref="${GITHUB_REF_NAME}"

@@ -112,6 +112,41 @@ Rules:
 - `trace.json` is optional and may be absent when the run has no trace.
 - summary JSON `artifacts` values are repository-relative paths.
 
+## Evidence Tiers
+
+Not every benchmark output is a dashboard fact.
+
+Dashboard-persisted evidence is limited to immutable run summaries under `results/`, optional sibling artifacts, generated `results/index.json`, and generated `aggregates/*.json`. These files are the long-term static data contract for `optagent-dashboard`.
+
+Suite-run evidence lives in a run directory such as:
+
+```text
+docs/evals/benchmark-suite/runs/<timestamp>/
+```
+
+The runner may write `config.json`, `inventory.json`, `run_metadata.json`, `rows.jsonl`, `results.jsonl`, `results.csv`, `anytime.jsonl`, `curves.jsonl`, `throughput.jsonl`, `summary.json`, and `report.md`. These files are audit evidence for one execution. Dashboard publication must convert selected rows into run summaries instead of making the dashboard read those runner-private files directly.
+
+Local ad-hoc evaluations are useful for strategy tuning and diagnostics, but they should not be promoted to dashboard history unless the run records reproducible catalog inputs, OptAgent commit, benchmark commit, wheel hash, seed, budget, and environment. Promoted local runs must pass the same schema and generated-data checks as CI runs.
+
+Error rows are valid evidence. A run that fails inside OptAgent or the benchmark route must still be persisted with `metrics.status = "error"`, `metrics.feasible = false`, `metrics.error_type`, and `metrics.error_message` so the dashboard can show recording success separately from solver success.
+
+## Comparable Environment
+
+Dashboard-worthy quality comparisons should normally be produced by GitHub Actions or another explicitly documented standard runner.
+
+Recommended minimum environment fields:
+
+- runner name, such as `github-actions` or `local-smoke`;
+- OS / platform;
+- Python version;
+- OptAgent wheel hash;
+- OptAgent native extension availability when applicable;
+- benchmark data cache/download mode;
+- CPU information when available;
+- thread count and other budget fields when they affect runtime.
+
+Local smoke runs can prove that `optagent-benchmarks` produces dashboard-recordable JSON. They do not, by themselves, establish a comparable quality trend unless the environment is standardized and recorded.
+
 ## Schema
 
 The current JSON Schema is:

@@ -4,6 +4,41 @@ This document defines the generated static JSON files consumed by `optagent-dash
 
 The dashboard must not scan the Git tree. It reads generated files first, then loads a run summary or artifact only when a user opens a detail view.
 
+Dashboard data is a promoted evidence layer, not a raw runner workspace. The dashboard reads:
+
+- immutable run summaries under `results/`;
+- optional per-run `metrics.json`, `solution.json`, and `trace.json` artifacts;
+- generated `results/index.json`;
+- generated `aggregates/*.json`.
+
+It must not read CI-private runner files such as `rows.jsonl`, `results.csv`, `summary.json`, or `report.md` directly. Those files can be archived as CI artifacts or under `docs/evals/`, then converted into dashboard run summaries by a publication step.
+
+Failed runs should remain visible. Generated index and aggregates must retain runs whose status is `error` so maintainers can see benchmark route failures, native-extension mismatches, and regressions instead of confusing them with missing data.
+
+## Local Integration Data
+
+Maintainers may need to change benchmark output and dashboard rendering together before CI has a successful quality run. The supported local loop is:
+
+```bash
+python scripts/sync_dashboard_local_data.py \
+  docs/evals/benchmark-suite/runs/<timestamp> \
+  --overwrite
+```
+
+The script publishes the suite run into:
+
+```text
+docs/evals/benchmark-suite/dashboard-local/
+```
+
+and copies the generated `results/` and `aggregates/` trees into:
+
+```text
+../optagent-dashboard/public/data/
+```
+
+This local data is valid for frontend/schema integration and may contain error rows. It is not promoted history and must not be used as CI-comparable quality evidence unless it is separately promoted under the result JSON contract.
+
 ## Generate Data
 
 Run from a checkout that contains the `benchmarks/` Python package:
