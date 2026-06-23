@@ -2,7 +2,7 @@
   "generated_at": "2026-06-23T01:55:13Z",
   "groups": {
     "assignment": {
-      "benchmark_count": 4,
+      "benchmark_count": 2,
       "entries": [
         {
           "benchmark_group": "assignment",
@@ -17,129 +17,13 @@
           "optagent_commit": "cpp-python-boundary-redesign",
           "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
           "rank": 1,
-          "run_count": 12,
+          "run_count": 8,
           "strategy": "ga",
-          "success_rate": 1.0
-        },
-        {
-          "benchmark_group": "assignment",
-          "best_cost": 578.0,
-          "best_gap_rel": 0.0,
-          "best_objective": 578.0,
-          "best_run_id": "assignment-alns-qaplib-nug12-20260622-092000-9d4c2c7-272d7c2",
-          "best_runtime_ms": 16,
-          "best_summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-nug12-20260622-092000-9d4c2c7-272d7c2.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
-          "optagent_commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "optagent_commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "rank": 2,
-          "run_count": 4,
-          "strategy": "alns",
-          "success_rate": 1.0
-        }
-      ],
-      "run_count": 16,
-      "strategy_count": 2
-    },
-    "routing": {
-      "benchmark_count": 4,
-      "entries": [
-        {
-          "benchmark_group": "routing",
-          "best_cost": 150781.0,
-          "best_gap_rel": 0.39406799249253416,
-          "best_objective": 150781.0,
-          "best_run_id": "routing-ga-tsplib-pr76-20260622-092000-9d4c2c7-f7768bc",
-          "best_runtime_ms": 99,
-          "best_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-pr76-20260622-092000-9d4c2c7-f7768bc.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
-          "optagent_commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "optagent_commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "rank": 1,
-          "run_count": 4,
-          "strategy": "ga",
-          "success_rate": 1.0
-        },
-        {
-          "benchmark_group": "routing",
-          "best_cost": 150781.0,
-          "best_gap_rel": 0.39406799249253416,
-          "best_objective": 150781.0,
-          "best_run_id": "routing-alns-tsplib-pr76-20260622-092000-9d4c2c7-c63be0c",
-          "best_runtime_ms": 151,
-          "best_summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-pr76-20260622-092000-9d4c2c7-c63be0c.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
-          "optagent_commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "optagent_commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "rank": 2,
-          "run_count": 4,
-          "strategy": "alns",
           "success_rate": 1.0
         }
       ],
       "run_count": 8,
-      "strategy_count": 2
-    },
-    "scheduling": {
-      "benchmark_count": 8,
-      "entries": [
-        {
-          "benchmark_group": "scheduling",
-          "best_cost": 55.0,
-          "best_gap_rel": 0.0,
-          "best_objective": 55.0,
-          "best_run_id": "scheduling-alns-jsplib-ft06-20260622-092000-9d4c2c7-8fb4742",
-          "best_runtime_ms": 107,
-          "best_summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft06-20260622-092000-9d4c2c7-8fb4742.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
-          "optagent_commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "optagent_commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "rank": 1,
-          "run_count": 8,
-          "strategy": "alns",
-          "success_rate": 1.0
-        },
-        {
-          "benchmark_group": "scheduling",
-          "best_cost": 76.0,
-          "best_gap_rel": 0.08571428571428572,
-          "best_objective": 76.0,
-          "best_run_id": "scheduling-ga-psplib-j90-2-4-20260622-092000-9d4c2c7-aa5a906",
-          "best_runtime_ms": 470,
-          "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-psplib-j90-2-4-20260622-092000-9d4c2c7-aa5a906.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
-          "optagent_commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "optagent_commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "rank": 2,
-          "run_count": 8,
-          "strategy": "ga",
-          "success_rate": 1.0
-        },
-        {
-          "benchmark_group": "scheduling",
-          "best_cost": 930.0,
-          "best_gap_rel": 0.0,
-          "best_objective": 930.0,
-          "best_run_id": "scheduling-cpsat-jsplib-ft10-20260622-092000-9d4c2c7-3a612df",
-          "best_runtime_ms": 2020,
-          "best_summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft10-20260622-092000-9d4c2c7-3a612df.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
-          "optagent_commit": "9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "optagent_commit_url": "https://github.com/Dongbox/opt-agent/commit/9d4c2c7f9bcb753f9328bfca7fc43bc164d07a15",
-          "rank": 3,
-          "run_count": 8,
-          "strategy": "cpsat",
-          "success_rate": 0.375
-        }
-      ],
-      "run_count": 24,
-      "strategy_count": 3
+      "strategy_count": 1
     }
   },
   "schema_version": 1
