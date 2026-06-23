@@ -71,7 +71,7 @@ jobs:
       OPTAGENT_REPOSITORY_TOKEN: ${{ secrets.OPTAGENT_REPOSITORY_TOKEN }}
     steps:
       - name: Checkout optagent-benchmarks
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           path: benchmarks
 
@@ -82,7 +82,7 @@ jobs:
           exit 1
 
       - name: Checkout OptAgent
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.OPTAGENT_REPOSITORY }}
           ref: ${{ env.OPTAGENT_REF }}
@@ -91,22 +91,31 @@ jobs:
           submodules: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: optagent/pyproject.toml
+
+      - name: Cache OptAgent native wheel build tree
+        uses: actions/cache@v4
+        with:
+          path: optagent/build/wheel-cache/benchmark-linux-py312
+          key: optagent-benchmark-native-wheel-v1-linux-py312-${{ hashFiles('optagent/CMakeLists.txt', 'optagent/pyproject.toml', 'optagent/requirements-dev.txt', 'optagent/proto/**/*.proto', 'optagent/cpp/**/*.cc', 'optagent/cpp/**/*.cpp', 'optagent/cpp/**/*.h', 'optagent/cpp/**/*.hpp', 'benchmarks/.github/workflows/run-benchmarks.yml') }}
 
       - name: Build OptAgent wheel
         working-directory: optagent
         run: |
-          python -m pip install --upgrade pip build
-          python -m build --wheel
+          set -euo pipefail
+          rm -rf dist/benchmark
+          python -m pip install --upgrade pip build scikit-build-core pybind11 setuptools wheel ninja
+          python -m pip wheel . -w dist/benchmark --no-deps -Cbuild-dir=build/wheel-cache/benchmark-linux-py312 -Ccmake.args=-GNinja
           python - <<'PY' >> "$GITHUB_ENV"
           from pathlib import Path
-          wheels = sorted(Path("dist").glob("*.whl"))
-          if not wheels:
-              raise SystemExit("no wheel produced")
-          print(f"OPTAGENT_WHEEL={wheels[-1].resolve()}")
+          wheels = sorted(Path("dist/benchmark").glob("optagent-*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one OptAgent wheel, found {len(wheels)}: {wheels}")
+          print(f"OPTAGENT_WHEEL={wheels[0].resolve()}")
           PY
 
       - name: Install benchmark runtime
