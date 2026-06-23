@@ -192,7 +192,7 @@ jobs:
           git add results aggregates
           git commit -m "Add benchmark dashboard results for ${OPTAGENT_REF:0:12}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
-          python -m benchmarks.runners.generate_dashboard_data
+          PYTHONPATH=.. python -m benchmarks.runners.generate_dashboard_data
           git add results/index.json aggregates
           git commit --amend --no-edit
           git push origin "HEAD:${GITHUB_REF_NAME}"
