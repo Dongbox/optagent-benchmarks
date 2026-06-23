@@ -1,0 +1,15 @@
+{
+  "best_cost": null,
+  "error_message": "backend cp_sat_native requires optional dependency 'ortools'",
+  "error_type": "BackendUnavailableError",
+  "evaluations_per_s": null,
+  "feasible": false,
+  "gap_rel": null,
+  "improvement_per_second": null,
+  "objective": null,
+  "reference_cost": 55.0,
+  "runtime_ms": 0,
+  "status": "error",
+  "time_to_best_ms": 0,
+  "time_to_first_feasible_ms": 0
+}
