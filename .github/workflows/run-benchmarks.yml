@@ -59,6 +59,7 @@ jobs:
   benchmark:
     name: Benchmark OptAgent Commit
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       OPTAGENT_REPOSITORY: ${{ inputs.optagent_repository || 'Dongbox/optagent' }}
       OPTAGENT_REF: ${{ inputs.optagent_ref || 'main' }}
@@ -108,8 +109,8 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf dist/benchmark
-          python -m pip install --upgrade pip build scikit-build-core pybind11 setuptools wheel ninja
-          python -m pip wheel . -w dist/benchmark --no-deps -Cbuild-dir=build/wheel-cache/benchmark-linux-py312 -Ccmake.args=-GNinja
+          python -m pip install --upgrade pip build scikit-build-core pybind11 setuptools wheel
+          python -m pip wheel . -w dist/benchmark --no-deps -Cbuild-dir=build/wheel-cache/benchmark-linux-py312
           python - <<'PY' >> "$GITHUB_ENV"
           from pathlib import Path
           wheels = sorted(Path("dist/benchmark").glob("optagent-*.whl"))
