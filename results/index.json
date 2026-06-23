@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-23T01:26:12Z",
+  "generated_at": "2026-06-23T01:40:01Z",
   "groups": {
     "assignment": {
       "alns": [
@@ -11,9 +11,11 @@
       "ga": [
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224.json",
+        "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-014001-41974fe-4617c7a.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-had20-20260622-092000-9d4c2c7-a5420a3.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
+        "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-014001-41974fe-94e5cac.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug20-20260622-092000-9d4c2c7-e248f08.json"
       ]
     },
@@ -114,6 +116,22 @@
       "tier": "smoke"
     },
     {
+      "benchmark_commit": "ddb04270a08017fbb7188324fcbc060f25469f25",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_chr12a",
+      "created_at": "2026-06-23T01:40:01Z",
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "assignment-ga-qaplib-chr12a-20260623-014001-41974fe-4617c7a",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_qap_delta_v1",
+      "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-014001-41974fe-4617c7a.json",
+      "tier": "smoke"
+    },
+    {
       "benchmark_commit": "4b73511f0338462bcb704554fa37598a4e834b30",
       "benchmark_group": "assignment",
       "benchmark_id": "qaplib_had20",
@@ -191,6 +209,22 @@
       "strategy": "ga",
       "strategy_profile": "ga_qap_delta_v1",
       "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "ddb04270a08017fbb7188324fcbc060f25469f25",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug12",
+      "created_at": "2026-06-23T01:40:01Z",
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "assignment-ga-qaplib-nug12-20260623-014001-41974fe-94e5cac",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_qap_delta_v1",
+      "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-014001-41974fe-94e5cac.json",
       "tier": "smoke"
     },
     {

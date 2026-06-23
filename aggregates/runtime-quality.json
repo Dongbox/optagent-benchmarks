@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-23T01:26:12Z",
+  "generated_at": "2026-06-23T01:40:01Z",
   "points": [
     {
       "benchmark_group": "assignment",
@@ -71,6 +71,30 @@
       "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224.json",
       "tier": "smoke",
       "time_to_best_ms": 7,
+      "time_to_first_feasible_ms": 0
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_chr12a",
+      "best_cost": 9552.0,
+      "created_at": "2026-06-23T01:40:01Z",
+      "evaluations_per_s": 75203.27056783362,
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "gap_rel": 0.0,
+      "improvement_per_second": 3825123.1640981156,
+      "objective": 9552.0,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+      "run_id": "assignment-ga-qaplib-chr12a-20260623-014001-41974fe-4617c7a",
+      "runtime_ms": 8,
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_qap_delta_v1",
+      "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-014001-41974fe-4617c7a.json",
+      "tier": "smoke",
+      "time_to_best_ms": 8,
       "time_to_first_feasible_ms": 0
     },
     {
@@ -191,6 +215,30 @@
       "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
       "tier": "smoke",
       "time_to_best_ms": 4,
+      "time_to_first_feasible_ms": 0
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug12",
+      "best_cost": 578.0,
+      "created_at": "2026-06-23T01:40:01Z",
+      "evaluations_per_s": 79110.2653436444,
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "gap_rel": 0.0,
+      "improvement_per_second": 28731.588905900702,
+      "objective": 578.0,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+      "run_id": "assignment-ga-qaplib-nug12-20260623-014001-41974fe-94e5cac",
+      "runtime_ms": 5,
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_qap_delta_v1",
+      "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-014001-41974fe-94e5cac.json",
+      "tier": "smoke",
+      "time_to_best_ms": 5,
       "time_to_first_feasible_ms": 0
     },
     {
