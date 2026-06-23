@@ -681,6 +681,11 @@ aggregates/runtime-quality.json
 
 `optagent-dashboard` 应优先读取这些文件；进入单次运行详情时，再按 `summary_path` 读取 run summary 和 artifacts。
 
+Dashboard 数据有两条链路，语义不同：
+
+- **正式线上链路**：由 GitHub Actions 在标准 runner 中 checkout 指定 OptAgent commit，构建 wheel，运行 benchmark，然后把发布后的 run summary / index / aggregates 提交到 `optagent-benckmarks` 的 `results/` 和 `aggregates/`。Cloudflare 上的 `optagent-dashboard` 只同步这批 CI promoted 文件，作为跨 commit 可比历史和 release gate 依据。
+- **本地联调链路**：维护者可以在本地运行 suite，再用 `scripts/sync_dashboard_local_data.py` 把结果复制到 sibling `optagent-dashboard/public/data/`。这只用于调试字段、artifact、筛选和页面交互；它会写入 `LOCAL_DEV_DATA.md` 标记，不应提交为正式 benchmark 历史，也不应作为质量趋势结论。
+
 Dashboard 展示的是 promoted 长期事实，不是所有本地实验目录。进入 Dashboard 的文件范围固定为：
 
 - `results/<group>/<strategy>/<yyyy>/<mm>/<run-id>.json`
