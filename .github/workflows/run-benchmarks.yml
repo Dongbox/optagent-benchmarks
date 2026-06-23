@@ -170,7 +170,6 @@ jobs:
           PY
 
       - name: Publish dashboard JSON
-        working-directory: benchmarks
         run: |
           python -m benchmarks.runners.publish_dashboard_results "${BENCHMARK_RUN_DIR}" \
             --optagent-version "${OPTAGENT_VERSION}" \
