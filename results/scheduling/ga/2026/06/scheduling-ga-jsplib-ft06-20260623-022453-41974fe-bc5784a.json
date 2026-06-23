@@ -1,0 +1,61 @@
+{
+  "artifacts": {
+    "metrics": "results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a/metrics.json"
+  },
+  "benchmark_group": "scheduling",
+  "benchmark_id": "jsplib_ft06",
+  "benchmarks": {
+    "commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+    "commit_url": "https://github.com/Dongbox/optagent-benckmarks/commit/fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d"
+  },
+  "created_at": "2026-06-23T02:24:53Z",
+  "environment": {
+    "platform": "Linux-6.17.0-1018-azure-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "runner": "github-actions"
+  },
+  "family": "interval_job_shop",
+  "metrics": {
+    "best_cost": 60.0,
+    "evaluations_per_s": 106.11258917104423,
+    "feasible": true,
+    "gap_rel": 0.09090909090909091,
+    "improvement_per_second": 4881.179101868035,
+    "objective": 60.0,
+    "reference_cost": 55.0,
+    "runtime_ms": 19,
+    "status": "success",
+    "time_to_best_ms": 19,
+    "time_to_first_feasible_ms": 0
+  },
+  "optagent": {
+    "commit": "cpp-python-boundary-redesign",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256:f78ef89f364558e8fd21173f68a7eec04f5020591d94c102562a463ca5f290c1"
+  },
+  "run_id": "scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a",
+  "schema_version": 1,
+  "seed": 11,
+  "strategy": "ga",
+  "strategy_config": {
+    "duplicate_filter": true,
+    "local_improvement_strategy": "lns",
+    "local_improvement_top_k": 2,
+    "max_iterations": 2,
+    "mutation_count": 2,
+    "mutation_portfolio": [
+      "scheduling_lns",
+      "ruin_and_repair",
+      "random_swap"
+    ],
+    "parallel_workers": 1,
+    "population_size": 4,
+    "restart_after": 25,
+    "restart_limit": 0,
+    "search_width": 4,
+    "unimproved_iteration_limit": null
+  },
+  "strategy_profile": "ga_scheduling_feasibility_v1",
+  "tier": "smoke"
+}

@@ -1,20 +1,66 @@
 {
-  "generated_at": "2026-06-23T01:55:13Z",
+  "generated_at": "2026-06-23T02:24:53Z",
   "groups": {
     "assignment": {
+      "alns": [
+        "/results/assignment/alns/2026/06/assignment-alns-qaplib-chr12a-20260623-022453-41974fe-416c9f9.json",
+        "/results/assignment/alns/2026/06/assignment-alns-qaplib-nug12-20260623-022453-41974fe-e741b01.json"
+      ],
       "ga": [
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-014001-41974fe-4617c7a.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-014238-41974fe-4cd9b38.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-015513-41974fe-2b8ebdd.json",
+        "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-022453-41974fe-1c6adba.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-014001-41974fe-94e5cac.json",
         "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-014238-41974fe-b874020.json",
-        "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-015513-41974fe-1e6678c.json"
+        "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-015513-41974fe-1e6678c.json",
+        "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-022453-41974fe-a4e0425.json"
+      ]
+    },
+    "routing": {
+      "alns": [
+        "/results/routing/alns/2026/06/routing-alns-tsplib-berlin52-20260623-022453-41974fe-5a562a7.json",
+        "/results/routing/alns/2026/06/routing-alns-tsplib-eil51-20260623-022453-41974fe-40fdc65.json"
+      ],
+      "ga": [
+        "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260623-022453-41974fe-75ddadf.json",
+        "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260623-022453-41974fe-2da3c44.json"
+      ]
+    },
+    "scheduling": {
+      "alns": [
+        "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft06-20260623-022453-41974fe-944e297.json",
+        "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft10-20260623-022453-41974fe-ca2deb0.json"
+      ],
+      "cpsat": [
+        "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft06-20260623-022453-41974fe-f772e15.json",
+        "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft10-20260623-022453-41974fe-32702f3.json"
+      ],
+      "ga": [
+        "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a.json",
+        "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2.json"
       ]
     }
   },
   "runs": [
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_chr12a",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "assignment-alns-qaplib-chr12a-20260623-022453-41974fe-416c9f9",
+      "seed": 11,
+      "status": "success",
+      "strategy": "alns",
+      "strategy_profile": "alns_qap_delta_v1",
+      "summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-chr12a-20260623-022453-41974fe-416c9f9.json",
+      "tier": "smoke"
+    },
     {
       "benchmark_commit": "5be39d93195e5550f481606691a254f34d0db6e8",
       "benchmark_group": "assignment",
@@ -80,6 +126,38 @@
       "tier": "smoke"
     },
     {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_chr12a",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "assignment-ga-qaplib-chr12a-20260623-022453-41974fe-1c6adba",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_qap_delta_v1",
+      "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-022453-41974fe-1c6adba.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug12",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "assignment-alns-qaplib-nug12-20260623-022453-41974fe-e741b01",
+      "seed": 11,
+      "status": "success",
+      "strategy": "alns",
+      "strategy_profile": "alns_qap_delta_v1",
+      "summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-nug12-20260623-022453-41974fe-e741b01.json",
+      "tier": "smoke"
+    },
+    {
       "benchmark_commit": "5be39d93195e5550f481606691a254f34d0db6e8",
       "benchmark_group": "assignment",
       "benchmark_id": "qaplib_nug12",
@@ -141,6 +219,182 @@
       "strategy": "ga",
       "strategy_profile": "ga_qap_delta_v1",
       "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-015513-41974fe-1e6678c.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_nug12",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_quadratic_assignment",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "assignment-ga-qaplib-nug12-20260623-022453-41974fe-a4e0425",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_qap_delta_v1",
+      "summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-022453-41974fe-a4e0425.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_berlin52",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_blackbox_tsp",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "routing-alns-tsplib-berlin52-20260623-022453-41974fe-5a562a7",
+      "seed": 11,
+      "status": "success",
+      "strategy": "alns",
+      "strategy_profile": "alns_tsp_blackbox_v1",
+      "summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-berlin52-20260623-022453-41974fe-5a562a7.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_berlin52",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_blackbox_tsp",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "routing-ga-tsplib-berlin52-20260623-022453-41974fe-75ddadf",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_tsp_blackbox_v1",
+      "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260623-022453-41974fe-75ddadf.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_eil51",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_blackbox_tsp",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "routing-alns-tsplib-eil51-20260623-022453-41974fe-40fdc65",
+      "seed": 11,
+      "status": "success",
+      "strategy": "alns",
+      "strategy_profile": "alns_tsp_blackbox_v1",
+      "summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-eil51-20260623-022453-41974fe-40fdc65.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "routing",
+      "benchmark_id": "tsplib_eil51",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "sequence_blackbox_tsp",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "routing-ga-tsplib-eil51-20260623-022453-41974fe-2da3c44",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_tsp_blackbox_v1",
+      "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260623-022453-41974fe-2da3c44.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft06",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "interval_job_shop",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "scheduling-alns-jsplib-ft06-20260623-022453-41974fe-944e297",
+      "seed": 11,
+      "status": "success",
+      "strategy": "alns",
+      "strategy_profile": "alns_scheduling_repair_v1",
+      "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft06-20260623-022453-41974fe-944e297.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft06",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "interval_job_shop",
+      "feasible": false,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "scheduling-cpsat-jsplib-ft06-20260623-022453-41974fe-f772e15",
+      "seed": 11,
+      "status": "error",
+      "strategy": "cpsat",
+      "strategy_profile": "cpsat_scheduling_exact_v1",
+      "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft06-20260623-022453-41974fe-f772e15.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft06",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "interval_job_shop",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_scheduling_feasibility_v1",
+      "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft10",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "interval_job_shop",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "scheduling-alns-jsplib-ft10-20260623-022453-41974fe-ca2deb0",
+      "seed": 11,
+      "status": "success",
+      "strategy": "alns",
+      "strategy_profile": "alns_scheduling_repair_v1",
+      "summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft10-20260623-022453-41974fe-ca2deb0.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft10",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "interval_job_shop",
+      "feasible": false,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "scheduling-cpsat-jsplib-ft10-20260623-022453-41974fe-32702f3",
+      "seed": 11,
+      "status": "error",
+      "strategy": "cpsat",
+      "strategy_profile": "cpsat_scheduling_exact_v1",
+      "summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft10-20260623-022453-41974fe-32702f3.json",
+      "tier": "smoke"
+    },
+    {
+      "benchmark_commit": "fea8eb9bfcdea4108c6b624b4b8b7749c249ff3d",
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft10",
+      "created_at": "2026-06-23T02:24:53Z",
+      "family": "interval_job_shop",
+      "feasible": true,
+      "optagent_commit": "cpp-python-boundary-redesign",
+      "run_id": "scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2",
+      "seed": 11,
+      "status": "success",
+      "strategy": "ga",
+      "strategy_profile": "ga_scheduling_feasibility_v1",
+      "summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2.json",
       "tier": "smoke"
     }
   ],

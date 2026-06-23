@@ -1,9 +1,26 @@
 {
-  "generated_at": "2026-06-23T01:55:13Z",
+  "generated_at": "2026-06-23T02:24:53Z",
   "groups": {
     "assignment": {
       "benchmark_count": 2,
       "entries": [
+        {
+          "benchmark_group": "assignment",
+          "best_cost": 9552.0,
+          "best_gap_rel": 0.0,
+          "best_objective": 9552.0,
+          "best_run_id": "assignment-alns-qaplib-chr12a-20260623-022453-41974fe-416c9f9",
+          "best_runtime_ms": 4,
+          "best_summary_path": "/results/assignment/alns/2026/06/assignment-alns-qaplib-chr12a-20260623-022453-41974fe-416c9f9.json",
+          "feasible_rate": 1.0,
+          "latest_created_at": "2026-06-23T02:24:53Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 1,
+          "run_count": 2,
+          "strategy": "alns",
+          "success_rate": 1.0
+        },
         {
           "benchmark_group": "assignment",
           "best_cost": 578.0,
@@ -13,17 +30,116 @@
           "best_runtime_ms": 4,
           "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
           "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T01:55:13Z",
+          "latest_created_at": "2026-06-23T02:24:53Z",
           "optagent_commit": "cpp-python-boundary-redesign",
           "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
-          "rank": 1,
-          "run_count": 8,
+          "rank": 2,
+          "run_count": 10,
           "strategy": "ga",
           "success_rate": 1.0
         }
       ],
-      "run_count": 8,
-      "strategy_count": 1
+      "run_count": 12,
+      "strategy_count": 2
+    },
+    "routing": {
+      "benchmark_count": 2,
+      "entries": [
+        {
+          "benchmark_group": "routing",
+          "best_cost": 19547.0,
+          "best_gap_rel": 1.5917528507027314,
+          "best_objective": 19547.0,
+          "best_run_id": "routing-alns-tsplib-berlin52-20260623-022453-41974fe-5a562a7",
+          "best_runtime_ms": 21,
+          "best_summary_path": "/results/routing/alns/2026/06/routing-alns-tsplib-berlin52-20260623-022453-41974fe-5a562a7.json",
+          "feasible_rate": 1.0,
+          "latest_created_at": "2026-06-23T02:24:53Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 1,
+          "run_count": 2,
+          "strategy": "alns",
+          "success_rate": 1.0
+        },
+        {
+          "benchmark_group": "routing",
+          "best_cost": 22108.0,
+          "best_gap_rel": 1.9313179527976665,
+          "best_objective": 22108.0,
+          "best_run_id": "routing-ga-tsplib-berlin52-20260623-022453-41974fe-75ddadf",
+          "best_runtime_ms": 8,
+          "best_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260623-022453-41974fe-75ddadf.json",
+          "feasible_rate": 1.0,
+          "latest_created_at": "2026-06-23T02:24:53Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 2,
+          "run_count": 2,
+          "strategy": "ga",
+          "success_rate": 1.0
+        }
+      ],
+      "run_count": 4,
+      "strategy_count": 2
+    },
+    "scheduling": {
+      "benchmark_count": 2,
+      "entries": [
+        {
+          "benchmark_group": "scheduling",
+          "best_cost": 60.0,
+          "best_gap_rel": 0.09090909090909091,
+          "best_objective": 60.0,
+          "best_run_id": "scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a",
+          "best_runtime_ms": 19,
+          "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a.json",
+          "feasible_rate": 1.0,
+          "latest_created_at": "2026-06-23T02:24:53Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 1,
+          "run_count": 2,
+          "strategy": "ga",
+          "success_rate": 1.0
+        },
+        {
+          "benchmark_group": "scheduling",
+          "best_cost": 152.0,
+          "best_gap_rel": 1.7636363636363637,
+          "best_objective": 152.0,
+          "best_run_id": "scheduling-alns-jsplib-ft06-20260623-022453-41974fe-944e297",
+          "best_runtime_ms": 21,
+          "best_summary_path": "/results/scheduling/alns/2026/06/scheduling-alns-jsplib-ft06-20260623-022453-41974fe-944e297.json",
+          "feasible_rate": 1.0,
+          "latest_created_at": "2026-06-23T02:24:53Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 2,
+          "run_count": 2,
+          "strategy": "alns",
+          "success_rate": 1.0
+        },
+        {
+          "benchmark_group": "scheduling",
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "scheduling-cpsat-jsplib-ft06-20260623-022453-41974fe-f772e15",
+          "best_runtime_ms": 1,
+          "best_summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft06-20260623-022453-41974fe-f772e15.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-06-23T02:24:53Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 3,
+          "run_count": 2,
+          "strategy": "cpsat",
+          "success_rate": 0.0
+        }
+      ],
+      "run_count": 6,
+      "strategy_count": 3
     }
   },
   "schema_version": 1
