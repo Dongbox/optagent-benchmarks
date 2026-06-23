@@ -1,0 +1,62 @@
+{
+  "artifacts": {
+    "metrics": "results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224/metrics.json"
+  },
+  "benchmark_group": "assignment",
+  "benchmark_id": "qaplib_chr12a",
+  "benchmarks": {
+    "commit": "5be39d93195e5550f481606691a254f34d0db6e8",
+    "commit_url": "https://github.com/Dongbox/optagent-benckmarks/commit/5be39d93195e5550f481606691a254f34d0db6e8"
+  },
+  "created_at": "2026-06-23T01:26:12Z",
+  "environment": {
+    "platform": "Linux-6.17.0-1018-azure-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "runner": "github-actions"
+  },
+  "family": "sequence_quadratic_assignment",
+  "metrics": {
+    "best_cost": 9552.0,
+    "evaluations_per_s": 85952.98371879649,
+    "feasible": true,
+    "gap_rel": 0.0,
+    "improvement_per_second": 4371894.2881553965,
+    "objective": 9552.0,
+    "reference_cost": 9552.0,
+    "runtime_ms": 7,
+    "status": "success",
+    "time_to_best_ms": 7,
+    "time_to_first_feasible_ms": 0
+  },
+  "optagent": {
+    "commit": "cpp-python-boundary-redesign",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256:4472b0aadf01ba2f552c7702317fbc25de7f8299e1a9595334335565a5eee414"
+  },
+  "run_id": "assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224",
+  "schema_version": 1,
+  "seed": 11,
+  "strategy": "ga",
+  "strategy_config": {
+    "duplicate_filter": true,
+    "local_improvement_strategy": "tabu",
+    "local_improvement_top_k": 2,
+    "max_iterations": 2,
+    "mutation_count": 2,
+    "mutation_portfolio": [
+      "sequence_two_opt",
+      "sequence_block_move",
+      "ruin_and_repair",
+      "random_swap"
+    ],
+    "parallel_workers": 1,
+    "population_size": 4,
+    "restart_after": 25,
+    "restart_limit": 0,
+    "search_width": 4,
+    "unimproved_iteration_limit": null
+  },
+  "strategy_profile": "ga_qap_delta_v1",
+  "tier": "smoke"
+}

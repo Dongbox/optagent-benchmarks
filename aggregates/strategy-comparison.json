@@ -22,19 +22,19 @@
           "success_rate": 1.0
         },
         {
-          "avg_runtime_ms": 27,
+          "avg_runtime_ms": 17,
           "best_cost": 9552.0,
           "best_gap_rel": 0.0,
           "best_objective": 9552.0,
-          "best_run_id": "assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d",
-          "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d.json",
+          "best_run_id": "assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224",
+          "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224.json",
           "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
+          "latest_created_at": "2026-06-23T01:26:12Z",
           "latest_feasible": true,
-          "latest_run_id": "assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d",
+          "latest_run_id": "assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224",
           "latest_status": "success",
-          "latest_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260622-092000-9d4c2c7-0a7b63d.json",
-          "run_count": 1,
+          "latest_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-012612-41974fe-d243224.json",
+          "run_count": 2,
           "strategy": "ga",
           "success_rate": 1.0
         }
@@ -104,19 +104,19 @@
           "success_rate": 1.0
         },
         {
-          "avg_runtime_ms": 25,
+          "avg_runtime_ms": 14.5,
           "best_cost": 578.0,
           "best_gap_rel": 0.0,
           "best_objective": 578.0,
-          "best_run_id": "assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae",
-          "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae.json",
+          "best_run_id": "assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67",
+          "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
           "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-22T09:20:00Z",
+          "latest_created_at": "2026-06-23T01:26:12Z",
           "latest_feasible": true,
-          "latest_run_id": "assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae",
+          "latest_run_id": "assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67",
           "latest_status": "success",
-          "latest_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260622-092000-9d4c2c7-f0a77ae.json",
-          "run_count": 1,
+          "latest_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
+          "run_count": 2,
           "strategy": "ga",
           "success_rate": 1.0
         }
@@ -793,6 +793,6 @@
       "tier": "calibration"
     }
   ],
-  "generated_at": "2026-06-22T09:20:00Z",
+  "generated_at": "2026-06-23T01:26:12Z",
   "schema_version": 1
 }
