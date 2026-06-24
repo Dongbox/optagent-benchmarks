@@ -18,15 +18,12 @@ env/
 build/
 dist/
 
-# Local benchmark data cache. Keep the placeholder tracked.
-data-cache/*
-!data-cache/.gitignore
-
 # Local logs and ad hoc scratch output
 logs/
 tmp/
 *.log
 
-# Keep versioned dashboard/result artifacts addable by default.
-!results/
-!aggregates/
+# Keep versioned dashboard/presentation artifacts addable by default.
+!presentation/
+!presentation/results/
+!presentation/aggregates/

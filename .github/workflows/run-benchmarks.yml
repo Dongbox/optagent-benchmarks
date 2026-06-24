@@ -39,13 +39,9 @@ on:
       - main
     paths:
       - ".github/workflows/run-benchmarks.yml"
-      - "catalog/**"
-      - "definitions/**"
-      - "loaders/**"
-      - "models/**"
+      - "cases/**"
       - "runners/**"
-      - "results/**"
-      - "aggregates/**"
+      - "presentation/**"
 
 permissions:
   contents: write

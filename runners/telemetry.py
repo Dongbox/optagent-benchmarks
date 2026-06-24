@@ -106,11 +106,34 @@ def _throughput_entry(row: dict[str, Any]) -> dict[str, Any] | None:
         "ga_generation_duplicate_ratio_mean",
         "ga_generation_duplicate_ratio_max",
         "ga_generation_unique_offspring_mean",
+        "ga_candidate_move_pool_hit_count",
+        "ga_candidate_move_pool_miss_count",
+        "ga_candidate_move_pool_rebuild_count",
+        "ga_candidate_move_pool_skeleton_size",
+        "ga_child_draft_batch_count",
+        "ga_child_draft_count",
+        "ga_mutation_draft_count",
+        "ga_crossover_draft_count",
+        "ga_full_snapshot_draft_count",
+        "ga_child_draft_materialized_count",
+        "ga_child_draft_accepted_count",
+        "ga_generation_worker_count_effective",
+        "ga_generation_worker_batches",
+        "ga_generation_worker_draft_attempts",
         "ga_external_evaluation_mode",
         "ga_external_batch_count",
         "ga_external_batch_rows",
         "ga_external_parallel_batches",
         "ga_external_callback_wall_time_ms",
+        "ga_external_candidate_set_count",
+        "ga_external_candidate_set_rows",
+        "ga_external_candidate_set_cache_hits",
+        "ga_external_candidate_set_unique_miss_rows",
+        "ga_external_candidate_set_coalesced_rows",
+        "ga_external_candidate_set_batch_calls",
+        "ga_external_candidate_set_fallback_count",
+        "ga_external_candidate_set_fallback_reason",
+        "ga_external_candidate_set_wall_time_ms",
         "external_rows_requested",
         "external_cache_hits",
         "external_cache_misses",
@@ -207,10 +230,32 @@ def _normalize_ga_observability(row: dict[str, Any], metadata: dict[str, Any]) -
         "ga_generation_duplicate_ratio_mean",
         "ga_generation_duplicate_ratio_max",
         "ga_generation_unique_offspring_mean",
+        "ga_candidate_move_pool_hit_count",
+        "ga_candidate_move_pool_miss_count",
+        "ga_candidate_move_pool_rebuild_count",
+        "ga_candidate_move_pool_skeleton_size",
+        "ga_child_draft_batch_count",
+        "ga_child_draft_count",
+        "ga_mutation_draft_count",
+        "ga_crossover_draft_count",
+        "ga_full_snapshot_draft_count",
+        "ga_child_draft_materialized_count",
+        "ga_child_draft_accepted_count",
+        "ga_generation_worker_count_effective",
+        "ga_generation_worker_batches",
+        "ga_generation_worker_draft_attempts",
         "ga_external_batch_count",
         "ga_external_batch_rows",
         "ga_external_parallel_batches",
         "ga_external_callback_wall_time_ms",
+        "ga_external_candidate_set_count",
+        "ga_external_candidate_set_rows",
+        "ga_external_candidate_set_cache_hits",
+        "ga_external_candidate_set_unique_miss_rows",
+        "ga_external_candidate_set_coalesced_rows",
+        "ga_external_candidate_set_batch_calls",
+        "ga_external_candidate_set_fallback_count",
+        "ga_external_candidate_set_wall_time_ms",
     ):
         value = _first_number(row, metadata, (key,))
         if value is not None:
@@ -218,6 +263,12 @@ def _normalize_ga_observability(row: dict[str, Any], metadata: dict[str, Any]) -
     mode = row.get("ga_external_evaluation_mode") or metadata.get("ga_external_evaluation_mode")
     if mode is not None:
         row["ga_external_evaluation_mode"] = str(mode)
+    candidate_set_fallback = (
+        row.get("ga_external_candidate_set_fallback_reason")
+        or metadata.get("ga_external_candidate_set_fallback_reason")
+    )
+    if candidate_set_fallback is not None:
+        row["ga_external_candidate_set_fallback_reason"] = str(candidate_set_fallback)
     attempts = _optional_float(row.get("ga_offspring_attempt_count"))
     generated = _optional_float(row.get("ga_offspring_generated"))
     duplicate_offspring = _optional_float(row.get("ga_duplicate_offspring_count"))

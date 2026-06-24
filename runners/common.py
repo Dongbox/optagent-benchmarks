@@ -6,17 +6,17 @@ import json
 from pathlib import Path
 from typing import Any
 
+from benchmarks.cases.common import (
+    MODEL_STYLE_BY_FAMILY,
+    model_style_from_program,
+    objective_gap,
+    strategy_profile_name,
+    summarize_solution_metadata,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUN_ROOT = REPO_ROOT / "docs" / "evals" / "benchmark-suite" / "runs"
-
-MODEL_STYLE_BY_FAMILY = {
-    "cumulative_resource_scheduling": "interval_var_cumulative_precedence",
-    "exact_linear_mip": "mps_linear_mp",
-    "interval_job_shop": "interval_var_sequence_no_overlap_precedence",
-    "sequence_blackbox_tsp": "sequence_var_external_call",
-    "sequence_quadratic_assignment": "sequence_var_external_call",
-}
 
 SEARCH_DIAGNOSTIC_KEYS = (
     "construct_candidates_evaluated",
@@ -58,11 +58,34 @@ SEARCH_DIAGNOSTIC_KEYS = (
     "ga_generation_duplicate_ratio_mean",
     "ga_generation_duplicate_ratio_max",
     "ga_generation_unique_offspring_mean",
+    "ga_candidate_move_pool_hit_count",
+    "ga_candidate_move_pool_miss_count",
+    "ga_candidate_move_pool_rebuild_count",
+    "ga_candidate_move_pool_skeleton_size",
+    "ga_child_draft_batch_count",
+    "ga_child_draft_count",
+    "ga_mutation_draft_count",
+    "ga_crossover_draft_count",
+    "ga_full_snapshot_draft_count",
+    "ga_child_draft_materialized_count",
+    "ga_child_draft_accepted_count",
+    "ga_generation_worker_count_effective",
+    "ga_generation_worker_batches",
+    "ga_generation_worker_draft_attempts",
     "ga_external_evaluation_mode",
     "ga_external_batch_count",
     "ga_external_batch_rows",
     "ga_external_parallel_batches",
     "ga_external_callback_wall_time_ms",
+    "ga_external_candidate_set_count",
+    "ga_external_candidate_set_rows",
+    "ga_external_candidate_set_cache_hits",
+    "ga_external_candidate_set_unique_miss_rows",
+    "ga_external_candidate_set_coalesced_rows",
+    "ga_external_candidate_set_batch_calls",
+    "ga_external_candidate_set_fallback_count",
+    "ga_external_candidate_set_fallback_reason",
+    "ga_external_candidate_set_wall_time_ms",
     "external_batch_count",
     "external_rows_requested",
     "external_cache_hits",
@@ -164,17 +187,6 @@ def append_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n")
 
 
-def objective_gap(objective: float | int | None, reference: float | int | None) -> dict[str, float | None]:
-    if objective is None or reference is None:
-        return {"gap_abs": None, "gap_rel": None}
-    gap_abs = float(objective) - float(reference)
-    denominator = abs(float(reference))
-    return {
-        "gap_abs": gap_abs,
-        "gap_rel": gap_abs / denominator if denominator else None,
-    }
-
-
 def resolve_family_tier_budget(
     *,
     family: str,
@@ -214,49 +226,6 @@ def resolve_family_tier_budget(
     )
 
 
-def model_style_from_program(program: Any, *, family: str | None = None) -> str | None:
-    metadata = getattr(program, "metadata", None)
-    if isinstance(metadata, dict):
-        model_style = metadata.get("model_style")
-        if model_style is not None:
-            return str(model_style)
-    if family is not None:
-        return MODEL_STYLE_BY_FAMILY.get(family)
-    return None
-
-
-def strategy_profile_name(
-    *,
-    family: str,
-    strategy: str,
-    model_style: str | None = None,
-    kind: str | None = None,
-) -> str:
-    if kind == "exact_baseline":
-        if strategy == "cpsat":
-            return "cpsat_scheduling_exact_v1"
-        if strategy in {"optx", "mathopt_mp"}:
-            return f"{strategy}_mip_exact_v1"
-        return f"{strategy}_exact_baseline_v1"
-    if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
-        if strategy == "ga":
-            return "ga_scheduling_feasibility_v1"
-        if strategy == "alns":
-            return "alns_scheduling_repair_v1"
-        if strategy == "lns":
-            return "lns_scheduling_repair_v1"
-        return f"{strategy}_scheduling_smoke_v1"
-    if family == "sequence_blackbox_tsp":
-        if model_style == "sequence_var_sequence_transition_sum":
-            return f"{strategy}_tsp_graph_v1"
-        return f"{strategy}_tsp_blackbox_v1"
-    if family == "sequence_quadratic_assignment":
-        return f"{strategy}_qap_delta_v1"
-    if family == "exact_linear_mip":
-        return f"{strategy}_mip_exact_v1"
-    return f"{strategy}_{family}_v1"
-
-
 def normalize_result_row(row: dict[str, Any]) -> dict[str, Any]:
     family = str(row.get("family") or "")
     strategy = str(row.get("strategy") or "")
@@ -282,75 +251,6 @@ def normalize_result_row(row: dict[str, Any]) -> dict[str, Any]:
         if "budget_profile" in row:
             metadata.setdefault("budget_profile", row["budget_profile"])
     return row
-
-
-def summarize_solution_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
-    keys = (
-        "strategy",
-        "strategy_source",
-        "termination_reason",
-        "iterations",
-        "attempted_moves",
-        "accepted_moves",
-        "improved_moves",
-        "rejected_moves",
-        "trace",
-        "trace_entry_count",
-        "domain_best_sequence_penalty",
-        "domain_sequence_graph_provenance",
-        "domain_sequence_graph_objective_ids_json",
-        "domain_sequence_legacy_metadata_hint_available",
-        "domain_sequence_legacy_metadata_hint_enabled",
-        "domain_sequence_lower_bound_certified",
-        "ga_generation_count",
-        "ga_mutation_portfolio",
-        "ga_offspring_generated",
-        "ga_offspring_evaluated",
-        "ga_duplicate_child_count",
-        "ga_tabu_improvement_count",
-        "ga_repair_application_count",
-        "ga_scheduling_repair_count",
-        "ga_scheduling_repair_success_count",
-        "ga_infeasible_offspring_count",
-        "ga_first_feasible_generation",
-        "lns_applications",
-        "alns_iterations",
-        "alns_candidates_evaluated",
-        "alns_candidates_accepted",
-        "alns_repair_applications",
-        "alns_repair_failures",
-        "alns_acceptance_model",
-        "external_batch_count",
-        "external_rows_requested",
-        "external_cache_hits",
-        "external_cache_misses",
-        "external_duplicate_rows_coalesced",
-        "construct_candidates_evaluated",
-        "construct_candidates_accepted",
-        "construct_best_improvements",
-        "sequence_graph_delta_count",
-        "full_root_eval_delta_count",
-        "tsp_two_opt_moves_evaluated",
-        "tsp_two_opt_improvements",
-        "tsp_repair_insertions",
-        "tsp_preserved_edge_ratio",
-        "qap_swap_delta_count",
-        "qap_swap_improvement_count",
-        "qap_repair_assignment_count",
-        "qap_common_assignment_preservation_ratio",
-        "thread_count",
-        "parallel_matrix_enabled",
-        "ga_parallel_worker_count",
-        "ga_parallel_batches",
-        "ga_parallel_candidates_evaluated",
-        "domain_qap_supported",
-        "domain_qap_move_count",
-        "budget",
-        "budget_profile",
-        "effective_budget",
-        "seed",
-    )
-    return {key: metadata[key] for key in keys if key in metadata}
 
 
 def metadata_highlights(metadata: dict[str, Any]) -> list[str]:
@@ -385,6 +285,29 @@ def metadata_highlights(metadata: dict[str, Any]) -> list[str]:
         "ga_parallel_worker_count",
         "ga_parallel_batches",
         "ga_parallel_candidates_evaluated",
+        "ga_candidate_move_pool_hit_count",
+        "ga_candidate_move_pool_miss_count",
+        "ga_candidate_move_pool_rebuild_count",
+        "ga_candidate_move_pool_skeleton_size",
+        "ga_child_draft_batch_count",
+        "ga_child_draft_count",
+        "ga_mutation_draft_count",
+        "ga_crossover_draft_count",
+        "ga_full_snapshot_draft_count",
+        "ga_child_draft_materialized_count",
+        "ga_child_draft_accepted_count",
+        "ga_generation_worker_count_effective",
+        "ga_generation_worker_batches",
+        "ga_generation_worker_draft_attempts",
+        "ga_external_candidate_set_count",
+        "ga_external_candidate_set_rows",
+        "ga_external_candidate_set_cache_hits",
+        "ga_external_candidate_set_unique_miss_rows",
+        "ga_external_candidate_set_coalesced_rows",
+        "ga_external_candidate_set_batch_calls",
+        "ga_external_candidate_set_fallback_count",
+        "ga_external_candidate_set_fallback_reason",
+        "ga_external_candidate_set_wall_time_ms",
         "domain_qap_supported",
         "domain_qap_move_count",
         "external_rows_requested",

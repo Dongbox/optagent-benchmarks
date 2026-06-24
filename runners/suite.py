@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 import csv
 import json
 import platform
@@ -9,11 +9,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from benchmarks.loaders.catalog import DEFAULT_CATALOG_PATH, catalog_cases, select_cases
+from benchmarks.cases.common import MODEL_STYLE_BY_FAMILY, strategy_profile_name
+from benchmarks.case_loader import all_cases as load_case_rows, select_cases
+from benchmarks.cases.registry import INSTANCE_COLLECTION_MODULES, implemented_families, run_case
 from benchmarks.runners.common import (
     DEFAULT_RUN_ROOT,
     EffectiveStrategyBudget,
-    MODEL_STYLE_BY_FAMILY,
     SEARCH_DIAGNOSTIC_KEYS,
     StrategyBudgetRequest,
     append_jsonl,
@@ -21,20 +22,25 @@ from benchmarks.runners.common import (
     metadata_highlights,
     normalize_result_row,
     resolve_family_tier_budget,
-    strategy_profile_name,
     utc_timestamp,
     write_json,
 )
 from benchmarks.runners.telemetry import normalize_telemetry, write_anytime_jsonl, write_throughput_jsonl
 
 
-IMPLEMENTED_FAMILIES = {
-    "cumulative_resource_scheduling",
-    "exact_linear_mip",
-    "interval_job_shop",
-    "sequence_blackbox_tsp",
-    "sequence_quadratic_assignment",
-}
+# suite.py 是标准 benchmark suite 评测场景调度器：
+# 1. 从具体实例模块选择 case；
+# 2. 解析 family-aware 策略矩阵和预算；
+# 3. 通过 cases.registry 调用对应实例模块的 `solve_case`；
+# 4. 对 row 做 runner 级归一化，并写出 JSONL/CSV/report/presentation feedback。
+# 它不保存 case 私有建模逻辑，也不保存 case solve 共享函数。
+RUNNER_SCENARIO_ID = "standard_benchmark_suite"
+RUNNER_SCENARIO_KIND = "evaluation_scenario"
+RUNNER_SCENARIO_DESCRIPTION = (
+    "Standard artifact-writing benchmark suite for CI, calibration, strategy matrices, "
+    "and dashboard publication inputs. Use benchmarks.run for lightweight local case tests."
+)
+IMPLEMENTED_FAMILIES = implemented_families()
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
 DEFAULT_STRATEGIES = ("ga", "alns", "tabu")
 DEFAULT_CANDIDATE_STRATEGIES = ("local_search", "alns", "ga", "tabu")
@@ -96,9 +102,25 @@ STRATEGY_ROW_OPTIONAL_FIELDS = (
 )
 
 
+@dataclass(frozen=True)
+class ScenarioCaseBudget:
+    seed: int
+    max_iterations: int
+    time_limit_s: float
+    population_size: int
+    trace_limit: int
+    thread_count: int = 1
+    cpsat_time_limit_s: float | None = None
+    backend: str = "optx"
+
+    @property
+    def effective_cpsat_time_limit_s(self) -> float:
+        return float(self.cpsat_time_limit_s if self.cpsat_time_limit_s is not None else self.time_limit_s)
+
+
 def run_benchmark_suite(
     *,
-    catalog_path: str | Path = DEFAULT_CATALOG_PATH,
+    case_rows: list[dict[str, Any]] | None = None,
     output_root: str | Path = DEFAULT_RUN_ROOT,
     families: tuple[str, ...] = DEFAULT_RUNNABLE_FAMILIES,
     tiers: tuple[str, ...] = ("smoke",),
@@ -109,7 +131,6 @@ def run_benchmark_suite(
     time_limit_s: float = 5.0,
     population_size: int = 10,
     trace_limit: int = 8,
-    data_cache_dir: str | None = None,
     allow_download: bool = True,
     model_styles: tuple[str, ...] = (),
     default_candidate_matrix: bool = False,
@@ -117,8 +138,9 @@ def run_benchmark_suite(
     timestamp: str | None = None,
 ) -> dict[str, Any]:
     run_dir = ensure_run_dir(output_root, timestamp=timestamp)
+    all_cases = list(case_rows) if case_rows is not None else load_case_rows()
     cases = select_cases(
-        catalog_cases(catalog_path),
+        all_cases,
         families=families,
         tiers=tiers,
         benchmark_ids=benchmark_ids,
@@ -149,7 +171,11 @@ def run_benchmark_suite(
         if tuple(strategies) != tuple(effective)
     ]
     config = {
-        "catalog_path": str(catalog_path),
+        "runner_scenario_id": RUNNER_SCENARIO_ID,
+        "runner_scenario_kind": RUNNER_SCENARIO_KIND,
+        "runner_scenario_description": RUNNER_SCENARIO_DESCRIPTION,
+        "case_source": "benchmarks.cases concrete instance modules",
+        "instance_collection_modules": list(INSTANCE_COLLECTION_MODULES),
         "families": list(families),
         "tiers": list(tiers),
         "benchmark_ids": list(benchmark_ids),
@@ -165,7 +191,6 @@ def run_benchmark_suite(
         "budget_policy": "family_tier_ceiling_v1",
         "family_budgets": budget_matrix,
         "allow_download": allow_download,
-        "data_cache_dir": data_cache_dir,
         "implemented_families": sorted(IMPLEMENTED_FAMILIES),
         "environment": build_run_environment_metadata(),
         "python": sys.version,
@@ -173,7 +198,7 @@ def run_benchmark_suite(
     }
     write_json(run_dir / "config.json", config)
     write_json(run_dir / "inventory.json", build_benchmark_inventory(
-        catalog_path=catalog_path,
+        case_rows=all_cases,
         families=families,
         tiers=tiers,
         benchmark_ids=benchmark_ids,
@@ -213,61 +238,13 @@ def run_benchmark_suite(
                     thread_count=thread_count,
                 ),
             )
-            if family == "sequence_blackbox_tsp":
-                from benchmarks.runners.sequence_blackbox_tsp import run_tsp_case
-
-                case_rows = run_tsp_case(
-                    case,
-                    strategies=strategy_plan[family],
-                    budget=_tsp_budget(effective_budget),
-                    data_cache_dir=data_cache_dir,
-                    allow_download=allow_download,
-                    model_styles=model_styles,
-                )
-            elif family == "exact_linear_mip":
-                from benchmarks.runners.exact_linear_mip import run_mip_case
-
-                case_rows = run_mip_case(
-                    case,
-                    strategies=strategies,
-                    budget=_mip_budget(effective_budget),
-                    data_cache_dir=data_cache_dir,
-                    allow_download=allow_download,
-                )
-            elif family == "cumulative_resource_scheduling":
-                from benchmarks.runners.cumulative_resource_scheduling import run_rcpsp_case
-
-                case_rows = run_rcpsp_case(
-                    case,
-                    strategies=strategy_plan[family],
-                    budget=_rcpsp_budget(effective_budget),
-                    data_cache_dir=data_cache_dir,
-                    allow_download=allow_download,
-                    include_exact_baseline=True,
-                )
-            elif family == "interval_job_shop":
-                from benchmarks.runners.interval_job_shop import run_job_shop_case
-
-                case_rows = run_job_shop_case(
-                    case,
-                    strategies=strategy_plan[family],
-                    budget=_job_shop_budget(effective_budget),
-                    data_cache_dir=data_cache_dir,
-                    allow_download=allow_download,
-                    include_exact_baseline=True,
-                )
-            elif family == "sequence_quadratic_assignment":
-                from benchmarks.runners.sequence_quadratic_assignment import run_qap_case
-
-                case_rows = run_qap_case(
-                    case,
-                    strategies=strategy_plan[family],
-                    budget=_qap_budget(effective_budget),
-                    data_cache_dir=data_cache_dir,
-                    allow_download=allow_download,
-                )
-            else:
-                case_rows = []
+            case_rows = _run_case_implementation(
+                case,
+                strategies=strategies if family == "exact_linear_mip" else strategy_plan[family],
+                budget=_scenario_case_budget(family=family, effective_budget=effective_budget),
+                allow_download=allow_download,
+                model_styles=model_styles,
+            )
             case_rows = [
                 _normalize_case_row(
                     row,
@@ -301,7 +278,7 @@ def run_benchmark_suite(
 def run_calibration_suite(
     *,
     seeds: tuple[int, ...],
-    catalog_path: str | Path = DEFAULT_CATALOG_PATH,
+    case_rows: list[dict[str, Any]] | None = None,
     output_root: str | Path = DEFAULT_RUN_ROOT,
     families: tuple[str, ...] = DEFAULT_RUNNABLE_FAMILIES,
     tiers: tuple[str, ...] = ("calibration",),
@@ -311,7 +288,6 @@ def run_calibration_suite(
     time_limit_s: float = 5.0,
     population_size: int = 10,
     trace_limit: int = 8,
-    data_cache_dir: str | None = None,
     allow_download: bool = True,
     model_styles: tuple[str, ...] = (),
     default_candidate_matrix: bool = False,
@@ -325,7 +301,7 @@ def run_calibration_suite(
     rows: list[dict[str, Any]] = []
     for seed in seeds:
         summary = run_benchmark_suite(
-            catalog_path=catalog_path,
+            case_rows=case_rows,
             output_root=calibration_dir,
             families=families,
             tiers=tiers,
@@ -336,7 +312,6 @@ def run_calibration_suite(
             time_limit_s=time_limit_s,
             population_size=population_size,
             trace_limit=trace_limit,
-            data_cache_dir=data_cache_dir,
             allow_download=allow_download,
             model_styles=model_styles,
             default_candidate_matrix=default_candidate_matrix,
@@ -388,6 +363,19 @@ def _normalize_thread_counts(thread_counts: tuple[int, ...]) -> tuple[int, ...]:
     return tuple(normalized)
 
 
+def _scenario_case_budget(*, family: str, effective_budget: EffectiveStrategyBudget) -> ScenarioCaseBudget:
+    return ScenarioCaseBudget(
+        seed=effective_budget.seed,
+        max_iterations=0 if family == "exact_linear_mip" else effective_budget.max_iterations,
+        time_limit_s=effective_budget.exact_time_limit_s or effective_budget.time_limit_s,
+        population_size=0 if family == "exact_linear_mip" else effective_budget.population_size,
+        trace_limit=0 if family == "exact_linear_mip" else effective_budget.trace_limit,
+        thread_count=effective_budget.thread_count,
+        cpsat_time_limit_s=effective_budget.exact_time_limit_s,
+        backend="optx",
+    )
+
+
 def _effective_strategies_for_family(family: str, requested: tuple[str, ...]) -> tuple[str, ...]:
     if family == "exact_linear_mip":
         return requested
@@ -418,7 +406,7 @@ def _strategy_plan_change_reason(family: str, route_plan: dict[str, Any]) -> str
 
 def build_benchmark_inventory(
     *,
-    catalog_path: str | Path = DEFAULT_CATALOG_PATH,
+    case_rows: list[dict[str, Any]] | None = None,
     families: tuple[str, ...] = DEFAULT_RUNNABLE_FAMILIES,
     tiers: tuple[str, ...] = ("smoke",),
     benchmark_ids: tuple[str, ...] = (),
@@ -430,9 +418,9 @@ def build_benchmark_inventory(
     trace_limit: int = 8,
     thread_counts: tuple[int, ...] = (1,),
 ) -> dict[str, Any]:
-    """Build a no-solve benchmark inventory without importing family runners."""
+    """Build a no-solve benchmark inventory from concrete instance modules."""
 
-    all_cases = catalog_cases(catalog_path)
+    all_cases = list(case_rows) if case_rows is not None else load_case_rows()
     selected_cases = select_cases(
         all_cases,
         families=families,
@@ -454,8 +442,11 @@ def build_benchmark_inventory(
         for family, item_plan in strategy_matrix.items()
     }
     return {
-        "catalog_path": str(catalog_path),
-        "catalog_case_count": len(all_cases),
+        "runner_scenario_id": RUNNER_SCENARIO_ID,
+        "runner_scenario_kind": RUNNER_SCENARIO_KIND,
+        "runner_scenario_description": RUNNER_SCENARIO_DESCRIPTION,
+        "case_source": "benchmarks.cases concrete instance modules",
+        "case_count": len(all_cases),
         "selected_case_count": len(selected_cases),
         "implemented_families": sorted(IMPLEMENTED_FAMILIES),
         "default_runnable_families": list(DEFAULT_RUNNABLE_FAMILIES),
@@ -671,6 +662,27 @@ def _inventory_family_rows(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda item: item["family"])
 
 
+def _run_case_implementation(
+    case: dict[str, Any],
+    *,
+    strategies: tuple[str, ...],
+    budget: Any,
+    allow_download: bool,
+    model_styles: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    family = str(case["family"])
+    kwargs: dict[str, Any] = {
+        "strategies": strategies,
+        "budget": budget,
+        "allow_download": allow_download,
+    }
+    if family in SCHEDULING_FAMILIES:
+        kwargs["include_exact_baseline"] = True
+    if family == "sequence_blackbox_tsp":
+        kwargs["model_styles"] = model_styles
+    return run_case(case, **kwargs)
+
+
 def _inventory_case_row(case: dict[str, Any]) -> dict[str, Any]:
     reference = case.get("reference") if isinstance(case.get("reference"), dict) else {}
     return {
@@ -683,74 +695,6 @@ def _inventory_case_row(case: dict[str, Any]) -> dict[str, Any]:
         "model_style": case.get("model_style"),
         "implemented": case.get("family") in IMPLEMENTED_FAMILIES,
     }
-
-
-def _tsp_budget(budget: EffectiveStrategyBudget):
-    from benchmarks.runners.sequence_blackbox_tsp import TspStrategyBudget
-
-    return TspStrategyBudget(
-        seed=budget.seed,
-        max_iterations=budget.max_iterations,
-        time_limit_s=budget.time_limit_s,
-        population_size=budget.population_size,
-        trace_limit=budget.trace_limit,
-        thread_count=budget.thread_count,
-    )
-
-
-def _qap_budget(budget: EffectiveStrategyBudget):
-    from benchmarks.runners.sequence_quadratic_assignment import QapStrategyBudget
-
-    return QapStrategyBudget(
-        seed=budget.seed,
-        max_iterations=budget.max_iterations,
-        time_limit_s=budget.time_limit_s,
-        population_size=budget.population_size,
-        trace_limit=budget.trace_limit,
-        thread_count=budget.thread_count,
-    )
-
-
-def _job_shop_budget(budget: EffectiveStrategyBudget):
-    from benchmarks.runners.interval_job_shop import JobShopStrategyBudget
-
-    return JobShopStrategyBudget(
-        seed=budget.seed,
-        max_iterations=budget.max_iterations,
-        time_limit_s=budget.time_limit_s,
-        population_size=budget.population_size,
-        trace_limit=budget.trace_limit,
-        thread_count=budget.thread_count,
-        cpsat_time_limit_s=budget.exact_time_limit_s,
-    )
-
-
-def _rcpsp_budget(budget: EffectiveStrategyBudget):
-    from benchmarks.runners.cumulative_resource_scheduling import RcpspStrategyBudget
-
-    return RcpspStrategyBudget(
-        seed=budget.seed,
-        max_iterations=budget.max_iterations,
-        time_limit_s=budget.time_limit_s,
-        population_size=budget.population_size,
-        trace_limit=budget.trace_limit,
-        thread_count=budget.thread_count,
-        cpsat_time_limit_s=budget.exact_time_limit_s,
-    )
-
-
-def _mip_budget(budget: EffectiveStrategyBudget):
-    from benchmarks.runners.exact_linear_mip import MipExactBudget
-
-    return MipExactBudget(
-        seed=budget.seed,
-        max_iterations=0,
-        time_limit_s=budget.exact_time_limit_s or budget.time_limit_s,
-        population_size=0,
-        trace_limit=0,
-        thread_count=budget.thread_count,
-        backend="optx",
-    )
 
 
 def _normalize_case_row(
@@ -1045,7 +989,7 @@ def build_strategy_feedback(rows: list[dict[str, Any]], *, config: dict[str, Any
         "families": list(config.get("families", [])),
         "tiers": list(config.get("tiers", [])),
         "explicit_user_strategy_override_policy": "feedback never overrides an explicit user-selected strategy",
-        "reference_policy": "external optimum or catalog best-known references only; local best is diagnostic",
+        "reference_policy": "external optimum or public best-known references only; local best is diagnostic",
         "freshness": {
             "created_at_utc": utc_timestamp(),
             "source_run_tier": list(config.get("tiers", [])),

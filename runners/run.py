@@ -6,11 +6,15 @@ import json
 from benchmarks.runners.bootstrap import prefer_local_development_paths
 
 
+# 标准 benchmark suite 评测场景 CLI：
+# - 只解析“跑哪些 family/case/tier/strategy、预算、缓存、输出目录”等运行声明。
+# - 不直接导入任何具体 case 的建模/求解实现。
+# - 具体 case 分派由 runners.suite 通过 cases.registry 完成。
+# - 轻量本地单 case 测试请使用 `python -m benchmarks.run`。
 def main() -> int:
     prefer_local_development_paths()
     from benchmarks.runners.suite import (
         DEFAULT_CANDIDATE_STRATEGIES,
-        DEFAULT_CATALOG_PATH,
         DEFAULT_PARALLEL_THREAD_COUNTS,
         DEFAULT_RUNNABLE_FAMILIES,
         DEFAULT_STRATEGIES,
@@ -20,7 +24,12 @@ def main() -> int:
     )
     from benchmarks.runners.common import DEFAULT_RUN_ROOT, ensure_run_dir, write_json
 
-    parser = argparse.ArgumentParser(description="Run the OptAgent modeling-native benchmark suite.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run the standard artifact-writing OptAgent benchmark suite scenario. "
+            "Use `python -m benchmarks.run` for lightweight local case tests."
+        )
+    )
     parser.add_argument("--family", action="append", dest="families", help="Benchmark family to run. Defaults to runnable smoke families.")
     parser.add_argument("--tier", action="append", dest="tiers", help="Benchmark tier to run. Defaults to smoke.")
     parser.add_argument("--case", action="append", dest="cases", help="Benchmark case id to run.")
@@ -71,11 +80,6 @@ def main() -> int:
     parser.add_argument("--time-limit-s", type=float, default=5.0)
     parser.add_argument("--population-size", type=int, default=10)
     parser.add_argument("--trace-limit", type=int, default=8)
-    parser.add_argument("--data-cache-dir")
-    parser.add_argument(
-        "--catalog-path",
-        help="Benchmark catalog JSON path. Defaults to benchmarks/catalog/modeling-native-catalog-v1.json.",
-    )
     parser.add_argument("--no-download", action="store_true", help="Fail when a required public instance is not already cached.")
     parser.add_argument("--output-root", default=str(DEFAULT_RUN_ROOT), help="Directory where benchmark run artifacts are written.")
     parser.add_argument(
@@ -92,14 +96,12 @@ def main() -> int:
         args.strategies
         or (DEFAULT_CANDIDATE_STRATEGIES if args.default_candidate_matrix else DEFAULT_STRATEGIES)
     )
-    catalog_path = args.catalog_path or DEFAULT_CATALOG_PATH
     thread_counts = tuple(
         args.thread_counts
         or (DEFAULT_PARALLEL_THREAD_COUNTS if args.parallel_matrix else ())
     )
     if args.list_inventory:
         inventory = build_benchmark_inventory(
-            catalog_path=catalog_path,
             families=families,
             tiers=tiers,
             benchmark_ids=benchmark_ids,
@@ -132,7 +134,6 @@ def main() -> int:
 
     if args.calibration_seeds:
         summary = run_calibration_suite(
-            catalog_path=catalog_path,
             output_root=args.output_root,
             families=families,
             tiers=tiers,
@@ -143,7 +144,6 @@ def main() -> int:
             time_limit_s=args.time_limit_s,
             population_size=args.population_size,
             trace_limit=args.trace_limit,
-            data_cache_dir=args.data_cache_dir,
             allow_download=not args.no_download,
             model_styles=tuple(args.model_styles or ()),
             default_candidate_matrix=args.default_candidate_matrix,
@@ -154,7 +154,6 @@ def main() -> int:
         return 0
 
     summary = run_benchmark_suite(
-        catalog_path=catalog_path,
         output_root=args.output_root,
         families=families,
         tiers=tiers,
@@ -165,7 +164,6 @@ def main() -> int:
         time_limit_s=args.time_limit_s,
         population_size=args.population_size,
         trace_limit=args.trace_limit,
-        data_cache_dir=args.data_cache_dir,
         allow_download=not args.no_download,
         model_styles=tuple(args.model_styles or ()),
         default_candidate_matrix=args.default_candidate_matrix,
