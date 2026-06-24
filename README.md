@@ -8,6 +8,18 @@ cd /path/to/opt-agent/benchmarks
 
 安装 OptAgent 后，可以直接通过 `python -m benchmarks...` 调用 benchmark 模块。
 
+## `cases/` 模块
+
+`cases/` 是 benchmark case 的声明层，负责定义每个可运行实例的元数据、问题类型、规模信息、建模方式和结果解码逻辑。这里不存放 dashboard 结果，只存放 `benchmarks.run`、suite runner 和 dashboard 能共同理解的 case 定义。
+
+`cases/` 的结构说明见 [cases/README.md](cases/README.md)。
+
+## 数据来源
+
+公开数据集、自定义数据和本地缓存都会放在 `cases/` 下对应的来源目录中，例如 `cases/tsplib/`、`cases/jsplib/`、`cases/miplib2017/`、`cases/psplib/`、`cases/qaplib/` 和 `cases/custom/`。每个来源目录都会提供自己的 `README.md`，用于说明该来源下有哪些 case，以及每个 case 对应的问题描述、数据含义和使用方式。
+
+自定义钢卷序列示例的来源说明见 [cases/custom/README.md](cases/custom/README.md)。
+
 ## `run.py`
 
 `run.py` 是本地单 case 运行入口。它会从 `cases/` 发现 benchmark case，构建对应的 OptAgent model，用一个或多个 strategy 求解，并把 JSON result rows 输出到 stdout。
