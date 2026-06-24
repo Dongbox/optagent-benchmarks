@@ -284,7 +284,7 @@ def build_model(instance_data: JobShopInstance, instance: str) -> JobShopBenchma
     )
 
 def solve_case(
-    instance: str = "abz5",
+    instance: str,
     *,
     strategies: tuple[str, ...] | None = None,
     budget: Any = JobShopStrategyBudget(),
@@ -314,12 +314,12 @@ def solve_case(
     return rows
 
 
-def solve_abz5(**kwargs: Any) -> list[dict[str, Any]]:
-    return solve_case("abz5", **kwargs)
+def solve_ft06(**kwargs: Any) -> list[dict[str, Any]]:
+    return solve_case("ft06", **kwargs)
 
 
-def solve_abz7(**kwargs: Any) -> list[dict[str, Any]]:
-    return solve_case("abz7", **kwargs)
+def solve_ft10(**kwargs: Any) -> list[dict[str, Any]]:
+    return solve_case("ft10", **kwargs)
 
 
 def machine_order_from_solution(
@@ -604,7 +604,7 @@ def _case_by_name(instance: str) -> JobShopCase:
         if case.instance == instance:
             return case
     supported = ", ".join(case.instance for case in CASES)
-    raise KeyError(f"unsupported ABZ JSPLIB instance: {instance}; supported: {supported}")
+    raise KeyError(f"unsupported FT JSPLIB instance: {instance}; supported: {supported}")
 
 
 def _coerce_budget(budget: Any) -> JobShopStrategyBudget:

@@ -135,9 +135,9 @@ class StrategyDeclaration:
 - MIPLIB 等 exact baseline 不引入特殊层级；它仍作为同一 case/strategy 层级表达，由策略名称和配置类决定求解方式。
 - 根入口和presentation 场景脚本 做对比实验时可以忽略默认策略声明，自行构造策略。
 
-## Instance Module Contract
+## Series Module Contract
 
-每个 `cases/<source>/<problem_type>/<instance_type>/<instance>.py` 应自包含默认全流程。
+每个 `cases/<source>/<problem_type>/<instance_type>/<series>.py` 应自包含默认全流程。单实例系列仍按系列文件处理，不恢复旧的 per-instance shim。
 
 必须包含：
 
@@ -148,13 +148,15 @@ class StrategyDeclaration:
 - 默认策略声明和固定配置；
 - `load_instance(instance: str = ..., **kwargs) -> Any`；
 - `build_model(instance_data: Any, instance: str = ...) -> Any`；
-- `solve_case(instance: str = ..., **kwargs) -> list[dict[str, Any]]`。
+- `solve_case(instance: str, **kwargs) -> list[dict[str, Any]]`。
 
 不要包含：
 
 - 大型不透明 metadata 字典；
 - 需要手工同步代码的完整建模说明；
 - 通过 `replace()` 等方式从一个 case 推导未核验或不存在的另一个 case；
+- 不属于当前 `CASES` 的公开实例名、默认实例、便捷方法或错误提示；
+- 迁移来源系列的兼容别名，例如非 ABZ 模块中的 `solve_abz5()`；
 - 对 private OptAgent internals 的依赖。
 
 示例轮廓：
@@ -188,6 +190,8 @@ CASES = (ABZ5, ABZ7)
 ```
 
 `solve_case()` 是 cases 内部默认路径，不是复杂实验 runner。它负责 load、build、按默认策略求解、生成标准 result rows，并在 setup error 或 solver error 时返回 error rows。
+
+`CASE_MODULE` 应使用当前模块名，优先写作 `CASE_MODULE = __name__`。registry 根据每个 case 的 `case_module` 导入系列模块，并把 case 自身的 `instance` 显式传入 `solve_case(instance, ...)`。
 
 ## Root Entry And Runners
 

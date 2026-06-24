@@ -16,7 +16,7 @@ from benchmarks.cases.common import model_style_from_program, objective_gap, str
 from benchmarks.cases.jsplib.scheduling.jobshop.raw.data import JobShopInstance, JobShopOperation, load_job_shop_case
 
 
-CASE_MODULE = "benchmarks.cases.jsplib.scheduling.jobshop.abz"
+CASE_MODULE = __name__
 SOURCE = "JSPLIB via ScheduleOpt"
 PROBLEM_TYPE = "scheduling"
 INSTANCE_TYPE = "jobshop"

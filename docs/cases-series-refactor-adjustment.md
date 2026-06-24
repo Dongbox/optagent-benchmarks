@@ -99,6 +99,9 @@ cases/<data_source>/<problem_type>/<instance_type>/<series>.py
 5. 系列级 `solve_case()` 必须能独立调用，不依赖顶层 `cases/*_model.py` / `cases/*_solve.py`。
 6. 原 `cases/<source>/<problem_type>/<instance_type>/<instance>.py` 不保留 shim。
 7. `__init__.py` 只聚合系列文件，不再聚合单个实例文件。
+8. 系列文件不得引用不属于自身 `CASES` 的公开实例名；例如 `abz5` / `abz7` 只能存在于 `abz.py` 和合法 raw 数据中。
+9. `CASE_MODULE` 使用当前模块名，优先写作 `CASE_MODULE = __name__`，并由每个 case 的 `case_module` 回指当前系列文件。
+10. `solve_case(instance, ...)` 接收 registry 传入的显式实例；便捷方法如需存在，必须按本系列命名，例如 `solve_ft06()`，不得保留迁移来源实例的别名。
 
 ## Completed Waves
 
@@ -139,6 +142,12 @@ cases/<data_source>/<problem_type>/<instance_type>/<series>.py
 - 已更新 `cases/registry.py`，仅按 `case_module` 路由到系列模块的 `solve_case()`。
 - 已跑 focused compile、list-cases、direct smoke 和 suite inventory smoke。
 
+### Wave 7: Case Implementation Integrity Cleanup
+
+- 已清理 JSPLIB 非 ABZ 系列中的 ABZ 迁移残留：`ft.py`、`la.py`、`dmu.py`、`swv.py` 不再包含 `abz5` / `abz7` 默认实例、`solve_abz*()` 方法或 ABZ 错误提示。
+- `abz.py` 的 `CASE_MODULE` 已收敛为 `__name__`，与其他系列文件保持一致。
+- 已新增 case integrity 防回归测试，覆盖公开 case 数量、metadata 一致性、`case_module` 回指、跨实例名污染和 registry 路由。
+
 ## Acceptance Criteria
 
 - 每个 family 的公开实例入口从“单实例文件列表”收敛为“系列文件列表”。
@@ -146,6 +155,8 @@ cases/<data_source>/<problem_type>/<instance_type>/<series>.py
 - 每个系列文件都可独立承载默认求解流程。
 - 不再依赖旧的顶层 `models/`、`loaders/` 风格组织。
 - 不保留旧实例文件兼容路径。
+- 系列文件源码不包含不属于自身 `CASES` 的公开实例名。
+- 每个 case 的 `case_module` 必须指向声明它的系列模块。
 
 ## Validation
 
