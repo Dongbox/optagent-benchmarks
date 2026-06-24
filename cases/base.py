@@ -225,7 +225,7 @@ def _modeling_notes_from_row(row: Mapping[str, Any]) -> Mapping[str, Any]:
     if isinstance(explicit, Mapping):
         return MappingProxyType(dict(explicit))
     notes: dict[str, Any] = {}
-    for key in ("modeling_form", "objective_sense", "optagent_primitives", "model_style"):
+    for key in ("objective_sense", "model_style"):
         if key in row:
             notes[key] = row[key]
     return MappingProxyType(notes)

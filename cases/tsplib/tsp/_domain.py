@@ -169,38 +169,6 @@ def make_tsp_case(
             "objective_sense": "minimize",
             "public_api_primitives": ["sequence_var", "external_call"],
         },
-        extra={
-            "modeling_form": "sequence_var route with external_call distance evaluator",
-            "objective_sense": "minimize",
-            "optagent_modeling": {
-                "constraints": [
-                    "sequence_var represents a permutation, so no separate all-different constraint is required"
-                ],
-                "data_mapping": (
-                    "Read TSPLIB coordinates or explicit distances and implement the documented "
-                    "TSPLIB distance metric in a callback."
-                ),
-                "decision_variables": [
-                    f"one sequence_var tour of size {nodes}; the sequence is the city visit order"
-                ],
-                "external_callback": (
-                    "route_cost(ctx) reads ctx.value(tour), sums consecutive arc costs, and adds "
-                    "the return-to-start arc."
-                ),
-                "objective": "builder.minimize(builder.external_call(route_cost, name='tour_length'), name='tour_length')",
-                "solver_routes": ["solve with GaConfig", "solve with AlnsConfig"],
-            },
-            "optagent_primitives": ["sequence_var", "external_call"],
-            "recommended_evaluation": {
-                "budgets_seconds": {"smoke": 10, "calibration": 60, "full": 300},
-                "primary_route": (
-                    "solve(..., strategy=GaConfig/AlnsConfig); exact route only for "
-                    "small diagnostic comparisons"
-                ),
-                "strategy_candidates": ["ga", "alns"],
-                "target_metrics": ["gap_to_optimum", "time_to_best", "external_call_count", "cache_hit_rate"],
-            },
-        },
     )
 
 

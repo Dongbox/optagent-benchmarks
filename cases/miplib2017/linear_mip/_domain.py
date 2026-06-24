@@ -188,34 +188,6 @@ def make_mip_case(
             "objective_sense": "minimize",
             "public_api_primitives": ["int_var", "bool_var", "float_var", "linear_constraints"],
         },
-        extra={
-            "modeling_form": "MPS/MP rows and columns for exact backend evaluation",
-            "objective_sense": "minimize",
-            "optagent_modeling": {
-                "constraints": ["one linear constraint per MPS row using the parsed row sense and right-hand side"],
-                "data_mapping": (
-                    "Load the MPS instance through the benchmark MPS/MP loader and preserve row "
-                    "sense, bounds, integrality, and objective coefficients."
-                ),
-                "decision_variables": [
-                    "bool_var for binary columns",
-                    "int_var for general integer columns",
-                    "float_var for continuous columns",
-                ],
-                "objective": (
-                    "builder.minimize(parsed_linear_objective, name='mip_objective') unless the "
-                    "source sense states maximize"
-                ),
-                "solver_routes": ["solve_milp with backend='optx'", "optional solve_milp with backend='mathopt_mp'"],
-            },
-            "optagent_primitives": ["int_var", "bool_var", "float_var", "linear_constraints"],
-            "recommended_evaluation": {
-                "budgets_seconds": {"smoke": 30, "calibration": 300, "full": 3600},
-                "primary_route": "solve_milp(..., backend='optx') and optional external mathopt_mp comparison",
-                "strategy_candidates": ["exact_optx"],
-                "target_metrics": ["optimality_match", "time_to_optimal_or_gap", "native_backend_status"],
-            },
-        },
     )
 
 

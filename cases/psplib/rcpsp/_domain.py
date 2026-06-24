@@ -172,43 +172,6 @@ def make_rcpsp_case(
             "objective_sense": "minimize",
             "public_api_primitives": ["interval_var", "precedence", "cumulative", "max"],
         },
-        extra={
-            "modeling_form": "interval project scheduling with renewable resource cumulative constraints",
-            "objective_sense": "minimize",
-            "optagent_modeling": {
-                "constraints": [
-                    "builder.precedence(activity[i], activity[j]) for every project precedence arc",
-                    (
-                        "builder.cumulative(intervals, demands_for_resource[r], capacity[r]) for "
-                        "each renewable resource"
-                    ),
-                ],
-                "data_mapping": (
-                    "Read PSPLIB .rcp activity durations, renewable-resource demands, capacities, "
-                    "and successor lists."
-                ),
-                "decision_variables": [
-                    "one interval_var activity[i] per non-dummy activity with fixed duration and bounded start"
-                ],
-                "objective": (
-                    "builder.minimize(builder.max(*(builder.interval_end(activity[i]) for terminal "
-                    "activities)), name='makespan')"
-                ),
-                "solver_routes": ["solve with AlnsConfig", "solve with GaConfig"],
-            },
-            "optagent_primitives": ["interval_var", "precedence", "cumulative", "max"],
-            "recommended_evaluation": {
-                "budgets_seconds": {"smoke": 30, "calibration": 180, "full": 900},
-                "primary_route": "solve(..., strategy=AlnsConfig/GaConfig) for search",
-                "strategy_candidates": ["alns", "ga"],
-                "target_metrics": [
-                    "gap_to_upper_bound",
-                    "gap_to_lower_bound",
-                    "time_to_first_feasible",
-                    "feasible_rate",
-                ],
-            },
-        },
     )
 
 

@@ -203,39 +203,6 @@ def make_job_shop_case(
             "objective_sense": "minimize",
             "public_api_primitives": ["interval_var", "sequence_var", "no_overlap", "precedence", "max"],
         },
-        extra={
-            "modeling_form": "interval scheduling with machine sequences and job precedences",
-            "objective_sense": "minimize",
-            "optagent_modeling": {
-                "constraints": [
-                    "builder.no_overlap(machine_order[m], *operations_on_machine[m]) for every machine",
-                    "builder.precedence(operation[j,k], operation[j,k+1]) for every consecutive operation in each job",
-                ],
-                "data_mapping": (
-                    "Read ScheduleOpt JSPLIB JSON rows as operations with job, operation index, "
-                    "machine, and duration."
-                ),
-                "decision_variables": [
-                    f"{jobs * machines} interval_var operation[j,k] with fixed duration and bounded start",
-                    (
-                        f"{machines} sequence_var machine_order[m], each ordering operations assigned "
-                        "to one machine"
-                    ),
-                ],
-                "objective": (
-                    "builder.minimize(builder.max(*(builder.interval_end(last_operation[j]) for "
-                    "each job)), name='makespan')"
-                ),
-                "solver_routes": ["solve with AlnsConfig", "solve with GaConfig"],
-            },
-            "optagent_primitives": ["interval_var", "sequence_var", "no_overlap", "precedence", "max"],
-            "recommended_evaluation": {
-                "budgets_seconds": {"smoke": 10, "calibration": 60, "full": 600},
-                "primary_route": "solve(..., strategy=AlnsConfig/GaConfig) for search",
-                "strategy_candidates": ["alns", "ga"],
-                "target_metrics": ["gap_to_reference", "time_to_first_feasible", "time_to_best", "feasible_rate"],
-            },
-        },
     )
 
 

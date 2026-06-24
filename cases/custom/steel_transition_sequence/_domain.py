@@ -125,21 +125,6 @@ def make_steel_case(
             "objective_sense": "minimize",
             "public_api_primitives": ["sequence_var", "external_call"],
         },
-        extra={
-            "modeling_form": "sequence_var coil order with external transition penalty callback",
-            "objective_sense": "minimize",
-            "optagent_primitives": ["sequence_var", "external_call"],
-            "optagent_modeling": {
-                "constraints": [
-                    "sequence_var represents a permutation of all coils",
-                    "adjacent incompatible weld pairs add one transition penalty",
-                ],
-                "decision_variables": [
-                    f"one sequence_var coil_sequence of size {coils}; the sequence is the coil processing order"
-                ],
-                "objective": "minimize external_call(transition_penalty, depends_on=(coil_sequence,))",
-            },
-        },
     )
 
 

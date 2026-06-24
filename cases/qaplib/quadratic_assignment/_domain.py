@@ -142,33 +142,6 @@ def make_qap_case(
             "objective_sense": "minimize",
             "public_api_primitives": ["sequence_var", "external_call"],
         },
-        extra={
-            "modeling_form": "sequence_var assignment permutation with external_call quadratic cost evaluator",
-            "objective_sense": "minimize",
-            "optagent_modeling": {
-                "constraints": ["sequence_var enforces a one-to-one facility-location assignment"],
-                "data_mapping": "Read QAPLIB flow and distance matrices.",
-                "decision_variables": [
-                    f"one sequence_var assignment of size {size}; assignment[i] is the location chosen for facility i"
-                ],
-                "external_callback": (
-                    "qap_cost(ctx) computes sum(flow[i][j] * distance[assignment[i]][assignment[j]]) "
-                    "over all facility pairs."
-                ),
-                "objective": "builder.minimize(builder.external_call(qap_cost, name='assignment_cost'), name='assignment_cost')",
-                "solver_routes": ["solve with GaConfig", "solve with AlnsConfig"],
-            },
-            "optagent_primitives": ["sequence_var", "external_call"],
-            "recommended_evaluation": {
-                "budgets_seconds": {"smoke": 10, "calibration": 120, "full": 600},
-                "primary_route": (
-                    "solve(..., strategy=GaConfig/AlnsConfig); not a natural pure MILP "
-                    "benchmark for OptAgent strategies"
-                ),
-                "strategy_candidates": ["ga", "alns"],
-                "target_metrics": ["gap_to_optimum", "time_to_best", "external_call_count", "cache_hit_rate"],
-            },
-        },
     )
 
 
