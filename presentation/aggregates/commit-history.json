@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T06:39:29Z",
+  "generated_at": "2026-06-24T06:51:20Z",
   "schema_version": 1,
   "series": [
     {
@@ -422,6 +422,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260624-063929-41974fe-dc2e0e2.json"
+        },
+        {
+          "best_cost": null,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-06-24T06:51:20Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "routing-ga-tsplib-berlin52-20260624-065120-41974fe-f538831",
+          "runtime_ms": 0,
+          "status": "error",
+          "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260624-065120-41974fe-f538831.json"
         }
       ],
       "seed": 11,
@@ -507,6 +520,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260624-063929-41974fe-7acc260.json"
+        },
+        {
+          "best_cost": null,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-06-24T06:51:20Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "routing-ga-tsplib-eil51-20260624-065120-41974fe-28112b3",
+          "runtime_ms": 0,
+          "status": "error",
+          "summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260624-065120-41974fe-28112b3.json"
         }
       ],
       "seed": 11,
