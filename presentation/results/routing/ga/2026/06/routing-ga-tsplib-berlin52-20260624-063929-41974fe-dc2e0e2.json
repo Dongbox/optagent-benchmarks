@@ -1,0 +1,46 @@
+{
+  "artifacts": {
+    "metrics": "results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260624-063929-41974fe-dc2e0e2/metrics.json"
+  },
+  "benchmark_group": "routing",
+  "benchmark_id": "tsplib_berlin52",
+  "benchmarks": {
+    "commit": "60afc7e42a87a9935886ab6eedf49cca310b2135",
+    "commit_url": "https://github.com/Dongbox/optagent-benckmarks/commit/60afc7e42a87a9935886ab6eedf49cca310b2135"
+  },
+  "created_at": "2026-06-24T06:39:29Z",
+  "environment": {
+    "platform": "Linux-6.17.0-1018-azure-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "runner": "github-actions"
+  },
+  "family": "sequence_blackbox_tsp",
+  "metrics": {
+    "best_cost": null,
+    "error_message": "cannot import name 'AdvancedGaConfig' from 'optagent' (/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/optagent/__init__.py)",
+    "error_type": "ImportError",
+    "evaluations_per_s": null,
+    "feasible": false,
+    "gap_rel": null,
+    "improvement_per_second": null,
+    "objective": null,
+    "reference_cost": 7542.0,
+    "runtime_ms": 0,
+    "status": "error",
+    "time_to_best_ms": 0,
+    "time_to_first_feasible_ms": 0
+  },
+  "optagent": {
+    "commit": "cpp-python-boundary-redesign",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256:c2c67a4705c1e7faeac9d50a0736daed4841f5fd1c31f60148e6c7f2b10e59b4"
+  },
+  "run_id": "routing-ga-tsplib-berlin52-20260624-063929-41974fe-dc2e0e2",
+  "schema_version": 1,
+  "seed": 11,
+  "strategy": "ga",
+  "strategy_config": {},
+  "strategy_profile": "ga_tsp_blackbox_v1",
+  "tier": "smoke"
+}
