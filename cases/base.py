@@ -13,19 +13,19 @@ class BenchmarkCase:
     """Structured case declaration shared by cases, local entrypoints, and runners."""
 
     benchmark_id: str
-    source: str
-    problem_type: str
-    instance_type: str
-    instance: str
     family: str
-    tier: str
-    compare_key: str
-    series_key: str
     size: Mapping[str, Any]
     data: Mapping[str, Any]
     reference: Mapping[str, Any]
     problem_description: str
-    case_module: str
+    source: str = ""
+    problem_type: str = ""
+    instance_type: str = ""
+    instance: str = ""
+    tier: str = "smoke"
+    compare_key: str = ""
+    series_key: str = ""
+    case_module: str = ""
     modeling_notes: Mapping[str, Any] = field(default_factory=dict)
     extra: Mapping[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
@@ -81,6 +81,14 @@ class BenchmarkCase:
         )
 
     def to_row(self) -> dict[str, Any]:
+        source = self.source
+        problem_type = self.problem_type
+        instance_type = self.instance_type
+        instance = self.instance or self.benchmark_id
+        compare_key = self.compare_key or "/".join(
+            part for part in (source, problem_type, instance_type, instance) if part
+        )
+        series_key = self.series_key or _default_series_key(compare_key, self.modeling_notes)
         row = dict(self.extra)
         row.update(
             {
@@ -88,16 +96,16 @@ class BenchmarkCase:
                 "case_module": self.case_module,
                 "data": dict(self.data),
                 "family": self.family,
-                "instance": self.instance,
+                "instance": instance,
                 "problem_description": self.problem_description,
                 "reference": dict(self.reference),
                 "size": dict(self.size),
-                "source": self.source,
-                "tier": self.tier,
-                "problem_type": self.problem_type,
-                "instance_type": self.instance_type,
-                "compare_key": self.compare_key,
-                "series_key": self.series_key,
+                "source": source,
+                "tier": self.tier or "smoke",
+                "problem_type": problem_type,
+                "instance_type": instance_type,
+                "compare_key": compare_key or self.benchmark_id,
+                "series_key": series_key or (compare_key or self.benchmark_id),
             }
         )
         if self.modeling_notes:

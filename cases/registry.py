@@ -10,11 +10,11 @@ from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row
 # 这里登记的是“系列集合包”，每个包只汇总同一来源/业务域/问题类型下的
 # 系列模块，例如 jsplib/scheduling/jobshop/abz.py。
 INSTANCE_COLLECTION_MODULES = (
-    "benchmarks.cases.jsplib.scheduling.jobshop",
-    "benchmarks.cases.psplib.scheduling.rcpsp",
-    "benchmarks.cases.tsplib.routing.tsp",
-    "benchmarks.cases.qaplib.assignment.quadratic_assignment",
-    "benchmarks.cases.miplib2017.exact.linear_mip",
+    "benchmarks.cases.jsplib.jobshop",
+    "benchmarks.cases.psplib.rcpsp",
+    "benchmarks.cases.tsplib.tsp",
+    "benchmarks.cases.qaplib.quadratic_assignment",
+    "benchmarks.cases.miplib2017.linear_mip",
 )
 
 IMPLEMENTED_FAMILY_NAMES = {
@@ -71,7 +71,7 @@ def run_case(case: CaseDeclaration, **kwargs: Any) -> list[dict[str, Any]]:
 
 def default_model_styles_for_family(family: str) -> tuple[str, ...]:
     if family == "sequence_blackbox_tsp":
-        from benchmarks.cases.tsplib.routing.tsp.pr import DEFAULT_TSP_MODEL_STYLES
+        from benchmarks.cases.tsplib.tsp.pr import DEFAULT_TSP_MODEL_STYLES
 
         return DEFAULT_TSP_MODEL_STYLES
     return ()
