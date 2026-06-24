@@ -162,9 +162,9 @@ cases/<data_source>/<problem_type>/<instance_type>/<series>.py
 
 - `python -m compileall cases`
 - `python -m benchmarks.run --list-cases`
-- `python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case qaplib_nug12 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_ft06 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case psplib_j90_1_1 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
+- `python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case qaplib_nug12 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_ft06 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case psplib_j90_1_1 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
 - `python -m benchmarks.run --case miplib2017_50v-10 --strategy optx --no-download --time-limit-s 0.1`
 - `python -m benchmarks.presentation.suite --list-inventory --family sequence_blackbox_tsp --tier smoke --timestamp case-series-refactor-smoke`

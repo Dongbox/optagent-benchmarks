@@ -9,7 +9,7 @@ from benchmarks.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 
-from optagent import AdvancedGaConfig, AlnsConfig, CpSatConfig, GaConfig, LnsConfig, LocalSearchConfig, ModelBuilder, TabuConfig, solve, solve_cpsat
+from optagent import AdvancedGaConfig, AlnsConfig, GaConfig, LnsConfig, LocalSearchConfig, ModelBuilder, TabuConfig, solve
 
 from benchmarks.cases.base import BenchmarkCase, StrategyDeclaration
 from benchmarks.cases.common import model_style_from_program, objective_gap, strategy_profile_name, summarize_solution_metadata
@@ -34,20 +34,6 @@ DEFAULT_POPULATION_SIZE = 10
 DEFAULT_TRACE_LIMIT = 8
 DEFAULT_THREAD_COUNT = 1
 
-JOBSHOP_CPSAT = StrategyDeclaration(
-    name="cpsat",
-    config_class="CpSatConfig",
-    profile="cpsat_scheduling_exact_v1",
-    kind="exact_baseline",
-    config={
-        "time_limit_s": DEFAULT_TIME_LIMIT_S,
-        "workers": DEFAULT_THREAD_COUNT,
-        "random_seed": DEFAULT_SEED,
-        "log_to_stdout": False,
-        "enable_solution_callback": True,
-        "solution_event_limit": DEFAULT_TRACE_LIMIT,
-    },
-)
 JOBSHOP_GA = StrategyDeclaration(
     name="ga",
     config_class="GaConfig",
@@ -68,7 +54,7 @@ JOBSHOP_ALNS = StrategyDeclaration(
         "acceptance": "not_worse",
     },
 )
-DEFAULT_STRATEGIES = (JOBSHOP_CPSAT, JOBSHOP_GA, JOBSHOP_ALNS)
+DEFAULT_STRATEGIES = (JOBSHOP_GA, JOBSHOP_ALNS)
 
 
 @dataclass(frozen=True)
@@ -79,11 +65,6 @@ class JobShopStrategyBudget:
     population_size: int = DEFAULT_POPULATION_SIZE
     trace_limit: int = DEFAULT_TRACE_LIMIT
     thread_count: int = DEFAULT_THREAD_COUNT
-    cpsat_time_limit_s: float | None = None
-
-    @property
-    def effective_cpsat_time_limit_s(self) -> float:
-        return float(self.cpsat_time_limit_s if self.cpsat_time_limit_s is not None else self.time_limit_s)
 
 
 class JobShopCase(BenchmarkCase):
@@ -163,7 +144,7 @@ def _case(
             "optagent_primitives": ["interval_var", "sequence_var", "no_overlap", "precedence", "max"],
             "recommended_evaluation": {
                 "budgets_seconds": {"calibration": 60, "full": 600, "smoke": 10},
-                "primary_route": "solve_cpsat for exact baseline; solve(..., strategy=AlnsConfig/GaConfig) for search",
+                "primary_route": "solve(..., strategy=AlnsConfig/GaConfig) for search",
                 "strategy_candidates": ["alns", "ga"],
                 "target_metrics": ["gap_to_reference", "time_to_first_feasible", "time_to_best", "feasible_rate"],
             },
@@ -273,26 +254,19 @@ def solve_case(
     strategies: tuple[str, ...] | None = None,
     budget: Any = JobShopStrategyBudget(),
     allow_download: bool = True,
-    include_exact_baseline: bool = True,
     **_: Any,
 ) -> list[dict[str, Any]]:
     case = _case_by_name(instance)
     case_row = case.to_row()
     effective_budget = _coerce_budget(budget)
-    strategy_names = strategies if strategies is not None else _default_strategy_names(include_exact=False)
+    strategy_names = strategies if strategies is not None else _default_strategy_names()
     try:
         instance_data = load_instance(instance, allow_download=allow_download)
         model = build_model(instance_data, instance)
     except Exception as exc:
-        rows = []
-        if include_exact_baseline:
-            rows.append(_case_setup_error_row(case=case_row, strategy_name="cpsat", exc=exc))
-        rows.extend(_case_setup_error_row(case=case_row, strategy_name=strategy_name, exc=exc) for strategy_name in strategy_names)
-        return rows
+        return [_case_setup_error_row(case=case_row, strategy_name=strategy_name, exc=exc) for strategy_name in strategy_names]
 
     rows: list[dict[str, Any]] = []
-    if include_exact_baseline:
-        rows.append(_run_cpsat_baseline(case=case_row, model=model, budget=effective_budget))
     for strategy_name in strategy_names:
         rows.append(_run_strategy(case=case_row, model=model, strategy_name=strategy_name, budget=effective_budget))
     return rows
@@ -326,79 +300,6 @@ def makespan_from_solution(model: JobShopBenchmarkModel, variable_values: dict[i
             return None
         ends.append(int(raw["end"]))
     return max(ends) if ends else None
-
-
-def _run_cpsat_baseline(
-    *,
-    case: dict[str, Any],
-    model: JobShopBenchmarkModel,
-    budget: JobShopStrategyBudget,
-) -> dict[str, Any]:
-    started = perf_counter()
-    try:
-        solution = solve_cpsat(
-            model.program,
-            config=CpSatConfig(
-                time_limit_s=budget.effective_cpsat_time_limit_s,
-                workers=budget.thread_count,
-                random_seed=budget.seed,
-                log_to_stdout=False,
-                enable_solution_callback=True,
-                solution_event_limit=budget.trace_limit,
-            ),
-        )
-        elapsed_seconds = perf_counter() - started
-        raw_objective = _solution_objective(model, solution.variable_values, solution.objective_value)
-        objective = raw_objective if solution.feasible else None
-        reference = _reference_objective(case)
-        gap = objective_gap(objective, reference)
-        return {
-            "kind": "exact_baseline",
-            "benchmark_id": case["benchmark_id"],
-            "family": case["family"],
-            "tier": case["tier"],
-            "instance": case["instance"],
-            "strategy": "cpsat",
-            "strategy_profile": strategy_profile_name(family=case["family"], strategy="cpsat", kind="exact_baseline"),
-            "model_style": model_style_from_program(model.program, family=case["family"]),
-            "strategy_config": {
-                "time_limit_s": budget.effective_cpsat_time_limit_s,
-                "workers": budget.thread_count,
-                "random_seed": budget.seed,
-                "solution_event_limit": budget.trace_limit,
-            },
-            "solver_name": solution.solver_name,
-            "status": getattr(solution.status, "value", str(solution.status)),
-            "feasible": bool(solution.feasible),
-            "objective": float(objective) if objective is not None else None,
-            "raw_objective": float(raw_objective) if raw_objective is not None else None,
-            "reference_objective": float(reference) if reference is not None else None,
-            "reference_kind": case.get("reference", {}).get("value_kind"),
-            "gap_abs": gap["gap_abs"],
-            "gap_rel": gap["gap_rel"],
-            "elapsed_seconds": elapsed_seconds,
-            "time_to_best_seconds": _time_to_best(solution.metadata, elapsed_seconds),
-            "time_to_first_feasible_seconds": _time_to_first_feasible(solution.metadata),
-            "dimension": model.instance.operation_count,
-            "edge_weight_type": "job_shop_interval",
-            "metadata": {
-                **_exact_metadata(solution.metadata),
-                "jobs": model.instance.jobs,
-                "machines": model.instance.machines,
-                "horizon": model.horizon,
-            },
-            "machine_order_head": _machine_order_head(model, solution.variable_values),
-        }
-    except Exception as exc:
-        elapsed_seconds = perf_counter() - started
-        return _error_row(
-            kind="exact_baseline",
-            case=case,
-            model=model,
-            strategy_name="cpsat",
-            exc=exc,
-            elapsed_seconds=elapsed_seconds,
-        )
 
 
 def _run_strategy(
@@ -456,7 +357,6 @@ def _run_strategy(
     except Exception as exc:
         elapsed_seconds = perf_counter() - started
         return _error_row(
-            kind="strategy_run",
             case=case,
             model=model,
             strategy_name=strategy_name,
@@ -518,15 +418,14 @@ def _case_setup_error_row(
     strategy_name: str,
     exc: Exception,
 ) -> dict[str, Any]:
-    kind = "exact_baseline" if strategy_name == "cpsat" else "strategy_run"
     return {
-        "kind": kind,
+        "kind": "strategy_run",
         "benchmark_id": case["benchmark_id"],
         "family": case["family"],
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": strategy_name,
-        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind=kind),
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="strategy_run"),
         "model_style": model_style_from_program(None, family=case["family"]),
         "status": "error",
         "feasible": False,
@@ -546,7 +445,6 @@ def _case_setup_error_row(
 
 def _error_row(
     *,
-    kind: str,
     case: dict[str, Any],
     model: JobShopBenchmarkModel,
     strategy_name: str,
@@ -554,13 +452,13 @@ def _error_row(
     elapsed_seconds: float,
 ) -> dict[str, Any]:
     return {
-        "kind": kind,
+        "kind": "strategy_run",
         "benchmark_id": case["benchmark_id"],
         "family": case["family"],
         "tier": case["tier"],
         "instance": case["instance"],
         "strategy": strategy_name,
-        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind=kind),
+        "strategy_profile": strategy_profile_name(family=case["family"], strategy=strategy_name, kind="strategy_run"),
         "model_style": model_style_from_program(model.program, family=case["family"]),
         "status": "error",
         "feasible": False,
@@ -601,14 +499,11 @@ def _coerce_budget(budget: Any) -> JobShopStrategyBudget:
         population_size=int(getattr(budget, "population_size", DEFAULT_POPULATION_SIZE)),
         trace_limit=int(getattr(budget, "trace_limit", DEFAULT_TRACE_LIMIT)),
         thread_count=int(getattr(budget, "thread_count", DEFAULT_THREAD_COUNT)),
-        cpsat_time_limit_s=getattr(budget, "cpsat_time_limit_s", None),
     )
 
 
-def _default_strategy_names(*, include_exact: bool) -> tuple[str, ...]:
-    if include_exact:
-        return tuple(strategy.name for strategy in DEFAULT_STRATEGIES)
-    return tuple(strategy.name for strategy in DEFAULT_STRATEGIES if strategy.kind != "exact_baseline")
+def _default_strategy_names() -> tuple[str, ...]:
+    return tuple(strategy.name for strategy in DEFAULT_STRATEGIES)
 
 
 def _operation_key(operation: JobShopOperation) -> tuple[int, int]:
@@ -675,23 +570,3 @@ def _time_to_first_feasible(metadata: dict[str, Any]) -> float | None:
             except (TypeError, ValueError):
                 return None
     return None
-
-
-def _exact_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
-    keys = (
-        "backend",
-        "backend_status",
-        "backend_status_name",
-        "wall_time_seconds",
-        "best_objective_bound",
-        "certified_bound",
-        "certified_lower_bound",
-        "certified_upper_bound",
-        "num_branches",
-        "num_conflicts",
-        "incomplete_search",
-        "reported_as_unknown",
-        "response_has_incumbent",
-        "solution_callback",
-    )
-    return {key: metadata[key] for key in keys if key in metadata}

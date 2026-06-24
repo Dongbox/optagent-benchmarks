@@ -57,7 +57,7 @@ PUBLIC_STRATEGY_CONFIGS = (
     "AlnsConfig",
     "GaConfig",
 )
-DIRECT_EXACT_APIS = ("solve_milp", "solve_cpsat")
+DIRECT_EXACT_APIS = ("solve_milp",)
 CORE_ROW_FIELDS = (
     "benchmark_schema_version",
     "benchmark_id",
@@ -267,12 +267,8 @@ class ScenarioCaseBudget:
     population_size: int
     trace_limit: int
     thread_count: int = 1
-    cpsat_time_limit_s: float | None = None
     backend: str = "optx"
 
-    @property
-    def effective_cpsat_time_limit_s(self) -> float:
-        return float(self.cpsat_time_limit_s if self.cpsat_time_limit_s is not None else self.time_limit_s)
 
 
 def run_benchmark_suite(
@@ -528,7 +524,6 @@ def _scenario_case_budget(*, family: str, effective_budget: EffectiveStrategyBud
         population_size=0 if family == "exact_linear_mip" else effective_budget.population_size,
         trace_limit=0 if family == "exact_linear_mip" else effective_budget.trace_limit,
         thread_count=effective_budget.thread_count,
-        cpsat_time_limit_s=effective_budget.exact_time_limit_s,
         backend="optx",
     )
 
@@ -698,11 +693,11 @@ def _family_route_matrix() -> dict[str, dict[str, Any]]:
             "ignored_heuristic_metadata": "mip_heuristic_route_enabled=false",
         },
         "interval_job_shop": {
-            "routes": ["solve_cpsat", "GaConfig", "AlnsConfig"],
+            "routes": ["GaConfig", "AlnsConfig"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "cumulative_resource_scheduling": {
-            "routes": ["solve_cpsat", "GaConfig", "AlnsConfig"],
+            "routes": ["GaConfig", "AlnsConfig"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "sequence_blackbox_tsp": {
@@ -833,8 +828,6 @@ def _run_case_implementation(
         "budget": budget,
         "allow_download": allow_download,
     }
-    if family in SCHEDULING_FAMILIES:
-        kwargs["include_exact_baseline"] = True
     if family == "sequence_blackbox_tsp":
         kwargs["model_styles"] = model_styles
     return run_case(case, **kwargs)
@@ -1443,7 +1436,7 @@ def _feedback_candidate(strategy: str, rows: list[dict[str, Any]]) -> dict[str, 
     if exact_rows:
         recommendation_kind = "exact_api"
         resolved_config = {
-            "api": "solve_milp" if rows[0].get("family") == "exact_linear_mip" else "solve_cpsat",
+            "api": "solve_milp",
             "strategy": strategy,
         }
     else:

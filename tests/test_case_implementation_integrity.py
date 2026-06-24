@@ -81,7 +81,7 @@ def test_registry_routes_each_case_to_its_own_module_with_instance(monkeypatch: 
 
         monkeypatch.setattr(module, "solve_case", fake_solve_case)
 
-        rows = run_case(case, allow_download=False, include_exact_baseline=False)
+        rows = run_case(case, allow_download=False)
 
         assert calls == [case["instance"]]
         assert rows == [{"benchmark_id": case["benchmark_id"], "instance": case["instance"]}]

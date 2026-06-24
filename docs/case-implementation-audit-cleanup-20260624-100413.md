@@ -130,13 +130,13 @@ Validation Commands：
 
 - `python -m compileall benchmarks/cases`
 - `python -m benchmarks.run --list-cases`
-- `python -m benchmarks.run --case jsplib_ft06 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_la16 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_dmu01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_swv01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case psplib_j90_1_1 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case qaplib_nug12 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
+- `python -m benchmarks.run --case jsplib_ft06 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_la16 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_dmu01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_swv01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case psplib_j90_1_1 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case qaplib_nug12 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
 - `python -m benchmarks.run --case miplib2017_50v-10 --strategy optx --no-download --time-limit-s 0.1`
 
 Exit Criteria：
@@ -226,17 +226,17 @@ Passed:
 - `python -m pytest tests/test_case_implementation_integrity.py`
 - `python -m compileall benchmarks/cases`
 - `python -m benchmarks.run --list-cases`
-- `python -m benchmarks.run --case jsplib_abz5 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_abz7 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_ft06 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_ft10 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_la16 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_la21 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_dmu01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case jsplib_swv01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case psplib_j90_1_1 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
-- `python -m benchmarks.run --case qaplib_nug12 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1 --no-exact-baseline`
+- `python -m benchmarks.run --case jsplib_abz5 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_abz7 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_ft06 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_ft10 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_la16 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_la21 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_dmu01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case jsplib_swv01 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case psplib_j90_1_1 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `python -m benchmarks.run --case qaplib_nug12 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
 - `python -m benchmarks.run --case miplib2017_50v-10 --strategy optx --no-download --time-limit-s 0.1`
 
 Notes:

@@ -130,7 +130,7 @@ class StrategyDeclaration:
 
 设计要求：
 
-- `config_class` 使用公开 OptAgent 策略类名，例如 `GaConfig`、`AlnsConfig`、`TabuConfig`、`LocalSearchConfig`、`CpSatConfig`。
+- `config_class` 使用公开 OptAgent 策略类名，例如 `GaConfig`、`AlnsConfig`、`TabuConfig`、`LocalSearchConfig`。
 - 默认策略预算由具体实例模块固定声明。
 - MIPLIB 等 exact baseline 不引入特殊层级；它仍作为同一 case/strategy 层级表达，由策略名称和配置类决定求解方式。
 - 根入口和presentation 场景脚本 做对比实验时可以忽略默认策略声明，自行构造策略。

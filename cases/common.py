@@ -48,8 +48,6 @@ def strategy_profile_name(
     kind: str | None = None,
 ) -> str:
     if kind == "exact_baseline":
-        if strategy == "cpsat":
-            return "cpsat_scheduling_exact_v1"
         if strategy in {"optx", "mathopt_mp"}:
             return f"{strategy}_mip_exact_v1"
         return f"{strategy}_exact_baseline_v1"

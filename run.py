@@ -18,7 +18,6 @@ class LocalRunBudget:
     population_size: int = 10
     trace_limit: int = 8
     thread_count: int = 1
-    cpsat_time_limit_s: float | None = None
 
 
 def all_cases() -> list[dict[str, Any]]:
@@ -68,7 +67,6 @@ def run_case(
     strategies: tuple[Any, ...] | None = None,
     allow_download: bool = True,
     budget: Any | None = None,
-    include_exact_baseline: bool = True,
     **kwargs: Any,
 ) -> list[dict[str, Any]]:
     from benchmarks.cases.registry import run_case as run_registered_case
@@ -79,7 +77,6 @@ def run_case(
         strategies=strategies,
         allow_download=allow_download,
         budget=budget if budget is not None else LocalRunBudget(),
-        include_exact_baseline=include_exact_baseline,
         **kwargs,
     )
 
@@ -98,9 +95,7 @@ def main() -> int:
     parser.add_argument("--population-size", type=int, default=10)
     parser.add_argument("--trace-limit", type=int, default=8)
     parser.add_argument("--thread-count", type=int, default=1)
-    parser.add_argument("--cpsat-time-limit-s", type=float)
     parser.add_argument("--no-download", action="store_true", help="Fail when a required public instance is not already cached.")
-    parser.add_argument("--no-exact-baseline", action="store_true", help="Skip exact baseline rows when the case provides one.")
     args = parser.parse_args()
 
     if args.list_cases:
@@ -134,14 +129,12 @@ def main() -> int:
         population_size=args.population_size,
         trace_limit=args.trace_limit,
         thread_count=args.thread_count,
-        cpsat_time_limit_s=args.cpsat_time_limit_s,
     )
     rows = run_case(
         args.benchmark_id,
         strategies=tuple(args.strategies) if args.strategies else None,
         allow_download=not args.no_download,
         budget=budget,
-        include_exact_baseline=not args.no_exact_baseline,
     )
     print(json.dumps(rows, indent=2, ensure_ascii=True, sort_keys=True))
     return 0
