@@ -342,7 +342,7 @@ python -m benchmarks.presentation.suite \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --case tsplib_berlin52 \
-  --strategy local_search \
+  --strategy ga \
   --no-download \
   --timestamp presentation-standard-smoke
 
@@ -366,7 +366,7 @@ python -m benchmarks.presentation.suite \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --case tsplib_berlin52 \
-  --strategy local_search \
+  --strategy ga \
   --model-style sequence_var_external_call \
   --model-style sequence_transition_sum \
   --parallel-matrix \

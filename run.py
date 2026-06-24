@@ -125,14 +125,14 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
     if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
         return ("ga", "alns")
     if family in {"sequence_blackbox_tsp", "sequence_quadratic_assignment", "sequence_transition_penalty"}:
-        return ("ga", "alns", "tabu")
+        return ("ga", "alns")
     if family == "exact_linear_mip":
         return ("optx",)
-    return ("local_search",)
+    return ("ga",)
 
 
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
-    from optagent import AdvancedGaConfig, AlnsConfig, GaConfig, LnsConfig, LocalSearchConfig, MilpConfig, TabuConfig
+    from optagent import AdvancedGaConfig, AlnsConfig, GaConfig, LnsConfig, MilpConfig
 
     max_iterations = int(getattr(budget, "max_iterations", 40))
     population_size = max(4, int(getattr(budget, "population_size", 10)))
@@ -167,7 +167,7 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             parallel_workers=thread_count,
             duplicate_filter=True,
             mutation_portfolio=("sequence_two_opt", "sequence_block_move", "ruin_and_repair", "random_swap"),
-            local_improvement_strategy="tabu",
+            local_improvement_strategy="lns",
             local_improvement_top_k=2,
         )
     if strategy_name == "alns":
@@ -189,10 +189,6 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
         return AlnsConfig(**kwargs)
     if strategy_name == "lns":
         return LnsConfig(max_iterations=max_iterations, destroy_count=max(2, min(16, dimension // 8)), lns_every=1)
-    if strategy_name == "tabu":
-        return TabuConfig(max_iterations=max_iterations, tabu_tenure=max(4, min(30, dimension // 4)), unimproved_iteration_limit=None)
-    if strategy_name == "local_search":
-        return LocalSearchConfig(max_iterations=max_iterations)
     raise ValueError(f"unsupported strategy for {case.benchmark_id}: {strategy_name}")
 
 

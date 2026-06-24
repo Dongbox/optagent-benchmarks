@@ -44,16 +44,14 @@ RUNNER_SCENARIO_DESCRIPTION = (
 )
 IMPLEMENTED_FAMILIES = implemented_families()
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
-DEFAULT_STRATEGIES = ("ga", "alns", "tabu")
-DEFAULT_CANDIDATE_STRATEGIES = ("local_search", "alns", "ga", "tabu")
+DEFAULT_STRATEGIES = ("ga", "alns")
+DEFAULT_CANDIDATE_STRATEGIES = ("alns", "ga")
 DEFAULT_PARALLEL_THREAD_COUNTS = (1, 2, 4, 8, 16)
 SCHEDULING_FAMILIES = {"interval_job_shop", "cumulative_resource_scheduling"}
 SCHEDULING_DEFAULT_STRATEGIES = ("ga", "alns")
-SCHEDULING_STRATEGY_REPLACEMENTS = {"tabu": "alns", "lns": "alns"}
-SEQUENCE_DEFAULT_STRATEGIES = ("ga", "alns", "tabu")
+SCHEDULING_STRATEGY_REPLACEMENTS = {"lns": "alns"}
+SEQUENCE_DEFAULT_STRATEGIES = ("ga", "alns")
 PUBLIC_STRATEGY_CONFIGS = (
-    "LocalSearchConfig",
-    "TabuConfig",
     "LnsConfig",
     "AlnsConfig",
     "GaConfig",
@@ -121,14 +119,14 @@ def main() -> int:
         "--strategy",
         action="append",
         dest="strategies",
-        help="Strategy to run. Defaults to family-aware ga/alns/tabu; scheduling tabu/lns requests are replaced by alns.",
+        help="Strategy to run. Defaults to family-aware ga/alns; scheduling lns requests are replaced by alns.",
     )
     parser.add_argument(
         "--default-candidate-matrix",
         action="store_true",
         help=(
             "Emit a default strategy candidate ranking from strategy rows. "
-            "When no --strategy is provided, runs local_search/alns/ga/tabu candidates."
+            "When no --strategy is provided, runs alns/ga candidates."
         ),
     )
     parser.add_argument(
@@ -615,7 +613,7 @@ def build_benchmark_inventory(
             "scheduling_families": sorted(SCHEDULING_FAMILIES),
             "replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
             "reason": (
-                "standalone tabu/lns do not currently produce feasible scheduling benchmark rows; "
+                "standalone lns does not currently produce feasible scheduling benchmark rows; "
                 "alns is the repairable scheduling search route"
             ),
         },
@@ -702,11 +700,11 @@ def _family_route_matrix() -> dict[str, dict[str, Any]]:
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "sequence_blackbox_tsp": {
-            "routes": ["GaConfig", "AlnsConfig", "TabuConfig"],
+            "routes": ["GaConfig", "AlnsConfig"],
             "strategy_replacements": {},
         },
         "sequence_quadratic_assignment": {
-            "routes": ["GaConfig", "AlnsConfig", "TabuConfig"],
+            "routes": ["GaConfig", "AlnsConfig"],
             "strategy_replacements": {},
         },
     }
@@ -753,7 +751,7 @@ def resolve_family_strategy_matrix(
                         "effective_strategy": replacement,
                         "decision": decision,
                         "reason": (
-                            "standalone tabu/lns do not currently produce feasible scheduling benchmark rows; "
+                            "standalone lns does not currently produce feasible scheduling benchmark rows; "
                             "alns is the repairable scheduling search route"
                             if decision == "substituted"
                             else "valid family strategy"

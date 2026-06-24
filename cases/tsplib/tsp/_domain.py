@@ -188,16 +188,16 @@ def make_tsp_case(
                     "the return-to-start arc."
                 ),
                 "objective": "builder.minimize(builder.external_call(route_cost, name='tour_length'), name='tour_length')",
-                "solver_routes": ["solve with GaConfig", "solve with TabuConfig", "solve with AlnsConfig"],
+                "solver_routes": ["solve with GaConfig", "solve with AlnsConfig"],
             },
             "optagent_primitives": ["sequence_var", "external_call"],
             "recommended_evaluation": {
                 "budgets_seconds": {"smoke": 10, "calibration": 60, "full": 300},
                 "primary_route": (
-                    "solve(..., strategy=GaConfig/TabuConfig/AlnsConfig); exact route only for "
+                    "solve(..., strategy=GaConfig/AlnsConfig); exact route only for "
                     "small diagnostic comparisons"
                 ),
-                "strategy_candidates": ["ga", "tabu", "alns"],
+                "strategy_candidates": ["ga", "alns"],
                 "target_metrics": ["gap_to_optimum", "time_to_best", "external_call_count", "cache_hit_rate"],
             },
         },
