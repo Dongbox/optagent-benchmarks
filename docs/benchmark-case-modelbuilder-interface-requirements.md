@@ -22,13 +22,19 @@ case.build_model(**primitive_kwargs) -> optagent.ModelBuilder
 case.solution_summary(solution, **primitive_kwargs) -> dict[str, Any]
 ```
 
+`solution_summary()` 是迁移期名称。后续应按
+[Solution Metrics and Presentation Boundary](solution-metrics-presentation-boundary.md)
+继续收窄为 `solution_metrics()`：case 只返回领域 correctness / audit facts，
+通用 solver row 字段由 `run.py` 读取，dashboard 展示派生字段由 `presentation/`
+生成。
+
 核心原则：
 
-- case 只负责建模和解释 solution。
+- case 只负责建模和解释 solution 中只有 case 才知道的领域事实。
 - 实例加载、下载、raw data 解析都封装在 `build_model()` 内部。
 - `build_model()` 返回 `ModelBuilder`；根目录 `run.py` 直接调用 `optagent.solve(model_builder, strategy=...)`，由 `solve()` 内部执行 freeze。
 - 策略声明、budget 解析、CLI 参数、求解主流程和 result row 拼装统一放到根目录 `run.py`。
-- `solution_summary()` 优先通过 OptAgent solution 的公开字段和变量名读取结果。
+- `solution_summary()` 迁移期优先通过 OptAgent solution 的公开字段和变量名读取领域结果；不要新增 dashboard-facing 截断或展示字段。
 - 默认不写 `ModelBuilder.metadata`；只有 solution 解析缺少必要桥接信息时才写少量 metadata。
 - runner 与 case 边界不传递 benchmark 自定义实例类型、wrapper 类型或系列私有 budget 类型。
 
@@ -65,16 +71,12 @@ class BenchmarkCase:
     def build_model(self, **kwargs: Any) -> ModelBuilder:
         raise NotImplementedError
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
-        return self.default_solution_summary(solution)
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        return {}
 
-    def default_solution_summary(self, solution: Any) -> dict[str, Any]:
-        return {
-            "solver_name": getattr(solution, "solver_name", None),
-            "status": getattr(getattr(solution, "status", None), "value", str(getattr(solution, "status", ""))),
-            "feasible": bool(getattr(solution, "feasible", False)),
-            "objective": getattr(solution, "objective", None),
-        }
+    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        # Compatibility alias during the migration window.
+        return self.solution_metrics(solution, **kwargs)
 ```
 
 明确移出 case 目标接口：
@@ -83,6 +85,8 @@ class BenchmarkCase:
 - `default_strategies` / `StrategyDeclaration`：策略声明由 `run.py` 统一定义。
 - 系列级 `solve_case()`：求解流程由 `run.py` 统一编排。
 - `*BenchmarkModel` wrapper：不再用系列私有 dataclass 包装 OptAgent 对象。
+- dashboard-facing 展示摘要：`sequence_head`、`machine_order_head` 等由
+  `presentation/` 从 `decoded_solution` 派生。
 
 ## Phase Documents
 
@@ -106,6 +110,8 @@ class BenchmarkCase:
 - `run.py` 与 case 类交互时不传递 benchmark 自定义数据类型。
 - 建模代码不重复维护大段 metadata；metadata 只作为必要时的最小桥接信息。
 - result row、dashboard index 和 aggregates 的数据合同保持兼容。
+- solution metrics 和 presentation 派生字段的边界符合
+  [Solution Metrics and Presentation Boundary](solution-metrics-presentation-boundary.md)。
 - 现有 case inventory 不减少。
 - 每个 family 至少有一个 smoke case 通过。
 

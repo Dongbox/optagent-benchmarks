@@ -209,7 +209,10 @@ def _run_single_strategy(
         strategy_config = build_strategy_config(case=case, strategy_name=strategy_name, budget=budget)
         solution = _solve_model(case, model, strategy_name=strategy_name, strategy_config=strategy_config, budget=budget)
         elapsed_seconds = perf_counter() - started
-        summary = case.solution_summary(solution, **build_kwargs)
+        summary = _merge_solution_metrics(
+            _solver_solution_summary(solution),
+            _case_solution_metrics(case, solution, build_kwargs),
+        )
         return _result_row(case, strategy_name=strategy_name, strategy_config=strategy_config, summary=summary, elapsed_seconds=elapsed_seconds)
     except Exception as exc:
         elapsed_seconds = perf_counter() - started
@@ -236,6 +239,41 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
     )
 
 
+def _case_solution_metrics(case: BenchmarkCase, solution: Any, build_kwargs: dict[str, Any]) -> dict[str, Any]:
+    if (
+        type(case).solution_metrics is BenchmarkCase.solution_metrics
+        and type(case).solution_summary is not BenchmarkCase.solution_summary
+    ):
+        return case.solution_summary(solution, **build_kwargs)
+    return case.solution_metrics(solution, **build_kwargs)
+
+
+def _solver_solution_summary(solution: Any) -> dict[str, Any]:
+    status = getattr(solution, "status", None)
+    status_value = getattr(status, "value", None)
+    return {
+        "solver_name": getattr(solution, "solver_name", None),
+        "status": status_value if status_value is not None else (str(status) if status is not None else ""),
+        "feasible": bool(getattr(solution, "feasible", False)),
+        "objective": getattr(solution, "objective_value", None),
+        "metadata": dict(getattr(solution, "metadata", {}) or {}),
+    }
+
+
+def _merge_solution_metrics(solver_summary: dict[str, Any], case_metrics: dict[str, Any]) -> dict[str, Any]:
+    summary = dict(solver_summary)
+    metrics = dict(case_metrics or {})
+    solver_owned = {"solver_name", "status", "feasible"}
+    case_metadata = metrics.pop("metadata", None)
+    for key, value in metrics.items():
+        if key in solver_owned:
+            continue
+        summary[key] = value
+    if isinstance(case_metadata, dict):
+        summary["metadata"] = {**dict(summary.get("metadata") or {}), **case_metadata}
+    return summary
+
+
 def _result_row(
     case: BenchmarkCase,
     *,
@@ -251,6 +289,7 @@ def _result_row(
     metadata = summarize_solution_metadata(dict(summary.get("metadata") or {}))
     if case.family == "exact_linear_mip":
         metadata = dict(summary.get("metadata") or {})
+    model_style = summary.get("model_style") or case.modeling_notes.get("model_style")
     row = {
         "kind": kind,
         "benchmark_id": case.benchmark_id,
@@ -258,8 +297,8 @@ def _result_row(
         "tier": case.tier,
         "instance": case.instance,
         "strategy": strategy_name,
-        "strategy_profile": strategy_profile_name(family=case.family, strategy=strategy_name, model_style=summary.get("model_style"), kind=kind),
-        "model_style": summary.get("model_style"),
+        "strategy_profile": strategy_profile_name(family=case.family, strategy=strategy_name, model_style=model_style, kind=kind),
+        "model_style": model_style,
         "strategy_config": _strategy_config_dict(strategy_config),
         "solver_name": summary.get("solver_name"),
         "status": summary.get("status"),
@@ -272,6 +311,7 @@ def _result_row(
         "elapsed_seconds": elapsed_seconds,
         "time_to_best_seconds": _time_to_best(dict(summary.get("metadata") or {}), elapsed_seconds),
         "metadata": metadata,
+        "case_size": dict(case.size),
     }
     for key, value in summary.items():
         if key not in row and key not in {"metadata", "solver_name", "status", "feasible", "objective", "reference_objective"}:

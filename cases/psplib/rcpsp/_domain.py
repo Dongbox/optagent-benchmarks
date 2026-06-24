@@ -100,21 +100,20 @@ class RcpspCase(BenchmarkCase):
         )
         return builder
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
         context = self._build_context()
         raw_objective = _solution_objective(context, solution.variable_values, solution.objective_value)
         objective = raw_objective if solution.feasible else None
         instance = context["instance"]
         return {
-            **super().solution_summary(solution, **kwargs),
             "objective": float(objective) if objective is not None else None,
             "raw_objective": float(raw_objective) if raw_objective is not None else None,
-            "dimension": instance.activity_count,
-            "edge_weight_type": "rcpsp_cumulative",
             "model_style": MODEL_STYLE,
-            "activity_start_head": activity_start_head(context, solution.variable_values),
+            "decoded_solution": {
+                "kind": "rcpsp_schedule",
+                "activity_starts": activity_starts_from_solution(context, solution.variable_values),
+            },
             "metadata": {
-                **dict(getattr(solution, "metadata", {}) or {}),
                 "activities": instance.activity_count,
                 "renewable_resources": instance.resource_count,
                 "horizon": context["horizon"],
@@ -325,9 +324,9 @@ def makespan_from_solution(context: dict[str, Any], variable_values: dict[int, A
     return int(sink["end"])
 
 
-def activity_start_head(context: dict[str, Any], variable_values: dict[int, Any], *, limit: int = 20) -> list[dict[str, int]]:
+def activity_starts_from_solution(context: dict[str, Any], variable_values: dict[int, Any]) -> list[dict[str, int]]:
     rows: list[dict[str, int]] = []
-    for activity_id in sorted(context["activity_node_ids"])[:limit]:
+    for activity_id in sorted(context["activity_node_ids"]):
         raw = variable_values.get(context["activity_node_ids"][activity_id])
         if isinstance(raw, dict) and "start" in raw and "end" in raw:
             rows.append({"activity": activity_id + 1, "start": int(raw["start"]), "end": int(raw["end"])})

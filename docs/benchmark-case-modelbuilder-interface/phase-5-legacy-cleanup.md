@@ -7,7 +7,7 @@
 阶段完成后：
 
 - `run.py` 是唯一求解主流程入口。
-- case 文件只保留 case 声明、`build_model()` 和可选 `solution_summary()`。
+- case 文件只保留 case 声明、`build_model()` 和可选领域 solution metrics。
 - registry 只负责发现和返回 case，不再负责调用系列级 `solve_case()`。
 - 文档和测试都以新接口为准。
 
@@ -19,6 +19,7 @@
 - 删除 case 文件中的 `StrategyDeclaration`、默认 strategy tuple 和私有 budget dataclass。
 - 删除 `*BenchmarkModel` wrapper。
 - 清理 `load_instance()` 作为公开接口的残留。
+- 收窄 `solution_summary()` 职责，避免 case 继续维护 presentation/dashboard 字段。
 - 更新旧架构文档中与新接口冲突的内容。
 - 增加防回归检查。
 
@@ -59,6 +60,8 @@ rg -n "class .*BenchmarkModel|-> .*BenchmarkModel|def load_instance|default_stra
 - `StrategyDeclaration` / default strategies：删除，迁移到 `run.py`。
 - `solve_case()`：删除，或明确标记为 legacy shim 并计划后续删除。
 - 私有 budget dataclass：删除，使用 `run.py.LocalRunBudget` 或统一 budget 类型。
+- `solution_summary()`：迁移为只返回领域 correctness / audit facts；`sequence_head`、
+  `machine_order_head`、`activity_start_head` 等展示截断字段迁到 `presentation/`。
 
 ### Documentation
 
@@ -67,6 +70,7 @@ rg -n "class .*BenchmarkModel|-> .*BenchmarkModel|def load_instance|default_stra
 - `docs/case-architecture-refactor.md`
 - `docs/cases-series-refactor-adjustment.md`
 - `docs/presentation-runner-dashboard-refactor.md`
+- `docs/solution-metrics-presentation-boundary.md`
 - 任何仍描述 `build_model() -> Any`、case 级 `load_instance()`、case 级默认策略或系列级 `solve_case()` 为目标架构的内容。
 
 ### Regression Tests
@@ -77,6 +81,7 @@ rg -n "class .*BenchmarkModel|-> .*BenchmarkModel|def load_instance|default_stra
 - public case 不要求实现 `load_instance()`。
 - case 源码不定义 `class .*BenchmarkModel`。
 - case 源码不定义新增 `StrategyDeclaration`。
+- case 源码不新增 dashboard-facing `*_head` 展示字段。
 - `run.py` 能对每个 implemented family 至少选择一个 case 执行 smoke。
 
 ## Acceptance Criteria
@@ -84,6 +89,7 @@ rg -n "class .*BenchmarkModel|-> .*BenchmarkModel|def load_instance|default_stra
 - `rg -n "class .*BenchmarkModel|-> .*BenchmarkModel" cases` 无有效命中。
 - `rg -n "default_strategies|StrategyDeclaration|StrategyBudget" cases` 无目标实现命中。
 - `rg -n "def solve_case" cases` 无目标实现命中，或只剩明确标记的 legacy shim。
+- `rg -n "sequence_head|machine_order_head|activity_start_head" cases` 无新增目标实现命中。
 - `BenchmarkCase` 目标接口和文档一致。
 - 所有 implemented family 的 smoke case 通过。
 - dashboard data check 通过。

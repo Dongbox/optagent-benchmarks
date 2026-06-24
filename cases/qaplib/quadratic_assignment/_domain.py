@@ -69,7 +69,7 @@ class QapCase(BenchmarkCase):
         self._set_build_context({"instance": instance, "assignment_node_id": assignment.node_id})
         return builder
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
         context = self._build_context()
         instance = context["instance"]
         assignment_node_id = int(context["assignment_node_id"])
@@ -77,12 +77,12 @@ class QapCase(BenchmarkCase):
         objective = instance.assignment_cost(assignment)
         reference = instance.reference_objective
         return {
-            **super().solution_summary(solution, **kwargs),
             "objective": float(objective),
             "reference_objective": float(reference) if reference is not None else None,
-            "sequence_head": assignment[:20],
-            "dimension": instance.size,
-            "edge_weight_type": "qap_quadratic",
+            "decoded_solution": {
+                "kind": "sequence",
+                "sequence": assignment,
+            },
             "model_style": MODEL_STYLE,
         }
 

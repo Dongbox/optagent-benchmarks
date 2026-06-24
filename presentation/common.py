@@ -166,6 +166,15 @@ FAMILY_TIER_BUDGET_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
     },
 }
 
+DISPLAY_EDGE_TYPE_BY_FAMILY = {
+    "cumulative_resource_scheduling": "rcpsp_cumulative",
+    "exact_linear_mip": "mps_linear_mip",
+    "interval_job_shop": "job_shop_interval",
+    "sequence_blackbox_tsp": "tsp_route",
+    "sequence_quadratic_assignment": "qap_quadratic",
+    "sequence_transition_penalty": "transition_penalty",
+}
+
 
 def utc_timestamp() -> str:
     return datetime.utcnow().strftime("%Y%m%d-%H%M%S")
@@ -250,7 +259,62 @@ def normalize_result_row(row: dict[str, Any]) -> dict[str, Any]:
                 row.setdefault(key, metadata[key])
         if "budget_profile" in row:
             metadata.setdefault("budget_profile", row["budget_profile"])
+    _derive_presentation_fields(row)
     return row
+
+
+def _derive_presentation_fields(row: dict[str, Any]) -> None:
+    family = str(row.get("family") or "")
+    decoded = row.get("decoded_solution")
+    if isinstance(decoded, dict):
+        edge_weight_type = decoded.get("edge_weight_type")
+        if edge_weight_type is not None:
+            row.setdefault("edge_weight_type", str(edge_weight_type))
+        sequence = decoded.get("sequence")
+        if isinstance(sequence, list):
+            row.setdefault("sequence_head", sequence[:20])
+            row.setdefault("dimension", len(sequence))
+        machine_orders = decoded.get("machine_orders")
+        if isinstance(machine_orders, dict):
+            row.setdefault(
+                "machine_order_head",
+                {
+                    str(machine): order[:10]
+                    for machine, order in sorted(machine_orders.items(), key=lambda item: str(item[0]))
+                    if isinstance(order, list)
+                },
+            )
+            machine_order_dimension = _machine_order_dimension(machine_orders)
+            if machine_order_dimension is not None:
+                row.setdefault("dimension", machine_order_dimension)
+        activity_starts = decoded.get("activity_starts")
+        if isinstance(activity_starts, list):
+            row.setdefault("activity_start_head", activity_starts[:20])
+            row.setdefault("dimension", len(activity_starts))
+    case_size_dimension = _dimension_from_case_size(row.get("case_size"))
+    if case_size_dimension is not None:
+        row.setdefault("dimension", case_size_dimension)
+    if "edge_weight_type" not in row and family in DISPLAY_EDGE_TYPE_BY_FAMILY:
+        row["edge_weight_type"] = DISPLAY_EDGE_TYPE_BY_FAMILY[family]
+
+
+def _machine_order_dimension(machine_orders: dict[Any, Any]) -> int | None:
+    counts = [len(order) for order in machine_orders.values() if isinstance(order, list)]
+    return sum(counts) if counts else None
+
+
+def _dimension_from_case_size(case_size: Any) -> int | None:
+    if not isinstance(case_size, dict):
+        return None
+    for key in ("nodes", "facilities", "activities", "operations", "variables", "coils", "locations"):
+        value = case_size.get(key)
+        if value is None:
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def metadata_highlights(metadata: dict[str, Any]) -> list[str]:

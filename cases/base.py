@@ -159,17 +159,14 @@ class BenchmarkCase:
     def build_model(self, **kwargs: Any) -> "ModelBuilder":
         raise NotImplementedError(f"{type(self).__name__}.build_model is not implemented")
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
-        return self.default_solution_summary(solution)
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        return self.default_solution_metrics(solution)
 
-    def default_solution_summary(self, solution: Any) -> dict[str, Any]:
-        return {
-            "solver_name": getattr(solution, "solver_name", None),
-            "status": getattr(getattr(solution, "status", None), "value", str(getattr(solution, "status", ""))),
-            "feasible": bool(getattr(solution, "feasible", False)),
-            "objective": getattr(solution, "objective_value", None),
-            "metadata": dict(getattr(solution, "metadata", {}) or {}),
-        }
+    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        return self.solution_metrics(solution, **kwargs)
+
+    def default_solution_metrics(self, solution: Any) -> dict[str, Any]:
+        return {}
 
     def _set_build_context(self, context: Mapping[str, Any]) -> None:
         object.__setattr__(self, "_last_build_context", dict(context))
@@ -177,7 +174,7 @@ class BenchmarkCase:
     def _build_context(self) -> dict[str, Any]:
         context = getattr(self, "_last_build_context", None)
         if not isinstance(context, dict):
-            raise RuntimeError(f"{type(self).__name__}.build_model must be called before solution_summary")
+            raise RuntimeError(f"{type(self).__name__}.build_model must be called before solution_metrics")
         return context
 
     def reference_objective(self) -> float | None:

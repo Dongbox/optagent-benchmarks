@@ -113,17 +113,14 @@ class MipCase(BenchmarkCase):
         self._set_build_context({"instance": instance})
         return builder
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
         context = self._build_context()
         instance = context["instance"]
         objective = solution.objective_value if solution.feasible else None
         raw_objective = solution.objective_value
         return {
-            **super().solution_summary(solution, **kwargs),
             "objective": float(objective) if objective is not None else None,
             "raw_objective": float(raw_objective) if raw_objective is not None else None,
-            "dimension": instance.variable_count,
-            "edge_weight_type": "mps_linear_mip",
             "model_style": MODEL_STYLE,
             "metadata": {
                 **_exact_metadata(solution.metadata),

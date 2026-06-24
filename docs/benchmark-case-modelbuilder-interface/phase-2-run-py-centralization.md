@@ -9,7 +9,7 @@
 3. 构造 OptAgent 策略配置。
 4. 调用 `case.build_model(...)` 得到 `ModelBuilder`。
 5. 直接调用 `optagent.solve(model_builder, strategy=...)`。
-6. 调用 `case.solution_summary(solution)`。
+6. 调用 `case.solution_metrics(solution)`。
 7. 拼装 result row。
 
 阶段完成后，至少一个 smoke case 可以完全不经过系列级 `solve_case()` 完成求解。
@@ -53,8 +53,9 @@ def run_benchmark_case(
         try:
             solution = solve(model, strategy=strategy_config, seed=effective_budget.seed, time_limit_s=effective_budget.time_limit_s)
             elapsed_seconds = perf_counter() - started
-            summary = case.solution_summary(solution, **kwargs)
-            rows.append(build_result_row(case, strategy_name, strategy_config, summary, elapsed_seconds))
+            solver_summary = solver_solution_summary(solution)
+            case_metrics = case.solution_metrics(solution, **kwargs)
+            rows.append(build_result_row(case, strategy_name, strategy_config, solver_summary, case_metrics, elapsed_seconds))
         except Exception as exc:
             rows.append(build_error_row(case, strategy_name, exc, perf_counter() - started))
     return rows
@@ -102,16 +103,19 @@ def run_benchmark_case(
 - `time_to_best_seconds`
 - `metadata`
 
-case 的 `solution_summary()` 只补充领域字段，例如：
+case 的 `solution_metrics()` 只补充领域 correctness / audit facts，例如：
 
-- `sequence_head`
-- `assignment_head`
-- `makespan`
-- `activity_start_head`
-- `dimension`
-- `edge_weight_type`
+- `objective`
+- `raw_objective`
+- `reference_objective`
+- `decoded_solution`
+- 领域诊断 `metadata`
+- 动态 `model_style`
 
-如果 `solution_summary()` 返回基础字段同名 key，`run.py` 应明确合并优先级。建议 case summary 可以覆盖 `objective`，因为 TSP/QAP 可能需要用领域 evaluator 复算目标值。
+`run.py` 统一读取 `solver_name`、`status`、`feasible` 和 solution metadata。case metrics
+只允许覆盖明确列出的领域字段，尤其是 `objective`，因为 TSP/QAP 等 family 可能需要用
+领域 evaluator 复算目标值。`sequence_head`、`activity_start_head`、`dimension`、
+`edge_weight_type` 等展示字段由 `presentation/` 派生。
 
 ## Registry Transition
 

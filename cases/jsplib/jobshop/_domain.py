@@ -121,21 +121,20 @@ class JobShopCase(BenchmarkCase):
         )
         return builder
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
         context = self._build_context()
         raw_objective = _solution_objective(context, solution.variable_values, solution.objective_value)
         objective = raw_objective if solution.feasible else None
         instance = context["instance"]
         return {
-            **super().solution_summary(solution, **kwargs),
             "objective": float(objective) if objective is not None else None,
             "raw_objective": float(raw_objective) if raw_objective is not None else None,
-            "dimension": instance.operation_count,
-            "edge_weight_type": "job_shop_interval",
             "model_style": MODEL_STYLE,
-            "machine_order_head": _machine_order_head(context, solution.variable_values),
+            "decoded_solution": {
+                "kind": "job_shop_schedule",
+                "machine_orders": _decoded_machine_orders(context, solution.variable_values),
+            },
             "metadata": {
-                **dict(getattr(solution, "metadata", {}) or {}),
                 "jobs": instance.jobs,
                 "machines": instance.machines,
                 "horizon": context["horizon"],
@@ -379,9 +378,9 @@ def _solution_objective(
     return float(makespan) if makespan is not None else None
 
 
-def _machine_order_head(context: dict[str, Any], variable_values: dict[int, Any]) -> dict[str, list[list[int]]]:
+def _decoded_machine_orders(context: dict[str, Any], variable_values: dict[int, Any]) -> dict[str, list[list[int]]]:
     orders = machine_order_from_solution(context, variable_values)
     return {
-        str(machine): [[job, operation] for job, operation in order[:10]]
+        str(machine): [[job, operation] for job, operation in order]
         for machine, order in sorted(orders.items())
     }

@@ -104,18 +104,19 @@ class TspCase(BenchmarkCase):
         self._set_build_context({"instance": instance, "sequence_node_id": tour.node_id, "model_style": model_style})
         return builder
 
-    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
         context = self._build_context()
         instance = context["instance"]
         sequence_node_id = int(context["sequence_node_id"])
         sequence = [int(item) for item in solution.variable_values[sequence_node_id]]
         objective = instance.tour_length(sequence, include_return_edge=True)
         return {
-            **super().solution_summary(solution, **kwargs),
             "objective": float(objective),
-            "sequence_head": sequence[:20],
-            "dimension": instance.dimension,
-            "edge_weight_type": instance.edge_weight_type,
+            "decoded_solution": {
+                "kind": "sequence",
+                "sequence": sequence,
+                "edge_weight_type": instance.edge_weight_type,
+            },
             "model_style": context["model_style"],
         }
 
