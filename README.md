@@ -6,7 +6,7 @@
 cd /path/to/opt-agent/benchmarks
 ```
 
-直接调用 `benchmarks.*` 模块时，请设置 `PYTHONPATH=..`，让 Python 可以从父目录导入 `benchmarks` 包。
+安装 OptAgent 后，可以直接通过 `python -m benchmarks...` 调用 benchmark 模块。
 
 ## `run.py`
 
@@ -15,13 +15,13 @@ cd /path/to/opt-agent/benchmarks
 列出当前可用 case：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run --list-cases
+python -m benchmarks.run --list-cases
 ```
 
 运行一个不下载数据的 TSP smoke case：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run \
+python -m benchmarks.run \
   --case tsplib_berlin52 \
   --strategy ga \
   --no-download \
@@ -33,7 +33,7 @@ PYTHONPATH=.. python -m benchmarks.run \
 用较小 GA 预算运行 QAP smoke case：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run \
+python -m benchmarks.run \
   --case qaplib_nug12 \
   --strategy ga \
   --no-download \
@@ -45,7 +45,7 @@ PYTHONPATH=.. python -m benchmarks.run \
 运行自定义钢卷过渡排序 case：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run \
+python -m benchmarks.run \
   --case custom_steel_sequence_toy \
   --strategy ga \
   --max-iterations 2 \
@@ -56,7 +56,7 @@ PYTHONPATH=.. python -m benchmarks.run \
 对比 TSP 的不同建模风格：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run \
+python -m benchmarks.run \
   --case tsplib_berlin52 \
   --strategy ga \
   --model-style sequence_var_external_call \
@@ -70,7 +70,7 @@ PYTHONPATH=.. python -m benchmarks.run \
 运行一个 MIP exact baseline：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run \
+python -m benchmarks.run \
   --case miplib2017_50v-10 \
   --strategy optx \
   --no-download \
@@ -107,7 +107,7 @@ rows = run_case(
 如果需要 run directory、JSONL/CSV、telemetry、report 或 dashboard 发布输入，请使用 `presentation.suite`：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.presentation.suite \
+python -m benchmarks.presentation.suite \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --strategy ga \
@@ -117,7 +117,7 @@ PYTHONPATH=.. python -m benchmarks.presentation.suite \
 修改 `presentation/results/` 或 `presentation/aggregates/` 后，用下面的命令校验 dashboard 数据是否仍然同步：
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data --check
+python -m benchmarks.presentation.generate_dashboard_data --check
 ```
 
 ## 注意事项
