@@ -95,7 +95,7 @@ jobs:
           cache-dependency-path: optagent/pyproject.toml
 
       - name: Cache OptAgent native wheel build tree
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: optagent/build/wheel-cache/benchmark-linux-py312
           key: optagent-benchmark-native-wheel-v1-linux-py312-${{ hashFiles('optagent/CMakeLists.txt', 'optagent/pyproject.toml', 'optagent/requirements-dev.txt', 'optagent/proto/**/*.proto', 'optagent/cpp/**/*.cc', 'optagent/cpp/**/*.cpp', 'optagent/cpp/**/*.h', 'optagent/cpp/**/*.hpp', 'benchmarks/.github/workflows/run-benchmarks.yml') }}
