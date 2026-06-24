@@ -10,6 +10,7 @@ from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row
 # 这里登记的是“系列集合包”，每个包只汇总同一来源/业务域/问题类型下的
 # 系列模块，例如 jsplib/scheduling/jobshop/abz.py。
 INSTANCE_COLLECTION_MODULES = (
+    "benchmarks.cases.custom.steel_transition_sequence",
     "benchmarks.cases.jsplib.jobshop",
     "benchmarks.cases.psplib.rcpsp",
     "benchmarks.cases.tsplib.tsp",
@@ -21,6 +22,7 @@ IMPLEMENTED_FAMILY_NAMES = {
     "cumulative_resource_scheduling",
     "exact_linear_mip",
     "interval_job_shop",
+    "sequence_transition_penalty",
     "sequence_blackbox_tsp",
     "sequence_quadratic_assignment",
 }

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from benchmarks.cases.common import MODEL_STYLE_BY_FAMILY, strategy_profile_name
+from benchmarks.cases.common import MODEL_STYLE_BY_FAMILY
 from benchmarks.cases.registry import INSTANCE_COLLECTION_MODULES, implemented_families, run_case
 from benchmarks.presentation.common import (
     DEFAULT_RUN_ROOT,
@@ -22,6 +22,7 @@ from benchmarks.presentation.common import (
     metadata_highlights,
     normalize_result_row,
     resolve_family_tier_budget,
+    strategy_profile_name,
     utc_timestamp,
     write_json,
 )

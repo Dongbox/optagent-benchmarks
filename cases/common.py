@@ -4,7 +4,7 @@ from typing import Any
 
 
 # 这里放 case 求解入口共享的“问题语义”工具：
-# - model_style / strategy_profile 是 family row 的语义命名；
+# - model_style 是 family row 的语义命名；
 # - objective_gap 是 case 结果与公开 reference 的比较方式；
 # - summarize_solution_metadata 是 case row 从公开 solution metadata 提取诊断字段。
 # runner 侧只负责运行计划、预算、输出和汇总，不再作为 case solve 的工具库。
@@ -15,6 +15,7 @@ MODEL_STYLE_BY_FAMILY = {
     "interval_job_shop": "interval_var_sequence_no_overlap_precedence",
     "sequence_blackbox_tsp": "sequence_var_external_call",
     "sequence_quadratic_assignment": "sequence_var_external_call",
+    "sequence_transition_penalty": "sequence_var_external_transition_penalty",
 }
 
 
@@ -38,36 +39,6 @@ def model_style_from_program(program: Any, *, family: str | None = None) -> str 
     if family is not None:
         return MODEL_STYLE_BY_FAMILY.get(family)
     return None
-
-
-def strategy_profile_name(
-    *,
-    family: str,
-    strategy: str,
-    model_style: str | None = None,
-    kind: str | None = None,
-) -> str:
-    if kind == "exact_baseline":
-        if strategy in {"optx", "mathopt_mp"}:
-            return f"{strategy}_mip_exact_v1"
-        return f"{strategy}_exact_baseline_v1"
-    if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
-        if strategy == "ga":
-            return "ga_scheduling_feasibility_v1"
-        if strategy == "alns":
-            return "alns_scheduling_repair_v1"
-        if strategy == "lns":
-            return "lns_scheduling_repair_v1"
-        return f"{strategy}_scheduling_smoke_v1"
-    if family == "sequence_blackbox_tsp":
-        if model_style == "sequence_var_sequence_transition_sum":
-            return f"{strategy}_tsp_graph_v1"
-        return f"{strategy}_tsp_blackbox_v1"
-    if family == "sequence_quadratic_assignment":
-        return f"{strategy}_qap_delta_v1"
-    if family == "exact_linear_mip":
-        return f"{strategy}_mip_exact_v1"
-    return f"{strategy}_{family}_v1"
 
 
 def summarize_solution_metadata(metadata: dict[str, Any]) -> dict[str, Any]:

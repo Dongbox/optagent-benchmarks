@@ -10,7 +10,6 @@ from benchmarks.cases.common import (
     MODEL_STYLE_BY_FAMILY,
     model_style_from_program,
     objective_gap,
-    strategy_profile_name,
     summarize_solution_metadata,
 )
 
@@ -174,6 +173,38 @@ DISPLAY_EDGE_TYPE_BY_FAMILY = {
     "sequence_quadratic_assignment": "qap_quadratic",
     "sequence_transition_penalty": "transition_penalty",
 }
+
+
+def strategy_profile_name(
+    *,
+    family: str,
+    strategy: str,
+    model_style: str | None = None,
+    kind: str | None = None,
+) -> str:
+    if kind == "exact_baseline":
+        if strategy in {"optx", "mathopt_mp"}:
+            return f"{strategy}_mip_exact_v1"
+        return f"{strategy}_exact_baseline_v1"
+    if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
+        if strategy == "ga":
+            return "ga_scheduling_feasibility_v1"
+        if strategy == "alns":
+            return "alns_scheduling_repair_v1"
+        if strategy == "lns":
+            return "lns_scheduling_repair_v1"
+        return f"{strategy}_scheduling_smoke_v1"
+    if family == "sequence_blackbox_tsp":
+        if model_style == "sequence_var_sequence_transition_sum":
+            return f"{strategy}_tsp_graph_v1"
+        return f"{strategy}_tsp_blackbox_v1"
+    if family == "sequence_quadratic_assignment":
+        return f"{strategy}_qap_delta_v1"
+    if family == "sequence_transition_penalty":
+        return f"{strategy}_sequence_transition_penalty_v1"
+    if family == "exact_linear_mip":
+        return f"{strategy}_mip_exact_v1"
+    return f"{strategy}_{family}_v1"
 
 
 def utc_timestamp() -> str:

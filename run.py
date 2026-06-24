@@ -8,8 +8,9 @@ from typing import Any, Iterable
 
 from benchmarks.bootstrap import prefer_local_development_paths
 from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row, ensure_benchmark_case
-from benchmarks.cases.common import objective_gap, strategy_profile_name, summarize_solution_metadata
+from benchmarks.cases.common import objective_gap, summarize_solution_metadata
 from benchmarks.cases.registry import benchmark_cases
+from benchmarks.presentation.common import strategy_profile_name
 
 
 @dataclass(frozen=True)
@@ -123,7 +124,7 @@ def run_benchmark_case(
 def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
     if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
         return ("ga", "alns")
-    if family in {"sequence_blackbox_tsp", "sequence_quadratic_assignment"}:
+    if family in {"sequence_blackbox_tsp", "sequence_quadratic_assignment", "sequence_transition_penalty"}:
         return ("ga", "alns", "tabu")
     if family == "exact_linear_mip":
         return ("optx",)
