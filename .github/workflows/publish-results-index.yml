@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout optagent-benchmarks
         uses: actions/checkout@v4
+        with:
+          path: benchmarks
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,9 +30,11 @@ jobs:
           python-version: "3.12"
 
       - name: Regenerate index and aggregates
-        run: python -m benchmarks.presentation.generate_dashboard_data
+        working-directory: benchmarks
+        run: PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data
 
       - name: Commit generated dashboard data
+        working-directory: benchmarks
         run: |
           if git diff --quiet -- presentation/results/index.json presentation/aggregates; then
             echo "Generated dashboard data is already current."
