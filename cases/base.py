@@ -10,24 +10,68 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class BenchmarkCase:
-    """Structured case declaration shared by cases, local entrypoints, and runners."""
+    """不可变的基准测试用例：一个已知最优值的具体问题实例。
+
+    该类是 case 声明、runner、dashboard 和本地入口点之间共享的核心契约。
+    每个领域子类通过实现 :meth:`build_model` 来为该用例构建具体的 OptAgent 模型。
+
+    本设计有意将传统 benchmark 拆分为 ``domain``（模型描述/问题类型元数据）和
+    ``problem``（实例数据）的两层结构合为一体。领域级元数据作为字段存在于每个
+    case 上（``source``、``problem_type``、``instance_type``、``family`` 等），
+    由各子包的 ``_domain.py`` 中的工厂函数统一设置。实例特定数据在系列文件
+    （如 ``j90_1.py``）中声明。
+
+    当字段未显式填充时，``source`` / ``problem_type`` / ``instance_type`` 会
+    通过 :func:`_infer_case_path_parts` 从模块路径推导。
+    """
 
     benchmark_id: str
+    """唯一标识符，如 ``"psplib_j90_1_1"``。"""
+
     family: str
+    """问题族标签，如 ``"cumulative_resource_scheduling"``。"""
+
     size: Mapping[str, Any]
+    """规模信息，如 ``{"activities": 90, "renewable_resources": 4}``。"""
+
     data: Mapping[str, Any]
+    """实例文件路径/URL，可选的镜像 URL。"""
+
     reference: Mapping[str, Any]
+    """已知最优解：``{"objective": 73, "status": "optimal"}``。"""
+
     problem_description: str
+    """可读的实例一句话描述。"""
+
     source: str = ""
+    """来源库或出处，如 ``"PSPLIB j90 via ScheduleOpt"``。"""
+
     problem_type: str = ""
+    """广义问题类别，如 ``"scheduling"``。"""
+
     instance_type: str = ""
+    """具体变体，如 ``"rcpsp"``。"""
+
     instance: str = ""
+    """来源内的实例名称，如 ``"j90_1_1"``。"""
+
     tier: str = "smoke"
+    """评估层级：``"smoke"`` | ``"calibration"`` | ``"full"``。"""
+
     compare_key: str = ""
+    """层级分组键，如 ``"psplib/scheduling/rcpsp/j90_1_1"``。"""
+
     series_key: str = ""
+    """时序聚合键，通常为 ``compare_key/model_style``。"""
+
     case_module: str = ""
+    """声明该 case 的系列文件的 Python 点分隔模块路径。"""
+
     modeling_notes: Mapping[str, Any] = field(default_factory=dict)
+    """模型风格、目标方向、使用的 API 原语。"""
+
     extra: Mapping[str, Any] = field(default_factory=dict, repr=False, compare=False)
+    """额外结构化元数据（预算、策略建议等）。"""
 
     @classmethod
     def from_mapping(cls, row: Mapping[str, Any]) -> "BenchmarkCase":

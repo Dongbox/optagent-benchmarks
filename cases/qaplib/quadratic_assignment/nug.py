@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-from benchmarks.cases.qaplib.quadratic_assignment._common import (
+from benchmarks.cases.qaplib.quadratic_assignment._domain import (
     make_qap_case,
     RAW_DIR,
-    SOURCE,
-    SOURCE_KEY,
-    PROBLEM_TYPE,
-    INSTANCE_TYPE,
-    FAMILY,
-    MODEL_STYLE,
 )
 
 CASE_MODULE = __name__

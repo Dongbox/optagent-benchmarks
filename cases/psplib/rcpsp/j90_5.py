@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-from benchmarks.cases.psplib.rcpsp._common import (
+from benchmarks.cases.psplib.rcpsp._domain import (
     make_rcpsp_case,
     RAW_DIR,
-    SOURCE,
-    SOURCE_KEY,
-    PROBLEM_TYPE,
-    INSTANCE_TYPE,
-    FAMILY,
-    MODEL_STYLE,
 )
 
 CASE_MODULE = __name__

@@ -1,18 +1,8 @@
 from __future__ import annotations
 
-from benchmarks.cases.tsplib.tsp._common import (
+from benchmarks.cases.tsplib.tsp._domain import (
     make_tsp_case,
     RAW_DIR,
-    SOURCE,
-    SOURCE_KEY,
-    PROBLEM_TYPE,
-    INSTANCE_TYPE,
-    FAMILY,
-    MODEL_STYLE,
-    BLACKBOX_TSP_MODEL_STYLE,
-    GRAPH_TSP_MODEL_STYLE,
-    DEFAULT_TSP_MODEL_STYLES,
-    SUPPORTED_TSP_MODEL_STYLES,
 )
 
 CASE_MODULE = __name__

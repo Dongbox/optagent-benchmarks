@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-from benchmarks.cases.jsplib.jobshop._common import (
+from benchmarks.cases.jsplib.jobshop._domain import (
     make_job_shop_case,
     RAW_DIR,
-    SOURCE,
-    SOURCE_KEY,
-    PROBLEM_TYPE,
-    INSTANCE_TYPE,
-    FAMILY,
-    MODEL_STYLE,
 )
 
 CASE_MODULE = __name__

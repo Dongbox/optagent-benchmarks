@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-from benchmarks.cases.miplib2017.linear_mip._common import (
+from benchmarks.cases.miplib2017.linear_mip._domain import (
     make_mip_case,
     RAW_DIR,
-    SOURCE,
-    SOURCE_KEY,
-    PROBLEM_TYPE,
-    INSTANCE_TYPE,
-    FAMILY,
-    MODEL_STYLE,
 )
 
 CASE_MODULE = __name__
