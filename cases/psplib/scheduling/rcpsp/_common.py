@@ -122,6 +122,97 @@ class RcpspCase(BenchmarkCase):
         }
 
 
+def make_rcpsp_case(
+    *,
+    benchmark_id: str,
+    instance: str,
+    tier: str,
+    activities: int,
+    renewable_resources: int,
+    raw_path: str | Path,
+    objective: int,
+    case_module: str,
+    instance_url: str | None = None,
+) -> RcpspCase:
+    compare_key = f"{SOURCE_KEY}/{PROBLEM_TYPE}/{INSTANCE_TYPE}/{instance}"
+    data: dict[str, Any] = {
+        "raw_path": str(raw_path),
+        "bounds_url": "https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/rcpsp/instances/j90lb.sm",
+    }
+    if instance_url is not None:
+        data["instance_url"] = instance_url
+    return RcpspCase(
+        benchmark_id=benchmark_id,
+        source=SOURCE,
+        problem_type=PROBLEM_TYPE,
+        instance_type=INSTANCE_TYPE,
+        instance=instance,
+        family=FAMILY,
+        tier=tier,
+        compare_key=compare_key,
+        series_key=f"{compare_key}/{MODEL_STYLE}",
+        size={"activities": activities, "renewable_resources": renewable_resources},
+        data=data,
+        reference={
+            "lower_bound": objective,
+            "notes": "Rows marked with * in j90lb.sm have verified LB=UB optimal makespan.",
+            "objective": objective,
+            "source_url": "https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/rcpsp/instances/j90lb.sm",
+            "status": "closed",
+            "upper_bound": objective,
+            "value_kind": "optimal",
+        },
+        problem_description=(
+            f"PSPLIB RCPSP instance {instance}: schedule {activities} project activities with "
+            f"precedence constraints and {renewable_resources} renewable resources. The objective "
+            "is minimum project makespan; this selected case has a verified optimum."
+        ),
+        case_module=case_module,
+        modeling_notes={
+            "model_style": MODEL_STYLE,
+            "objective_sense": "minimize",
+            "public_api_primitives": ["interval_var", "precedence", "cumulative", "max"],
+        },
+        extra={
+            "modeling_form": "interval project scheduling with renewable resource cumulative constraints",
+            "objective_sense": "minimize",
+            "optagent_modeling": {
+                "constraints": [
+                    "builder.precedence(activity[i], activity[j]) for every project precedence arc",
+                    (
+                        "builder.cumulative(intervals, demands_for_resource[r], capacity[r]) for "
+                        "each renewable resource"
+                    ),
+                ],
+                "data_mapping": (
+                    "Read PSPLIB .rcp activity durations, renewable-resource demands, capacities, "
+                    "and successor lists."
+                ),
+                "decision_variables": [
+                    "one interval_var activity[i] per non-dummy activity with fixed duration and bounded start"
+                ],
+                "objective": (
+                    "builder.minimize(builder.max(*(builder.interval_end(activity[i]) for terminal "
+                    "activities)), name='makespan')"
+                ),
+                "solver_routes": ["solve with AlnsConfig", "solve with GaConfig"],
+            },
+            "optagent_primitives": ["interval_var", "precedence", "cumulative", "max"],
+            "recommended_evaluation": {
+                "budgets_seconds": {"smoke": 30, "calibration": 180, "full": 900},
+                "primary_route": "solve(..., strategy=AlnsConfig/GaConfig) for search",
+                "strategy_candidates": ["alns", "ga"],
+                "target_metrics": [
+                    "gap_to_upper_bound",
+                    "gap_to_lower_bound",
+                    "time_to_first_feasible",
+                    "feasible_rate",
+                ],
+            },
+        },
+    )
+
+
 def parse_psplib_rcp_text(text: str, *, name: str) -> RcpspInstance:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     if len(lines) < 2:
@@ -195,7 +286,7 @@ def load_rcpsp_case(
     if local_path:
         return parse_psplib_rcp_text(Path(local_path).read_text(encoding="utf-8"), name=instance_name)
 
-    path = Path(cache_dir) / f"{instance_name}.rcp"
+    path = Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.rcp"
     if path.exists():
         return parse_psplib_rcp_text(path.read_text(encoding="utf-8"), name=instance_name)
 

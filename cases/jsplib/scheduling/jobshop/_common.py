@@ -143,6 +143,103 @@ class JobShopCase(BenchmarkCase):
         }
 
 
+def make_job_shop_case(
+    *,
+    benchmark_id: str,
+    instance: str,
+    tier: str,
+    jobs: int,
+    machines: int,
+    raw_path: str | Path,
+    objective: int,
+    case_module: str,
+    reported_time_seconds: int | None = None,
+    instance_url: str | None = None,
+    reference: dict[str, Any] | None = None,
+) -> JobShopCase:
+    compare_key = f"{SOURCE_KEY}/{PROBLEM_TYPE}/{INSTANCE_TYPE}/{instance}"
+    effective_reference = {
+        "lower_bound": objective,
+        "objective": objective,
+        "reported_machine": "i7-1185G7 @ 3.00GHz",
+        "reported_solver": "OptalCP",
+        "source_url": "https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/solutions/bks.json",
+        "status": "closed",
+        "upper_bound": objective,
+        "value_kind": "optimal",
+    }
+    if reported_time_seconds is not None:
+        effective_reference["reported_time_seconds"] = reported_time_seconds
+    if reference:
+        effective_reference.update(reference)
+    data: dict[str, Any] = {
+        "raw_path": str(raw_path),
+        "documentation_url": "https://scheduleopt.github.io/benchmarks/jsplib/",
+        "solution_url": "https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/solutions/bks.json",
+    }
+    if instance_url is not None:
+        data["instance_url"] = instance_url
+
+    return JobShopCase(
+        benchmark_id=benchmark_id,
+        source=SOURCE,
+        problem_type=PROBLEM_TYPE,
+        instance_type=INSTANCE_TYPE,
+        instance=instance,
+        family=FAMILY,
+        tier=tier,
+        compare_key=compare_key,
+        series_key=f"{compare_key}/{MODEL_STYLE}",
+        size={"jobs": jobs, "machines": machines, "operations": jobs * machines},
+        data=data,
+        reference=effective_reference,
+        problem_description=(
+            f"JSPLIB job-shop instance {instance}: schedule {jobs} jobs across {machines} machines. "
+            "Each job has a fixed machine route and fixed operation durations; each machine can "
+            "process at most one operation at a time. The benchmark objective is minimum makespan."
+        ),
+        case_module=case_module,
+        modeling_notes={
+            "model_style": MODEL_STYLE,
+            "objective_sense": "minimize",
+            "public_api_primitives": ["interval_var", "sequence_var", "no_overlap", "precedence", "max"],
+        },
+        extra={
+            "modeling_form": "interval scheduling with machine sequences and job precedences",
+            "objective_sense": "minimize",
+            "optagent_modeling": {
+                "constraints": [
+                    "builder.no_overlap(machine_order[m], *operations_on_machine[m]) for every machine",
+                    "builder.precedence(operation[j,k], operation[j,k+1]) for every consecutive operation in each job",
+                ],
+                "data_mapping": (
+                    "Read ScheduleOpt JSPLIB JSON rows as operations with job, operation index, "
+                    "machine, and duration."
+                ),
+                "decision_variables": [
+                    f"{jobs * machines} interval_var operation[j,k] with fixed duration and bounded start",
+                    (
+                        f"{machines} sequence_var machine_order[m], each ordering operations assigned "
+                        "to one machine"
+                    ),
+                ],
+                "objective": (
+                    "builder.minimize(builder.max(*(builder.interval_end(last_operation[j]) for "
+                    "each job)), name='makespan')"
+                ),
+                "solver_routes": ["solve with AlnsConfig", "solve with GaConfig"],
+            },
+            "optagent_primitives": ["interval_var", "sequence_var", "no_overlap", "precedence", "max"],
+            "recommended_evaluation": {
+                "budgets_seconds": {"smoke": 10, "calibration": 60, "full": 600},
+                "primary_route": "solve(..., strategy=AlnsConfig/GaConfig) for search",
+                "strategy_candidates": ["alns", "ga"],
+                "target_metrics": ["gap_to_reference", "time_to_first_feasible", "time_to_best", "feasible_rate"],
+            },
+        },
+    )
+
+
 def parse_scheduleopt_jsplib_json(text: str) -> JobShopInstance:
     payload = json.loads(text)
     if not isinstance(payload, dict):
@@ -217,7 +314,7 @@ def load_job_shop_case(
         return parse_scheduleopt_jsplib_json(Path(local_path).read_text(encoding="utf-8"))
 
     instance_name = str(case.get("instance") or case["benchmark_id"].removeprefix("jsplib_"))
-    path = Path(cache_dir) / f"{instance_name}.json"
+    path = Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.json"
     if path.exists():
         return parse_scheduleopt_jsplib_json(path.read_text(encoding="utf-8"))
 

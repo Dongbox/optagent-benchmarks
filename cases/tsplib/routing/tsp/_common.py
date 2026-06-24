@@ -120,6 +120,89 @@ class TspCase(BenchmarkCase):
         }
 
 
+def make_tsp_case(
+    *,
+    benchmark_id: str,
+    instance: str,
+    tier: str,
+    nodes: int,
+    raw_path: str | Path,
+    instance_url: str,
+    objective: int,
+    case_module: str,
+    mirror_urls: tuple[str, ...] = (),
+) -> TspCase:
+    compare_key = f"{SOURCE_KEY}/{PROBLEM_TYPE}/{INSTANCE_TYPE}/{instance}"
+    return TspCase(
+        benchmark_id=benchmark_id,
+        source=SOURCE,
+        problem_type=PROBLEM_TYPE,
+        instance_type=INSTANCE_TYPE,
+        instance=instance,
+        family=FAMILY,
+        tier=tier,
+        compare_key=compare_key,
+        series_key=f"{compare_key}/{MODEL_STYLE}",
+        size={"nodes": nodes},
+        data={
+            "raw_path": str(raw_path),
+            "instance_url": instance_url,
+            "mirror_urls": list(mirror_urls),
+            "solution_url": "https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/STSP.html",
+        },
+        reference={
+            "notes": "TSPLIB STSP page states all symmetric TSP instances are solved to optimality.",
+            "objective": objective,
+            "source_url": "https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/STSP.html",
+            "status": "optimal",
+            "value_kind": "optimal",
+        },
+        problem_description=(
+            f"TSPLIB symmetric TSP instance {instance}: find the shortest Hamiltonian cycle over "
+            f"{nodes} cities using the instance distance metric. The benchmark is a blackbox "
+            "sequence optimization case with a published optimal tour length."
+        ),
+        case_module=case_module,
+        modeling_notes={
+            "model_style": MODEL_STYLE,
+            "objective_sense": "minimize",
+            "public_api_primitives": ["sequence_var", "external_call"],
+        },
+        extra={
+            "modeling_form": "sequence_var route with external_call distance evaluator",
+            "objective_sense": "minimize",
+            "optagent_modeling": {
+                "constraints": [
+                    "sequence_var represents a permutation, so no separate all-different constraint is required"
+                ],
+                "data_mapping": (
+                    "Read TSPLIB coordinates or explicit distances and implement the documented "
+                    "TSPLIB distance metric in a callback."
+                ),
+                "decision_variables": [
+                    f"one sequence_var tour of size {nodes}; the sequence is the city visit order"
+                ],
+                "external_callback": (
+                    "route_cost(ctx) reads ctx.value(tour), sums consecutive arc costs, and adds "
+                    "the return-to-start arc."
+                ),
+                "objective": "builder.minimize(builder.external_call(route_cost, name='tour_length'), name='tour_length')",
+                "solver_routes": ["solve with GaConfig", "solve with TabuConfig", "solve with AlnsConfig"],
+            },
+            "optagent_primitives": ["sequence_var", "external_call"],
+            "recommended_evaluation": {
+                "budgets_seconds": {"smoke": 10, "calibration": 60, "full": 300},
+                "primary_route": (
+                    "solve(..., strategy=GaConfig/TabuConfig/AlnsConfig); exact route only for "
+                    "small diagnostic comparisons"
+                ),
+                "strategy_candidates": ["ga", "tabu", "alns"],
+                "target_metrics": ["gap_to_optimum", "time_to_best", "external_call_count", "cache_hit_rate"],
+            },
+        },
+    )
+
+
 def parse_tsplib_text(text: str) -> TspInstance:
     headers: dict[str, str] = {}
     coordinates_by_id: dict[int, tuple[float, float]] = {}
@@ -202,7 +285,7 @@ def load_tsp_case(
         return parse_tsplib_text(Path(local_path).read_text(encoding="utf-8"))
 
     instance_name = str(case.get("instance") or case["benchmark_id"].removeprefix("tsplib_"))
-    path = Path(cache_dir) / f"{instance_name}.tsp"
+    path = Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.tsp"
     if path.exists():
         return parse_tsplib_text(path.read_text(encoding="utf-8"))
 

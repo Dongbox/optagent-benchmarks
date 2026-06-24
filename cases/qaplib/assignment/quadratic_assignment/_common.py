@@ -87,6 +87,91 @@ class QapCase(BenchmarkCase):
         }
 
 
+def make_qap_case(
+    *,
+    benchmark_id: str,
+    instance: str,
+    tier: str,
+    size: int,
+    raw_path: str | Path,
+    solution_raw_path: str | Path,
+    objective: int,
+    source_label: str,
+    case_module: str,
+    instance_url: str | None = None,
+    solution_url: str | None = None,
+) -> QapCase:
+    compare_key = f"{SOURCE_KEY}/{PROBLEM_TYPE}/{INSTANCE_TYPE}/{instance}"
+    data: dict[str, Any] = {
+        "raw_path": str(raw_path),
+        "solution_raw_path": str(solution_raw_path),
+        "instance_page_url": f"{QAPLIB_ROOT}/",
+        "solution_page_url": f"{QAPLIB_ROOT}/",
+    }
+    if instance_url is not None:
+        data["instance_url"] = instance_url
+    if solution_url is not None:
+        data["solution_url"] = solution_url
+    return QapCase(
+        benchmark_id=benchmark_id,
+        source=SOURCE,
+        problem_type=PROBLEM_TYPE,
+        instance_type=INSTANCE_TYPE,
+        instance=instance,
+        family=FAMILY,
+        tier=tier,
+        compare_key=compare_key,
+        series_key=f"{compare_key}/{MODEL_STYLE}",
+        size={"facilities": size, "locations": size},
+        data=data,
+        reference={
+            "objective": objective,
+            "source_label": source_label,
+            "source_url": f"{QAPLIB_ROOT}/",
+            "status": "optimal",
+            "value_kind": "optimal",
+        },
+        problem_description=(
+            f"QAPLIB quadratic assignment instance {instance}: assign {size} facilities to {size} "
+            "locations. The cost is the sum of flow between facility pairs multiplied by distance "
+            "between assigned locations. This is a permutation blackbox benchmark with a published optimum."
+        ),
+        case_module=case_module,
+        modeling_notes={
+            "model_style": MODEL_STYLE,
+            "objective_sense": "minimize",
+            "public_api_primitives": ["sequence_var", "external_call"],
+        },
+        extra={
+            "modeling_form": "sequence_var assignment permutation with external_call quadratic cost evaluator",
+            "objective_sense": "minimize",
+            "optagent_modeling": {
+                "constraints": ["sequence_var enforces a one-to-one facility-location assignment"],
+                "data_mapping": "Read QAPLIB flow and distance matrices.",
+                "decision_variables": [
+                    f"one sequence_var assignment of size {size}; assignment[i] is the location chosen for facility i"
+                ],
+                "external_callback": (
+                    "qap_cost(ctx) computes sum(flow[i][j] * distance[assignment[i]][assignment[j]]) "
+                    "over all facility pairs."
+                ),
+                "objective": "builder.minimize(builder.external_call(qap_cost, name='assignment_cost'), name='assignment_cost')",
+                "solver_routes": ["solve with GaConfig", "solve with TabuConfig", "solve with AlnsConfig"],
+            },
+            "optagent_primitives": ["sequence_var", "external_call"],
+            "recommended_evaluation": {
+                "budgets_seconds": {"smoke": 10, "calibration": 120, "full": 600},
+                "primary_route": (
+                    "solve(..., strategy=GaConfig/TabuConfig/AlnsConfig); not a natural pure MILP "
+                    "benchmark for OptAgent strategies"
+                ),
+                "strategy_candidates": ["ga", "tabu", "alns"],
+                "target_metrics": ["gap_to_optimum", "time_to_best", "external_call_count", "cache_hit_rate"],
+            },
+        },
+    )
+
+
 def parse_qaplib_dat(text: str, *, name: str) -> QapInstance:
     values = [int(item) for item in text.split()]
     if not values:
@@ -129,8 +214,9 @@ def load_qap_case(
     if local_path:
         instance = parse_qaplib_dat(Path(local_path).read_text(encoding="utf-8"), name=instance_name)
     else:
+        data_path = Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.dat"
         data_text = _read_or_download(
-            path=Path(cache_dir) / f"{instance_name}.dat",
+            path=data_path,
             urls=_case_data_urls(case, instance_name),
             allow_download=allow_download,
             benchmark_id=case["benchmark_id"],
@@ -143,8 +229,13 @@ def load_qap_case(
         solution_text = Path(local_solution_path).read_text(encoding="utf-8")
     else:
         try:
+            solution_path = (
+                Path(str(data.get("solution_raw_path") or ""))
+                if data.get("solution_raw_path")
+                else Path(cache_dir) / f"{instance_name}.sln"
+            )
             solution_text = _read_or_download(
-                path=Path(cache_dir) / f"{instance_name}.sln",
+                path=solution_path,
                 urls=_case_solution_urls(case, instance_name),
                 allow_download=allow_download,
                 benchmark_id=case["benchmark_id"],
