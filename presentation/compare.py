@@ -5,9 +5,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from benchmarks.runners.bootstrap import prefer_local_development_paths
-from benchmarks.runners.common import REPO_ROOT, append_jsonl, metadata_highlights, normalize_result_row, utc_timestamp
-from benchmarks.runners.telemetry import BENCHMARK_SCHEMA_VERSION
+from benchmarks.bootstrap import prefer_local_development_paths
+from benchmarks.presentation.common import REPO_ROOT, append_jsonl, metadata_highlights, normalize_result_row, utc_timestamp
+from benchmarks.presentation.telemetry import BENCHMARK_SCHEMA_VERSION
 
 
 RowKey = tuple[str, str, str, str, str, str]

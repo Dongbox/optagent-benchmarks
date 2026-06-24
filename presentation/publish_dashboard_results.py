@@ -10,8 +10,8 @@ import re
 import sys
 from typing import Any
 
-from benchmarks.runners.common import write_json
-from benchmarks.runners.generate_dashboard_data import (
+from benchmarks.presentation.common import write_json
+from benchmarks.presentation.generate_dashboard_data import (
     DEFAULT_AGGREGATES_ROOT,
     DEFAULT_RESULTS_ROOT,
     generate_dashboard_data,

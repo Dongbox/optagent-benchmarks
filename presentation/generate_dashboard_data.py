@@ -9,12 +9,12 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from benchmarks.runners.common import write_json
+from benchmarks.presentation.common import write_json
 
 
-BENCHMARK_REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_RESULTS_ROOT = BENCHMARK_REPO_ROOT / "results"
-DEFAULT_AGGREGATES_ROOT = BENCHMARK_REPO_ROOT / "aggregates"
+PRESENTATION_ROOT = Path(__file__).resolve().parents[0]
+DEFAULT_RESULTS_ROOT = PRESENTATION_ROOT / "results"
+DEFAULT_AGGREGATES_ROOT = PRESENTATION_ROOT / "aggregates"
 GENERATED_SCHEMA_VERSION = 1
 
 

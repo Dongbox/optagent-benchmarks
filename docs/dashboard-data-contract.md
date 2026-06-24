@@ -6,10 +6,10 @@ The dashboard must not scan the Git tree. It reads generated files first, then l
 
 Dashboard data is a promoted evidence layer, not a raw runner workspace. The dashboard reads:
 
-- immutable run summaries under `results/`;
+- immutable run summaries under `presentation/results/`;
 - optional per-run `metrics.json`, `solution.json`, and `trace.json` artifacts;
-- generated `results/index.json`;
-- generated `aggregates/*.json`.
+- generated `presentation/results/index.json`;
+- generated `presentation/aggregates/*.json`.
 
 It must not read CI-private runner files such as `rows.jsonl`, `results.csv`, `summary.json`, or `report.md` directly. Those files can be archived as CI artifacts or under `docs/evals/`, then converted into dashboard run summaries by a publication step.
 
@@ -31,7 +31,7 @@ The script publishes the suite run into:
 docs/evals/benchmark-suite/dashboard-local/
 ```
 
-and copies the generated `results/` and `aggregates/` trees into:
+and copies the generated `presentation/results/` and `presentation/aggregates/` trees into:
 
 ```text
 ../optagent-dashboard/public/data/
@@ -44,16 +44,16 @@ This local data is valid for frontend/schema integration and may contain error r
 Run from a checkout that contains the `benchmarks/` Python package:
 
 ```bash
-python -m benchmarks.runners.generate_dashboard_data
+python -m benchmarks.presentation.generate_dashboard_data
 ```
 
 Validation-only mode:
 
 ```bash
-python -m benchmarks.runners.generate_dashboard_data --check
+python -m benchmarks.presentation.generate_dashboard_data --check
 ```
 
-The generator reads immutable run summaries under `results/` and rewrites:
+The generator reads immutable run summaries under `presentation/results/` and rewrites:
 
 ```text
 results/index.json
@@ -78,7 +78,7 @@ Examples:
 
 If `optagent-dashboard` copies benchmark data to `public/data`, its loader may prefix these paths with `/data`.
 
-## `results/index.json`
+## `presentation/results/index.json`
 
 Entrypoint for run discovery.
 

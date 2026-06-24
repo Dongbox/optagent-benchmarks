@@ -1,6 +1,6 @@
 # Case Architecture Refactor Phased Development Plan
 
-本文档定义 benchmark case 架构重构的分阶段开发计划。目标是让新增实例的开发者只需要关注问题描述、建模函数、默认策略声明和实例内 `solve_case()`，同时把通用本地测试入口放在 `benchmarks/run.py`，把 `runners/` 收窄为具体目标评测场景目录。
+本文档定义 benchmark case 架构重构的分阶段开发计划。目标是让新增实例的开发者只需要关注问题描述、建模函数、默认策略声明和实例内 `solve_case()`，同时把通用本地测试入口放在 `benchmarks/run.py`，特定评测场景输出和 dashboard-facing 工具统一放在 `presentation/`。
 
 ## Final Shape
 
@@ -36,8 +36,12 @@ cases/
           data.py
         nug.py
         chr.py
-runners/
-  <specific-evaluation-scenario>.py
+presentation/
+  suite.py
+  compare.py
+  dashboard.py
+  publish_dashboard_results.py
+  generate_dashboard_data.py
 ```
 
 目录语义：
@@ -49,8 +53,9 @@ runners/
 - 不新增固定 `model.py` 或 `solve.py` 层。建模和默认求解入口优先跟随具体实例模块。
 - 允许实例文件之间存在相似甚至重复的建模、预算和求解逻辑；实例单独维护全流程更适合协同开发。
 - 只有当重复已经明显阻碍维护时，才抽取语义明确的同目录 helper，例如 `jobshop_modeling.py` 或 `jobshop_solve.py`。
-- `benchmarks/run.py` 是本地通用测试入口。
-- `runners/` 只承载具体目标评测场景，例如 CI smoke、dashboard publication、策略对比、多 seed calibration、ablation、性能矩阵。
+- `benchmarks/run.py` 是本地通用测试入口，集成 case 收集、过滤和单 case 调用能力。
+- `presentation/` 承载特定评测场景输出、标准 suite artifact 写入、对比报告、dashboard 发布和静态聚合数据生成。
+- 不再保留 `presentation/` 目录。
 
 ## Non Goals
 
@@ -91,7 +96,7 @@ class BenchmarkCase:
 
 建议行为：
 
-- `to_row() -> dict[str, Any]`：返回 runner、根入口和 presentation publication 可消费的兼容 dict。
+- `to_row() -> dict[str, Any]`：返回 presentation、根入口和 presentation publication 可消费的兼容 dict。
 - `load_instance(**kwargs) -> Any`：默认抛出 `NotImplementedError`，由实例子类或实例模块实现。
 - `build_model(instance_data: Any | None = None, **kwargs) -> Any`：默认抛出 `NotImplementedError`。
 - `default_strategy_names() -> tuple[str, ...]`：返回默认策略名。
@@ -128,7 +133,7 @@ class StrategyDeclaration:
 - `config_class` 使用公开 OptAgent 策略类名，例如 `GaConfig`、`AlnsConfig`、`TabuConfig`、`LocalSearchConfig`、`CpSatConfig`。
 - 默认策略预算由具体实例模块固定声明。
 - MIPLIB 等 exact baseline 不引入特殊层级；它仍作为同一 case/strategy 层级表达，由策略名称和配置类决定求解方式。
-- 根入口和场景 runner 做对比实验时可以忽略默认策略声明，自行构造策略。
+- 根入口和presentation 场景脚本 做对比实验时可以忽略默认策略声明，自行构造策略。
 
 ## Instance Module Contract
 
@@ -210,9 +215,9 @@ def run_case(
     ...
 ```
 
-`runners/` 不再作为通用运行层。`runners/` 下新增文件必须对应一个具体目标评测场景。场景 runner 可以只导入 case 对象和建模函数，然后自定义策略求解。
+`presentation/` 不再作为通用运行层。`presentation/` 下新增文件必须对应一个具体目标评测场景。presentation 场景脚本 可以只导入 case 对象和建模函数，然后自定义策略求解。
 
-根入口和场景 runner 都不应定义公开数据解析、默认 case metadata、默认问题描述、默认建模函数或实例族默认策略配置。
+根入口和presentation 场景脚本 都不应定义公开数据解析、默认 case metadata、默认问题描述、默认建模函数或实例族默认策略配置。
 
 ## Phase 0: Baseline Audit
 
@@ -229,8 +234,8 @@ def run_case(
 建议检查：
 
 - `cases/` 下现有实例模块、顶层 family 模块和 raw data 模块。
-- `runners/` 下哪些文件是通用 runner，哪些已经是具体评测场景。
-- `case_loader.py`、`cases/registry.py`、`runners/run.py`、`runners/suite.py` 的调用链。
+- `presentation/` 下哪些文件是通用 runner，哪些已经是具体评测场景。
+- `cases/registry.py`、`presentation/suite.py` 的调用链。
 - `docs/result-json-contract.md` 和 `docs/dashboard-data-contract.md` 对结果字段的要求。
 
 交付物：
@@ -252,7 +257,7 @@ def run_case(
 改动范围：
 
 - 新增 `cases/base.py`。
-- 小范围调整 `cases/registry.py` 和可能的 `case_loader.py`。
+- 小范围调整 `cases/registry.py` 和可能的 。
 
 交付物：
 
@@ -313,7 +318,7 @@ def run_case(
 目标：
 
 - 新增或改造 `benchmarks/run.py`，作为通用 case 调用和自定义策略测试入口。
-- 将通用本地测试从 `runners/` 中剥离。
+- 将通用本地测试从 `presentation/` 中剥离。
 
 改动范围：
 
@@ -344,32 +349,32 @@ def run_case(
 
 目标：
 
-- 让通用入口、场景 runner 和 presentation publication 都只依赖 `BenchmarkCase.to_row()` 或实例模块公开入口。
-- 将 `runners/` 中通用 suite 逻辑下沉、迁移或标注为具体评测场景。
+- 让通用入口、presentation 场景脚本 和 presentation publication 都只依赖 `BenchmarkCase.to_row()` 或实例模块公开入口。
+- 将 `presentation/` 中通用 suite 逻辑下沉、迁移或标注为具体评测场景。
 
 改动范围：
 
 - `cases/registry.py`。
-- `case_loader.py`。
-- `runners/run.py`、`runners/suite.py` 等现有通用 runner。
+- 。
+- `presentation/suite.py` 等现有通用 runner。
 - README 或开发说明中的运行命令。
 
 交付物：
 
-- `runners/` 下文件按目标评测场景命名或注释说明。
+- `presentation/` 下文件按目标评测场景命名或注释说明。
 - 新增 runner 文件必须说明服务的评测场景。
-- `runners/` 不再持有 family 默认预算 dataclass 导入和默认策略配置。
+- `presentation/` 不再持有 family 默认预算 dataclass 导入和默认策略配置。
 
 验收：
 
-- `runners/` 不作为默认新增通用运行层。
-- `runners/` 中具体场景仍可导入模型并自定义策略做对比。
+- `presentation/` 不作为默认新增通用运行层。
+- `presentation/` 中具体场景仍可导入模型并自定义策略做对比。
 - 现有 dashboard publication 或 result generation 路径不因入口重构而破坏。
 
 注意事项：
 
-- 若现有 `runners/run.py` 暂时保留，应明确为兼容 shim 或具体 suite 场景入口。
-- 不要把 case 默认逻辑留在 runner 中。
+- 若现有 `presentation/run.py` 暂时保留，应明确为兼容 shim 或具体 suite 场景入口。
+- 不要把 case 默认逻辑留在 presentation 脚本中。
 
 ## Phase 5: Family Migration
 
@@ -430,7 +435,7 @@ def run_case(
 
 - 新增 case 开发指南。
 - 根入口使用说明。
-- `runners/` 场景文件命名和职责说明。
+- `presentation/` 场景脚本命名和职责说明。
 - 移除不再使用的旧顶层 `models/`、`loaders/` 风格引用。
 
 验收：
@@ -443,9 +448,9 @@ def run_case(
 
 当前完成状态：
 
-- 已新增 `docs/new-case-guide.md`，说明新增 case 的目录、实例模块契约、根入口用法、runner 边界和验证命令。
+- 已新增 `docs/new-case-guide.md`，说明新增 case 的目录、实例模块契约、根入口用法、presentation 边界和验证命令。
 - 已更新 compatibility helper 与 raw loader 注释，移除会暗示固定 `model.py` / `solve.py` / `graphmodel.py` 层级的表述。
-- `runners/README.md` 已说明 `benchmarks.run` 是轻量本地入口，`runners/` 只承载具体目标评测场景。
+- `presentation/README.md` 已说明 `benchmarks.run` 是轻量本地入口，`presentation/` 只承载具体目标评测场景。
 - README 当前在工作树中处于删除状态；Phase 6 未恢复或改写该文件，以避免覆盖非本阶段变更。
 
 ## Global Acceptance Criteria
@@ -457,7 +462,7 @@ def run_case(
 - 不新增固定 `model.py` 层。
 - 不新增固定 `solve.py` 层。
 - `benchmarks/run.py` 或等价根入口可直接调用任意 case，并支持自定义策略测试。
-- `runners/` 下新增文件必须对应具体目标评测场景。
+- `presentation/` 下新增文件必须对应具体目标评测场景。
 
 功能验收：
 
@@ -479,4 +484,4 @@ def run_case(
 - MIPLIB 等 exact baseline 与其他实例保持同一 case/strategy 层级，不新增 exact baseline 特殊层级。
 - `BenchmarkCase` 必须包含 `compare_key` 和 `series_key`。
 - 允许实例间逻辑重复，优先保障单实例全流程自包含。
-- `runners/` 不是通用运行层，只服务具体目标评测场景。
+- `presentation/` 不是通用运行层，只服务具体目标评测场景。

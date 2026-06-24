@@ -6,9 +6,9 @@ on:
     branches:
       - main
     paths:
-      - "results/**"
-      - "aggregates/**"
-      - "runners/generate_dashboard_data.py"
+      - "presentation/results/**"
+      - "presentation/aggregates/**"
+      - "presentation/generate_dashboard_data.py"
 
 permissions:
   contents: write
@@ -28,17 +28,17 @@ jobs:
           python-version: "3.12"
 
       - name: Regenerate index and aggregates
-        run: python -m benchmarks.runners.generate_dashboard_data
+        run: python -m benchmarks.presentation.generate_dashboard_data
 
       - name: Commit generated dashboard data
         run: |
-          if git diff --quiet -- results/index.json aggregates; then
+          if git diff --quiet -- presentation/results/index.json presentation/aggregates; then
             echo "Generated dashboard data is already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add results/index.json aggregates
+          git add presentation/results/index.json presentation/aggregates
           git commit -m "Regenerate benchmark dashboard data"
           git push
 

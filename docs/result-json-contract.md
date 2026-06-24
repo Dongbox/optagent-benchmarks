@@ -116,7 +116,7 @@ Rules:
 
 Not every benchmark output is a dashboard fact.
 
-Dashboard-persisted evidence is limited to immutable run summaries under `results/`, optional sibling artifacts, generated `results/index.json`, and generated `aggregates/*.json`. These files are the long-term static data contract for `optagent-dashboard`.
+Dashboard-persisted evidence is limited to immutable run summaries under `presentation/results/`, optional sibling artifacts, generated `presentation/results/index.json`, and generated `presentation/aggregates/*.json`. These files are the long-term static data contract for `optagent-dashboard`.
 
 Suite-run evidence lives in a run directory such as:
 
@@ -162,7 +162,7 @@ The schema is intentionally conservative. It validates required identity and met
 After adding run summary files, regenerate static dashboard data:
 
 ```bash
-python -m benchmarks.runners.generate_dashboard_data
+python -m benchmarks.presentation.generate_dashboard_data
 ```
 
 The generator rewrites:

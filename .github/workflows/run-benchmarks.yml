@@ -160,7 +160,7 @@ jobs:
               RUN_ARGS+=(--tier "${tier}")
             fi
           done
-          python -m benchmarks.runners.run \
+          python -m benchmarks.presentation.suite \
             "${RUN_ARGS[@]}" \
             --max-iterations "${BENCHMARK_MAX_ITERATIONS}" \
             --time-limit-s "${BENCHMARK_TIME_LIMIT_S}" \
@@ -177,7 +177,7 @@ jobs:
 
       - name: Publish dashboard JSON
         run: |
-          python -m benchmarks.runners.publish_dashboard_results "${BENCHMARK_RUN_DIR}" \
+          python -m benchmarks.presentation.publish_dashboard_results "${BENCHMARK_RUN_DIR}" \
             --optagent-version "${OPTAGENT_VERSION}" \
             --optagent-commit "${OPTAGENT_REF}" \
             --optagent-commit-url "https://github.com/${OPTAGENT_REPOSITORY}/commit/${OPTAGENT_REF}" \
@@ -189,17 +189,17 @@ jobs:
       - name: Commit benchmark result updates
         working-directory: benchmarks
         run: |
-          if git diff --quiet -- results aggregates; then
+          if git diff --quiet -- presentation/results presentation/aggregates; then
             echo "No dashboard result changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add results aggregates
+          git add presentation/results presentation/aggregates
           git commit -m "Add benchmark dashboard results for ${OPTAGENT_REF:0:12}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
-          PYTHONPATH=.. python -m benchmarks.runners.generate_dashboard_data
-          git add results/index.json aggregates
+          PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data
+          git add presentation/results/index.json presentation/aggregates
           git commit --amend --no-edit
           git push origin "HEAD:${GITHUB_REF_NAME}"
 

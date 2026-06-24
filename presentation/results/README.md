@@ -1,6 +1,6 @@
 # Benchmark Results
 
-This directory stores Git-managed benchmark result JSON.
+This directory stores Git-managed benchmark result JSON under `presentation/results/`.
 
 Current Phase:
 
@@ -11,7 +11,7 @@ Current Phase:
 Layout:
 
 ```text
-results/
+presentation/results/
   index.json
   schema/
     run-v1.schema.json
@@ -37,7 +37,7 @@ Do not append new facts to a shared `history.json`. Add a new run file instead.
 After adding or changing run summary files, regenerate dashboard data:
 
 ```bash
-python -m benchmarks.runners.generate_dashboard_data
+python -m benchmarks.presentation.generate_dashboard_data
 ```
 
 Generated outputs:
@@ -53,5 +53,5 @@ aggregates/runtime-quality.json
 Use validation-only mode in review or CI:
 
 ```bash
-python -m benchmarks.runners.generate_dashboard_data --check
+python -m benchmarks.presentation.generate_dashboard_data --check
 ```

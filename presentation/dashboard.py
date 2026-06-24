@@ -5,9 +5,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from benchmarks.runners.bootstrap import prefer_local_development_paths
-from benchmarks.runners.common import REPO_ROOT, normalize_result_row, utc_timestamp, write_json
-from benchmarks.runners.compare import compare_run_dirs
+from benchmarks.bootstrap import prefer_local_development_paths
+from benchmarks.presentation.common import REPO_ROOT, normalize_result_row, utc_timestamp, write_json
+from benchmarks.presentation.compare import compare_run_dirs
 
 
 DEFAULT_DASHBOARD_ROOT = REPO_ROOT / "docs" / "evals" / "benchmark-suite" / "dashboards"

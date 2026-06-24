@@ -5,7 +5,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
-from benchmarks.runners.bootstrap import prefer_local_development_paths
+from benchmarks.bootstrap import prefer_local_development_paths
 
 prefer_local_development_paths()
 

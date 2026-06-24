@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from benchmarks.runners.common import append_jsonl
+from benchmarks.presentation.common import append_jsonl
 
 
 BENCHMARK_SCHEMA_VERSION = 2
