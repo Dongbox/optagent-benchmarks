@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 from importlib import import_module
 from types import ModuleType
 from typing import Any
@@ -42,6 +41,14 @@ def benchmark_cases() -> list[dict[str, Any]]:
     return cases
 
 
+def benchmark_case_objects() -> list[BenchmarkCase]:
+    cases: list[BenchmarkCase] = []
+    for module_name in INSTANCE_COLLECTION_MODULES:
+        module = import_module(module_name)
+        cases.extend(getattr(module, "CASES"))
+    return cases
+
+
 def case_module_for(case: CaseDeclaration) -> ModuleType:
     row = case_to_row(case)
     module_name = str(row.get("case_module") or "")
@@ -51,25 +58,15 @@ def case_module_for(case: CaseDeclaration) -> ModuleType:
 
 
 def run_case(case: CaseDeclaration, **kwargs: Any) -> list[dict[str, Any]]:
-    """导入系列模块并调用该实例的默认 solve_case。
+    """Run a case through the unified benchmarks.run entrypoint."""
 
-    这层只负责路由到具体系列文件；建模和求解参数声明仍由系列文件负责。
-    """
+    from benchmarks.run import run_benchmark_case
 
     row = case_to_row(case)
-    module = case_module_for(row)
-    solve_case = getattr(module, "solve_case")
-    if _accepts_instance_argument(solve_case):
-        return solve_case(str(row["instance"]), **kwargs)
-    return solve_case(**kwargs)
-
-
-def _accepts_instance_argument(callable_obj: Any) -> bool:
-    parameters = tuple(inspect.signature(callable_obj).parameters.values())
-    return bool(parameters) and parameters[0].kind in {
-        inspect.Parameter.POSITIONAL_ONLY,
-        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-    }
+    selected = next((item for item in benchmark_case_objects() if item.benchmark_id == row["benchmark_id"]), None)
+    if selected is None:
+        raise KeyError(f"benchmark case not found: {row.get('benchmark_id')}")
+    return run_benchmark_case(selected, **kwargs)
 
 
 def default_model_styles_for_family(family: str) -> tuple[str, ...]:

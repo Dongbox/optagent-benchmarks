@@ -7,15 +7,17 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from optagent import ModelBuilder
 
-# JSPLIB job-shop 数据说明：
-# - 当前实例模块使用 ScheduleOpt 提供的 JSON 版本，而不是原始纯文本。
-# - JSON 根对象包含 instance/jobs/machines/data 等字段。
-# - data 中每一行是一道工序：job 表示作业编号，operation 表示该作业内的工序顺序，
-#   machine 表示占用机器，duration 表示加工时长。
-# - raw/ 保存已下载的公开原始文件；新增实例时优先把来源和格式写入 实例模块 与本文件注释。
-# - loader 将这些行规范化为 JobShopInstance，供系列模块构造 interval/no_overlap/precedence 模型。
-DEFAULT_RAW_DIR = Path(__file__).resolve().parent
+from benchmarks.cases.base import BenchmarkCase
+
+SOURCE = "JSPLIB via ScheduleOpt"
+SOURCE_KEY = "jsplib"
+PROBLEM_TYPE = "scheduling"
+INSTANCE_TYPE = "jobshop"
+FAMILY = "interval_job_shop"
+MODEL_STYLE = "interval_var_sequence_no_overlap_precedence"
+RAW_DIR = Path(__file__).resolve().parent / "raw"
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,84 @@ class JobShopInstance:
         return {
             machine: tuple(sorted(items, key=lambda item: (item.job, item.operation)))
             for machine, items in sorted(grouped.items())
+        }
+
+
+class JobShopCase(BenchmarkCase):
+    def build_model(self, **kwargs: Any) -> ModelBuilder:
+        allow_download = bool(kwargs.get("allow_download", True))
+        instance = load_job_shop_case(self.to_row(), cache_dir=RAW_DIR, allow_download=allow_download)
+        horizon = max(0, instance.horizon)
+        builder = ModelBuilder(metadata={"model_style": MODEL_STYLE})
+
+        operation_vars: dict[tuple[int, int], Any] = {}
+        operation_node_ids: dict[tuple[int, int], int] = {}
+        for operation in instance.operations:
+            key = _operation_key(operation)
+            interval = builder.interval_var(
+                start=0,
+                length=operation.duration,
+                lb_start=0,
+                ub_start=horizon,
+                lb_length=operation.duration,
+                ub_length=operation.duration,
+                name=f"op_j{operation.job}_k{operation.operation}_m{operation.machine}",
+            )
+            operation_vars[key] = interval
+            operation_node_ids[key] = interval.node_id
+
+        machine_sequence_node_ids: dict[int, int] = {}
+        machine_operation_keys: dict[int, tuple[tuple[int, int], ...]] = {}
+        for machine, operations in instance.operations_by_machine().items():
+            keys = tuple(_operation_key(operation) for operation in operations)
+            sequence = builder.sequence_var(size=len(keys), default=list(range(len(keys))), name=f"machine_{machine}_order")
+            machine_sequence_node_ids[machine] = sequence.node_id
+            machine_operation_keys[machine] = keys
+            builder.constraint(builder.no_overlap(sequence, *(operation_vars[key] for key in keys)), name=f"machine_{machine}_capacity")
+
+        last_operation_ends = []
+        for job, operations in instance.operations_by_job().items():
+            if len(operations) != instance.machines:
+                raise ValueError(f"job {job} has {len(operations)} operations, expected {instance.machines}")
+            for before, after in zip(operations, operations[1:]):
+                builder.constraint(
+                    builder.precedence(operation_vars[_operation_key(before)], operation_vars[_operation_key(after)], lag=0),
+                    name=f"job_{job}_op_{before.operation}_before_{after.operation}",
+                )
+            last_operation_ends.append(builder.interval_end(operation_vars[_operation_key(operations[-1])]))
+
+        objective = builder.minimize(builder.max(*last_operation_ends), name="makespan")
+        self._set_build_context(
+            {
+                "instance": instance,
+                "operation_node_ids": operation_node_ids,
+                "machine_sequence_node_ids": machine_sequence_node_ids,
+                "machine_operation_keys": machine_operation_keys,
+                "objective_node_id": objective.node_id,
+                "horizon": horizon,
+            }
+        )
+        return builder
+
+    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        context = self._build_context()
+        raw_objective = _solution_objective(context, solution.variable_values, solution.objective_value)
+        objective = raw_objective if solution.feasible else None
+        instance = context["instance"]
+        return {
+            **super().solution_summary(solution, **kwargs),
+            "objective": float(objective) if objective is not None else None,
+            "raw_objective": float(raw_objective) if raw_objective is not None else None,
+            "dimension": instance.operation_count,
+            "edge_weight_type": "job_shop_interval",
+            "model_style": MODEL_STYLE,
+            "machine_order_head": _machine_order_head(context, solution.variable_values),
+            "metadata": {
+                **dict(getattr(solution, "metadata", {}) or {}),
+                "jobs": instance.jobs,
+                "machines": instance.machines,
+                "horizon": context["horizon"],
+            },
         }
 
 
@@ -128,7 +208,7 @@ def parse_scheduleopt_jsplib_json(text: str) -> JobShopInstance:
 def load_job_shop_case(
     case: dict[str, Any],
     *,
-    cache_dir: str | Path = DEFAULT_RAW_DIR,
+    cache_dir: str | Path = RAW_DIR,
     allow_download: bool = True,
 ) -> JobShopInstance:
     data = case.get("data", {})
@@ -167,3 +247,44 @@ def _download_text(url: str) -> str:
     request = Request(url, headers={"User-Agent": "optagent-benchmark/1.0"})
     with urlopen(request, timeout=60) as response:
         return response.read().decode("utf-8", errors="replace")
+
+def machine_order_from_solution(context: dict[str, Any], variable_values: dict[int, Any]) -> dict[int, list[tuple[int, int]]]:
+    machine_orders: dict[int, list[tuple[int, int]]] = {}
+    for machine, sequence_node_id in context["machine_sequence_node_ids"].items():
+        local_order = [int(item) for item in variable_values.get(sequence_node_id, [])]
+        keys = context["machine_operation_keys"][machine]
+        machine_orders[machine] = [keys[index] for index in local_order if 0 <= index < len(keys)]
+    return machine_orders
+
+
+def makespan_from_solution(context: dict[str, Any], variable_values: dict[int, Any]) -> int | None:
+    ends: list[int] = []
+    for node_id in context["operation_node_ids"].values():
+        raw = variable_values.get(node_id)
+        if not isinstance(raw, dict) or "end" not in raw:
+            return None
+        ends.append(int(raw["end"]))
+    return max(ends) if ends else None
+
+
+def _operation_key(operation: JobShopOperation) -> tuple[int, int]:
+    return (int(operation.job), int(operation.operation))
+
+
+def _solution_objective(
+    context: dict[str, Any],
+    variable_values: dict[int, Any],
+    solution_objective: float | None,
+) -> float | None:
+    if solution_objective is not None:
+        return float(solution_objective)
+    makespan = makespan_from_solution(context, variable_values)
+    return float(makespan) if makespan is not None else None
+
+
+def _machine_order_head(context: dict[str, Any], variable_values: dict[int, Any]) -> dict[str, list[list[int]]]:
+    orders = machine_order_from_solution(context, variable_values)
+    return {
+        str(machine): [[job, operation] for job, operation in order[:10]]
+        for machine, order in sorted(orders.items())
+    }

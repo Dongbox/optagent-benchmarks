@@ -70,18 +70,48 @@ def test_case_modules_do_not_reference_unrelated_public_instances() -> None:
             assert unrelated_instance not in source, f"{module_path} references unrelated instance {unrelated_instance}"
 
 
-def test_registry_routes_each_case_to_its_own_module_with_instance(monkeypatch: Any) -> None:
+def test_registry_routes_each_case_to_unified_runner(monkeypatch: Any) -> None:
+    import benchmarks.run as run_module
+
     for case in benchmark_cases():
-        module = importlib.import_module(str(case["case_module"]))
         calls: list[str] = []
 
-        def fake_solve_case(instance: str, **_: Any) -> list[dict[str, Any]]:
-            calls.append(instance)
-            return [{"benchmark_id": case["benchmark_id"], "instance": instance}]
+        def fake_run_benchmark_case(case_obj: Any, **_: Any) -> list[dict[str, Any]]:
+            calls.append(case_obj.instance)
+            return [{"benchmark_id": case_obj.benchmark_id, "instance": case_obj.instance}]
 
-        monkeypatch.setattr(module, "solve_case", fake_solve_case)
+        monkeypatch.setattr(run_module, "run_benchmark_case", fake_run_benchmark_case)
 
         rows = run_case(case, allow_download=False)
 
         assert calls == [case["instance"]]
         assert rows == [{"benchmark_id": case["benchmark_id"], "instance": case["instance"]}]
+
+
+def test_case_sources_do_not_reintroduce_legacy_runner_contracts() -> None:
+    forbidden_patterns = (
+        "class TspBenchmarkModel",
+        "class QapBenchmarkModel",
+        "class MipBenchmarkModel",
+        "class JobShopBenchmarkModel",
+        "class RcpspBenchmarkModel",
+        "def load_instance",
+        "def _load_instance",
+        "def _build_model",
+        "def _build_blackbox_model",
+        "def _build_graph_model",
+        "def solve_case",
+        "StrategyDeclaration",
+        "default_strategies",
+    )
+    for path in Path("cases").rglob("*.py"):
+        if path.name == "base.py":
+            continue
+        source = path.read_text(encoding="utf-8")
+        for pattern in forbidden_patterns:
+            assert pattern not in source, f"{path} contains legacy case contract pattern: {pattern}"
+
+
+def test_case_data_logic_stays_with_family_common_modules() -> None:
+    data_modules = sorted(Path("cases").glob("**/raw/data.py"))
+    assert data_modules == []

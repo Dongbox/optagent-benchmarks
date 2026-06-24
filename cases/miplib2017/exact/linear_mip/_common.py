@@ -7,14 +7,17 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from optagent import ModelBuilder
 
-# MIPLIB 2017 数据说明：
-# - 当前 exact_linear_mip family 读取 MIPLIB `.mps` / `.mps.gz` 文件。
-# - parser 支持 benchmark selected cases 需要的 ROWS/COLUMNS/RHS/RANGES/BOUNDS/OBJSENSE 子集。
-# - raw/ 保存已下载的公开原始文件；新增实例时优先把来源和格式写入 实例模块 与本文件注释。
-# - ParsedMpsInstance 保留线性目标、线性约束、变量上下界和整数/二进制类型。
-# - 系列模块将其映射到公开 OptAgent 线性建模 API，再走 solve_milp exact baseline。
-DEFAULT_RAW_DIR = Path(__file__).resolve().parent
+from benchmarks.cases.base import BenchmarkCase
+
+SOURCE = "MIPLIB 2017 benchmark-v2"
+SOURCE_KEY = "miplib2017"
+PROBLEM_TYPE = "exact"
+INSTANCE_TYPE = "linear_mip"
+FAMILY = "exact_linear_mip"
+MODEL_STYLE = "mps_linear_mp"
+RAW_DIR = Path(__file__).resolve().parent / "raw"
 MIPLIB_INSTANCE_ROOT = "https://miplib.zib.de/WebData/instances"
 
 
@@ -68,6 +71,70 @@ class ParsedMpsInstance:
     @property
     def nonzero_count(self) -> int:
         return len(self.objective_terms) + sum(len(row.terms) for row in self.constraints)
+
+
+class MipCase(BenchmarkCase):
+    def build_model(self, **kwargs: Any) -> ModelBuilder:
+        allow_download = bool(kwargs.get("allow_download", True))
+        instance = load_miplib_case(self.to_row(), cache_dir=RAW_DIR, allow_download=allow_download)
+        builder = ModelBuilder(metadata={"model_style": MODEL_STYLE})
+        const_cache: dict[float, Any] = {}
+        variable_exprs: dict[str, Any] = {}
+
+        def const_expr(value: float) -> Any:
+            normalized = float(value)
+            expr = const_cache.get(normalized)
+            if expr is None:
+                expr = builder.const(normalized)
+                const_cache[normalized] = expr
+            return expr
+
+        for name, spec in instance.variables.items():
+            if spec.is_binary:
+                expr = builder.bool_var(default=False, name=name)
+            elif spec.is_integer:
+                lb = _coerce_int_bound(spec.lb)
+                ub = _coerce_int_bound(spec.ub)
+                expr = builder.int_var(default=_default_for_integer(lb, ub), lb=lb, ub=ub, name=name)
+            else:
+                lb = None if spec.lb is None else float(spec.lb)
+                ub = None if spec.ub is None else float(spec.ub)
+                expr = builder.float_var(default=_default_for_float(lb, ub), lb=lb, ub=ub, name=name)
+            variable_exprs[name] = expr
+
+        objective_expr = _weighted_sum(builder, const_expr, variable_exprs, instance.objective_terms)
+        if instance.objective_sense == "max":
+            builder.maximize(objective_expr, name=instance.objective_row)
+        else:
+            builder.minimize(objective_expr, name=instance.objective_row)
+
+        for row in instance.constraints:
+            _add_constraint(builder, const_expr, variable_exprs, row)
+        self._set_build_context({"instance": instance})
+        return builder
+
+    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        context = self._build_context()
+        instance = context["instance"]
+        objective = solution.objective_value if solution.feasible else None
+        raw_objective = solution.objective_value
+        return {
+            **super().solution_summary(solution, **kwargs),
+            "objective": float(objective) if objective is not None else None,
+            "raw_objective": float(raw_objective) if raw_objective is not None else None,
+            "dimension": instance.variable_count,
+            "edge_weight_type": "mps_linear_mip",
+            "model_style": MODEL_STYLE,
+            "metadata": {
+                **_exact_metadata(solution.metadata),
+                "variables": instance.variable_count,
+                "binary_variables": instance.binary_count,
+                "integer_variables": instance.integer_count,
+                "continuous_variables": instance.continuous_count,
+                "constraints": instance.constraint_count,
+                "nonzeros": instance.nonzero_count,
+            },
+        }
 
 
 def parse_mps_text(text: str, *, name: str | None = None, objective_sense: str = "min") -> ParsedMpsInstance:
@@ -199,7 +266,7 @@ def parse_mps_text(text: str, *, name: str | None = None, objective_sense: str =
 def load_miplib_case(
     case: dict[str, Any],
     *,
-    cache_dir: str | Path = DEFAULT_RAW_DIR,
+    cache_dir: str | Path = RAW_DIR,
     allow_download: bool = True,
 ) -> ParsedMpsInstance:
     data = case.get("data", {})
@@ -231,6 +298,25 @@ def load_miplib_case(
         f"failed to download MIPLIB case {case['benchmark_id']} from {len(urls)} source(s): "
         + " | ".join(errors)
     )
+
+def _add_constraint(builder: ModelBuilder, const_expr: Any, variable_exprs: dict[str, Any], row: MpsLinearConstraint) -> None:
+    lhs = _weighted_sum(builder, const_expr, variable_exprs, row.terms)
+    rhs = const_expr(row.rhs)
+    if row.range_value is None:
+        if row.sense == "L":
+            builder.constraint(lhs <= rhs, name=row.name)
+            return
+        if row.sense == "G":
+            builder.constraint(lhs >= rhs, name=row.name)
+            return
+        if row.sense == "E":
+            builder.constraint(lhs == rhs, name=row.name)
+            return
+    lb, ub = _range_bounds(row)
+    if lb is not None:
+        builder.constraint(lhs >= const_expr(lb), name=f"{row.name}_range_lb")
+    if ub is not None:
+        builder.constraint(lhs <= const_expr(ub), name=f"{row.name}_range_ub")
 
 
 def _read_mps_path(path: Path) -> str:
@@ -311,3 +397,87 @@ def _apply_bound(spec: MpsVariableSpec, bound_type: str, value: float | None) ->
         spec.ub = value
         return
     raise ValueError(f"unsupported MPS bound type: {bound_type}")
+
+
+def _range_bounds(row: MpsLinearConstraint) -> tuple[float | None, float | None]:
+    if row.range_value is None:
+        raise ValueError("range_value is required")
+    rhs = float(row.rhs)
+    span = abs(float(row.range_value))
+    if row.sense == "L":
+        return rhs - span, rhs
+    if row.sense == "G":
+        return rhs, rhs + span
+    if row.sense == "E":
+        if row.range_value >= 0:
+            return rhs, rhs + span
+        return rhs - span, rhs
+    raise ValueError(f"unsupported row sense: {row.sense}")
+
+
+def _weighted_sum(builder: ModelBuilder, const_expr: Any, variables: dict[str, Any], terms: tuple[tuple[str, float], ...]) -> Any:
+    if not terms:
+        return const_expr(0.0)
+    exprs: list[Any] = []
+    for variable_name, coefficient in terms:
+        variable = variables[variable_name]
+        if coefficient == 1:
+            exprs.append(variable)
+        elif coefficient == -1:
+            exprs.append(-variable)
+        else:
+            exprs.append(variable * const_expr(coefficient))
+    if len(exprs) == 1:
+        return exprs[0]
+    return builder.sum(*exprs)
+
+
+def _coerce_int_bound(value: float | None) -> int | None:
+    if value is None:
+        return None
+    rounded = int(round(value))
+    if abs(float(value) - rounded) > 1e-9:
+        raise ValueError(f"expected integer bound, got {value}")
+    return rounded
+
+
+def _default_for_integer(lb: int | None, ub: int | None) -> int:
+    if lb is not None and ub is not None and lb == ub:
+        return lb
+    if lb is not None and lb > 0:
+        return lb
+    if ub is not None and ub < 0:
+        return ub
+    return 0
+
+
+def _default_for_float(lb: float | None, ub: float | None) -> float:
+    if lb is not None and ub is not None and abs(lb - ub) <= 1e-12:
+        return lb
+    if lb is not None and lb > 0.0:
+        return lb
+    if ub is not None and ub < 0.0:
+        return ub
+    return 0.0
+
+
+def _exact_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    keys = (
+        "backend",
+        "solver_status",
+        "status",
+        "objective_value",
+        "best_bound",
+        "mip_gap",
+        "simplex_iteration_count",
+        "node_count",
+        "constraint_violation_policy",
+        "max_constraint_violation",
+    )
+    return {
+        "mip_heuristic_route_enabled": False,
+        "mip_heuristic_route_decision": "exact_only",
+        "mip_heuristic_route_reason": "no_dedicated_milp_native_heuristic",
+        "exact_baseline_required": True,
+        **{key: metadata[key] for key in keys if key in metadata},
+    }

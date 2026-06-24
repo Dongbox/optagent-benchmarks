@@ -1,5 +1,9 @@
 # Presentation, Runner, And Dashboard Refactor Review
 
+> Current runner note: benchmark execution is now centralized through root `run.py`
+> and `BenchmarkCase.build_model() -> ModelBuilder`; case modules should not define
+> new strategy declarations or series-level `solve_case()` entrypoints.
+
 本文档评审 `presentation/` 是否适配当前 `cases/` 与 `presentation/` 的新结构，并定义后续重构需求。目标是保证 `presentation/` 中各个具体评测场景的结论都能被正常可视化，并按需发布到 dashboard 使用的数据层。
 
 ## Current Status

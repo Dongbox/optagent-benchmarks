@@ -32,7 +32,7 @@ from benchmarks.run import all_cases as load_case_rows, select_cases
 # suite.py 是 presentation 层的标准 benchmark suite 评测场景调度器：
 # 1. 从具体实例模块选择 case；
 # 2. 解析 family-aware 策略矩阵和预算；
-# 3. 通过 cases.registry 调用对应实例模块的 `solve_case`；
+# 3. 通过 cases.registry 委托 benchmarks.run 的统一 case runner；
 # 4. 对 row 做场景级归一化，并写出 JSONL/CSV/report/presentation feedback。
 # 它不保存 case 私有建模逻辑，也不保存 case solve 共享函数。
 RUNNER_SCENARIO_ID = "standard_benchmark_suite"

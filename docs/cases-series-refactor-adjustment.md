@@ -1,5 +1,12 @@
 # Cases Series Refactor Adjustment
 
+> Superseded note: this document records the earlier series-file consolidation work.
+> The current implementation target is defined in
+> [BenchmarkCase ModelBuilder Interface Roadmap](benchmark-case-modelbuilder-interface-requirements.md):
+> series files now declare case metadata, while build/solve orchestration is centralized
+> around `BenchmarkCase.build_model() -> ModelBuilder`, `solution_summary()`, and root
+> `run.py`.
+
 本文档用于梳理 `cases/` 下所有 case 的系列归并任务。目标不是再增加一层抽象，而是把一案一文件的实现，调整为按实例系列聚合的单文件模块：
 
 ```text

@@ -6,14 +6,17 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from optagent import ExternalCallbackContext, ModelBuilder
 
-# QAPLIB 数据说明：
-# - `.dat` 文件第一项是规模 n，之后依次给出 n*n flow matrix 和 n*n distance matrix。
-# - `.sln` 文件通常给出 reference objective 和 1-based assignment。
-# - raw/ 保存已下载的公开原始文件；新增实例时优先把来源和格式写入 实例模块 与本文件注释。
-# - loader 会读取 `.dat`，尽量读取 `.sln`，并把 assignment 转为 0-based。
-# - 系列模块用一个 sequence_var 表示 facility -> location 的排列，用 external_call 计算二次费用。
-DEFAULT_RAW_DIR = Path(__file__).resolve().parent
+from benchmarks.cases.base import BenchmarkCase
+
+SOURCE = "QAPLIB"
+SOURCE_KEY = "qaplib"
+PROBLEM_TYPE = "assignment"
+INSTANCE_TYPE = "quadratic_assignment"
+FAMILY = "sequence_quadratic_assignment"
+MODEL_STYLE = "sequence_var_external_call"
+RAW_DIR = Path(__file__).resolve().parent / "raw"
 QAPLIB_ROOT = "https://qaplib.mgi.polymtl.ca"
 
 
@@ -37,6 +40,51 @@ class QapInstance:
             for right in range(self.size):
                 total += self.flow[left][right] * self.distance[left_location][int(assignment[right])]
         return int(total)
+
+
+class QapCase(BenchmarkCase):
+    def build_model(self, **kwargs: Any) -> ModelBuilder:
+        allow_download = bool(kwargs.get("allow_download", True))
+        instance = load_qap_case(self.to_row(), cache_dir=RAW_DIR, allow_download=allow_download)
+        default_assignment = list(range(instance.size))
+        builder = ModelBuilder(metadata={"model_style": MODEL_STYLE})
+        assignment = builder.sequence_var(size=instance.size, default=default_assignment, name="assignment")
+
+        def assignment_cost(ctx: ExternalCallbackContext) -> int:
+            candidate = [int(item) for item in ctx.value(assignment)]
+            return instance.assignment_cost(candidate)
+
+        builder.minimize(
+            builder.external_call(
+                assignment_cost,
+                name="assignment_cost",
+                pure=True,
+                deterministic=True,
+                cacheable=True,
+                timeout_ms=100,
+                depends_on=(assignment,),
+            ),
+            name="assignment_cost",
+        )
+        self._set_build_context({"instance": instance, "assignment_node_id": assignment.node_id})
+        return builder
+
+    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        context = self._build_context()
+        instance = context["instance"]
+        assignment_node_id = int(context["assignment_node_id"])
+        assignment = [int(item) for item in solution.variable_values[assignment_node_id]]
+        objective = instance.assignment_cost(assignment)
+        reference = instance.reference_objective
+        return {
+            **super().solution_summary(solution, **kwargs),
+            "objective": float(objective),
+            "reference_objective": float(reference) if reference is not None else None,
+            "sequence_head": assignment[:20],
+            "dimension": instance.size,
+            "edge_weight_type": "qap_quadratic",
+            "model_style": MODEL_STYLE,
+        }
 
 
 def parse_qaplib_dat(text: str, *, name: str) -> QapInstance:
@@ -72,7 +120,7 @@ def parse_qaplib_solution(text: str) -> tuple[int | None, tuple[int, ...]]:
 def load_qap_case(
     case: dict[str, Any],
     *,
-    cache_dir: str | Path = DEFAULT_RAW_DIR,
+    cache_dir: str | Path = RAW_DIR,
     allow_download: bool = True,
 ) -> QapInstance:
     data = case.get("data", {})

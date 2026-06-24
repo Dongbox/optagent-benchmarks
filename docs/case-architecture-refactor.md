@@ -1,5 +1,11 @@
 # Case Architecture Refactor Phased Development Plan
 
+> Superseded note: the target interface in this historical plan has been replaced by
+> [BenchmarkCase ModelBuilder Interface Roadmap](benchmark-case-modelbuilder-interface-requirements.md).
+> New development should use `BenchmarkCase.build_model() -> ModelBuilder`, root `run.py`
+> strategy orchestration, and `solution_summary()` instead of case-level `load_instance()`,
+> `StrategyDeclaration`, or series-level `solve_case()`.
+
 本文档定义 benchmark case 架构重构的分阶段开发计划。目标是让新增实例的开发者只需要关注问题描述、建模函数、默认策略声明和实例内 `solve_case()`，同时把通用本地测试入口放在 `benchmarks/run.py`，特定评测场景输出和 dashboard-facing 工具统一放在 `presentation/`。
 
 ## Final Shape

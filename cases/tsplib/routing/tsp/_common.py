@@ -8,15 +8,21 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from optagent import ExternalCallbackContext, ModelBuilder
 
-# TSPLIB TSP 数据说明：
-# - 当前支持 selected symmetric TSP cases 需要的子集。
-# - 坐标型实例读取 NODE_COORD_SECTION，并按 EDGE_WEIGHT_TYPE 计算 EUC_2D / CEIL_2D 距离。
-# - 显式矩阵实例读取 EDGE_WEIGHT_SECTION，目前支持 FULL_MATRIX。
-# - raw/ 保存已下载的公开原始文件；新增实例时优先把来源和格式写入 实例模块 与本文件注释。
-# - loader 输出 TspInstance，系列模块可使用 external_call 黑盒距离目标，
-#   也可使用 sequence_transition_sum 显式图目标。
-DEFAULT_RAW_DIR = Path(__file__).resolve().parent
+from benchmarks.cases.base import BenchmarkCase
+
+SOURCE = "TSPLIB95"
+SOURCE_KEY = "tsplib"
+PROBLEM_TYPE = "routing"
+INSTANCE_TYPE = "tsp"
+FAMILY = "sequence_blackbox_tsp"
+BLACKBOX_TSP_MODEL_STYLE = "sequence_var_external_call"
+GRAPH_TSP_MODEL_STYLE = "sequence_var_sequence_transition_sum"
+MODEL_STYLE = BLACKBOX_TSP_MODEL_STYLE
+DEFAULT_TSP_MODEL_STYLES = (BLACKBOX_TSP_MODEL_STYLE,)
+SUPPORTED_TSP_MODEL_STYLES = (BLACKBOX_TSP_MODEL_STYLE, GRAPH_TSP_MODEL_STYLE)
+RAW_DIR = Path(__file__).resolve().parent / "raw"
 
 
 @dataclass(frozen=True)
@@ -56,9 +62,65 @@ class TspInstance:
         return int(total)
 
 
-def parse_tsplib_text(text: str) -> TspInstance:
-    """Parse the TSPLIB subset used by the selected symmetric TSP cases."""
+class TspCase(BenchmarkCase):
+    def build_model(self, **kwargs: Any) -> ModelBuilder:
+        allow_download = bool(kwargs.get("allow_download", True))
+        model_style = str(kwargs.get("model_style", BLACKBOX_TSP_MODEL_STYLE))
+        instance = load_tsp_case(self.to_row(), cache_dir=RAW_DIR, allow_download=allow_download)
+        default_tour = list(range(instance.dimension))
+        builder = ModelBuilder(metadata={"model_style": model_style})
+        tour = builder.sequence_var(size=instance.dimension, default=default_tour, name="tour")
 
+        if model_style == BLACKBOX_TSP_MODEL_STYLE:
+
+            def tour_length(ctx: ExternalCallbackContext) -> int:
+                order = [int(item) for item in ctx.value(tour)]
+                return instance.tour_length(order, include_return_edge=True)
+
+            builder.minimize(
+                builder.external_call(
+                    tour_length,
+                    name="tour_length",
+                    pure=True,
+                    deterministic=True,
+                    cacheable=True,
+                    timeout_ms=100,
+                    depends_on=(tour,),
+                ),
+                name="tour_length",
+            )
+        elif model_style == GRAPH_TSP_MODEL_STYLE:
+            distance_matrix = [
+                [instance.distance(left, right) for right in range(instance.dimension)]
+                for left in range(instance.dimension)
+            ]
+            builder.minimize(
+                builder.sequence_transition_sum(tour, distance_matrix, include_return_edge=True, cost_semantics="distance"),
+                name="tour_length",
+            )
+        else:
+            raise ValueError(f"unsupported TSP model style: {model_style}")
+
+        self._set_build_context({"instance": instance, "sequence_node_id": tour.node_id, "model_style": model_style})
+        return builder
+
+    def solution_summary(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        context = self._build_context()
+        instance = context["instance"]
+        sequence_node_id = int(context["sequence_node_id"])
+        sequence = [int(item) for item in solution.variable_values[sequence_node_id]]
+        objective = instance.tour_length(sequence, include_return_edge=True)
+        return {
+            **super().solution_summary(solution, **kwargs),
+            "objective": float(objective),
+            "sequence_head": sequence[:20],
+            "dimension": instance.dimension,
+            "edge_weight_type": instance.edge_weight_type,
+            "model_style": context["model_style"],
+        }
+
+
+def parse_tsplib_text(text: str) -> TspInstance:
     headers: dict[str, str] = {}
     coordinates_by_id: dict[int, tuple[float, float]] = {}
     weights: list[int] = []
@@ -128,26 +190,10 @@ def parse_tsplib_text(text: str) -> TspInstance:
     raise ValueError("TSPLIB file must contain NODE_COORD_SECTION or supported EDGE_WEIGHT_SECTION")
 
 
-def _parse_explicit_matrix(
-    weights: list[int],
-    dimension: int,
-    edge_weight_format: str,
-) -> tuple[tuple[int, ...], ...]:
-    if edge_weight_format == "FULL_MATRIX":
-        expected = dimension * dimension
-        if len(weights) != expected:
-            raise ValueError(f"expected {expected} FULL_MATRIX weights, found {len(weights)}")
-        return tuple(
-            tuple(weights[row * dimension + col] for col in range(dimension))
-            for row in range(dimension)
-        )
-    raise ValueError(f"unsupported TSPLIB EDGE_WEIGHT_FORMAT: {edge_weight_format}")
-
-
 def load_tsp_case(
     case: dict[str, Any],
     *,
-    cache_dir: str | Path = DEFAULT_RAW_DIR,
+    cache_dir: str | Path = RAW_DIR,
     allow_download: bool = True,
 ) -> TspInstance:
     data = case.get("data", {})
@@ -170,7 +216,7 @@ def load_tsp_case(
     errors: list[str] = []
     for url in urls:
         try:
-            raw = _download_bytes(url)
+            raw = _download_bytes(url, timeout=60)
         except (HTTPError, URLError, TimeoutError, OSError) as exc:
             errors.append(f"{url}: {type(exc).__name__}: {exc}")
             continue
@@ -185,7 +231,23 @@ def load_tsp_case(
     )
 
 
-def _download_bytes(url: str) -> bytes:
+def _parse_explicit_matrix(
+    weights: list[int],
+    dimension: int,
+    edge_weight_format: str,
+) -> tuple[tuple[int, ...], ...]:
+    if edge_weight_format == "FULL_MATRIX":
+        expected = dimension * dimension
+        if len(weights) != expected:
+            raise ValueError(f"expected {expected} FULL_MATRIX weights, found {len(weights)}")
+        return tuple(
+            tuple(weights[row * dimension + col] for col in range(dimension))
+            for row in range(dimension)
+        )
+    raise ValueError(f"unsupported TSPLIB EDGE_WEIGHT_FORMAT: {edge_weight_format}")
+
+
+def _download_bytes(url: str, *, timeout: int) -> bytes:
     request = Request(url, headers={"User-Agent": "optagent-benchmark/1.0"})
-    with urlopen(request, timeout=60) as response:
+    with urlopen(request, timeout=timeout) as response:
         return response.read()
