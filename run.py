@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -132,7 +132,12 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 
 
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
-    from optagent import AdvancedGaConfig, AlnsConfig, GaConfig, LnsConfig, MilpConfig
+    from optagent import AlnsConfig, GaConfig, LnsConfig, MilpConfig
+
+    try:
+        from optagent import AdvancedGaConfig
+    except ImportError:
+        AdvancedGaConfig = GaConfig
 
     max_iterations = int(getattr(budget, "max_iterations", 40))
     population_size = max(4, int(getattr(budget, "population_size", 10)))

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from benchmarks.cases.qaplib.quadratic_assignment._domain import (
     make_qap_case,
@@ -21,4 +21,18 @@ HAD20 = make_qap_case(
     solution_url='https://qaplib.mgi.polymtl.ca/soln.d/had20.sln',
 )
 
-CASES = (HAD20,)
+HAD12 = make_qap_case(
+    benchmark_id='qaplib_had12',
+    instance='had12',
+    tier='smoke',
+    size=12,
+    raw_path=RAW_DIR / 'had12.dat',
+    solution_raw_path=RAW_DIR / 'had12.sln',
+    objective=1652,
+    source_label='Had12',
+    case_module=CASE_MODULE,
+    instance_url='https://qaplib.mgi.polymtl.ca/data.d/had12.dat',
+    solution_url='https://qaplib.mgi.polymtl.ca/soln.d/had12.sln',
+)
+
+CASES = (HAD20, HAD12,)

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from benchmarks.cases.jsplib.jobshop._domain import (
     make_job_shop_case,
@@ -20,6 +20,19 @@ ABZ5 = make_job_shop_case(
     reported_time_seconds=1,
 )
 
+ABZ6 = make_job_shop_case(
+    benchmark_id='jsplib_abz6',
+    instance='abz6',
+    tier='calibration',
+    jobs=10,
+    machines=10,
+    raw_path=RAW_DIR / 'abz6.json',
+    objective=943,
+    case_module=CASE_MODULE,
+    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/abz6.json',
+    reported_time_seconds=1,
+)
+
 ABZ7 = make_job_shop_case(
     benchmark_id='jsplib_abz7',
     instance='abz7',
@@ -33,4 +46,4 @@ ABZ7 = make_job_shop_case(
     reported_time_seconds=10,
 )
 
-CASES = (ABZ5, ABZ7)
+CASES = (ABZ5, ABZ6, ABZ7)

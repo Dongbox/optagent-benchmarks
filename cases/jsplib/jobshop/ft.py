@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from benchmarks.cases.jsplib.jobshop._domain import (
     make_job_shop_case,
@@ -33,4 +33,17 @@ FT10 = make_job_shop_case(
     reported_time_seconds=1,
 )
 
-CASES = (FT06, FT10)
+FT20 = make_job_shop_case(
+    benchmark_id='jsplib_ft20',
+    instance='ft20',
+    tier='smoke',
+    jobs=20,
+    machines=5,
+    raw_path=RAW_DIR / 'ft20.json',
+    objective=1165,
+    case_module=CASE_MODULE,
+    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/ft20.json',
+    reported_time_seconds=1,
+)
+
+CASES = (FT06, FT10, FT20)
