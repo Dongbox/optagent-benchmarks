@@ -1,0 +1,15 @@
+{
+  "best_cost": null,
+  "error_message": "cannot import name 'LnsConfig' from 'optagent' (/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/optagent/__init__.py)",
+  "error_type": "ImportError",
+  "evaluations_per_s": null,
+  "feasible": false,
+  "gap_rel": null,
+  "improvement_per_second": null,
+  "objective": null,
+  "reference_cost": 9552.0,
+  "runtime_ms": 0,
+  "status": "error",
+  "time_to_best_ms": 0,
+  "time_to_first_feasible_ms": 0
+}
