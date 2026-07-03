@@ -1,0 +1,85 @@
+{
+  "artifacts": {
+    "metrics": "results/scheduling/ga/2026/07/scheduling-ga-jsplib-la01-20260703-071000-41974fe-e897dd0/metrics.json"
+  },
+  "benchmark_group": "scheduling",
+  "benchmark_id": "jsplib_la01",
+  "benchmarks": {
+    "commit": "804009dec3d899309a3af06bcd47aea66c264555",
+    "commit_url": "https://github.com/Dongbox/optagent-benchmarks/commit/804009dec3d899309a3af06bcd47aea66c264555"
+  },
+  "created_at": "2026-07-03T07:10:00Z",
+  "environment": {
+    "platform": "Linux-6.17.0-1018-azure-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "runner": "github-actions"
+  },
+  "family": "interval_job_shop",
+  "metrics": {
+    "best_cost": 858.0,
+    "evaluations_per_s": 248.80098223482662,
+    "feasible": true,
+    "gap_rel": 0.2882882882882883,
+    "improvement_per_second": null,
+    "objective": 858.0,
+    "reference_cost": 666.0,
+    "runtime_ms": 76,
+    "status": "success",
+    "time_to_best_ms": 0,
+    "time_to_first_feasible_ms": 0
+  },
+  "operator_diagnostics": {
+    "ga_duplicate_child_count": 173.0,
+    "ga_duplicate_offspring_count": 70.0,
+    "ga_duplicate_ratio": 0.7865168539325843,
+    "ga_offspring_attempt_count": 89.0,
+    "ga_offspring_evaluated": 19.0,
+    "ga_offspring_generated": 89.0,
+    "ga_parallel_batches": 0.0,
+    "ga_parallel_candidates_evaluated": 0.0,
+    "ga_unique_offspring_count": 19.0,
+    "parallel_matrix_enabled": false,
+    "thread_count": 1
+  },
+  "optagent": {
+    "commit": "cpp-python-boundary-redesign",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256:15fc3987167c12149e81ffb16468c7cea36a2f2d737fb6be8d6e2474fe8ce162"
+  },
+  "run_id": "scheduling-ga-jsplib-la01-20260703-071000-41974fe-e897dd0",
+  "schema_version": 1,
+  "seed": 11,
+  "strategy": "ga",
+  "strategy_config": {
+    "crossover_rate": 0.35,
+    "dedup_mode": "recency",
+    "disable_external_cache": false,
+    "duplicate_filter": true,
+    "elite_ratio": null,
+    "enable_iteration_trace": false,
+    "lightweight_eval": false,
+    "local_improvement_strategy": "lns",
+    "local_improvement_top_k": 2,
+    "max_iterations": 5,
+    "mutation_count": 2,
+    "mutation_portfolio": [
+      "scheduling_lns",
+      "ruin_and_repair",
+      "random_swap"
+    ],
+    "mutation_sampling": "balanced",
+    "name": "ga",
+    "parallel_workers": 1,
+    "population_size": 6,
+    "restart_after": 25,
+    "restart_limit": 0,
+    "search_width": 6,
+    "snapshot_at_iteration": -1,
+    "stagnation_limit": null,
+    "unimproved_iteration_limit": null,
+    "unique_offspring_retry_limit": 3
+  },
+  "strategy_profile": "ga_scheduling_feasibility_v1",
+  "tier": "smoke"
+}
