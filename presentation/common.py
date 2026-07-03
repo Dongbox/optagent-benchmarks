@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -137,6 +137,12 @@ TIER_BUDGET_DEFAULTS: dict[str, dict[str, Any]] = {
         "max_iterations": 50,
         "time_limit_s": 10.0,
         "population_size": 32,
+        "trace_limit": 8,
+    },
+    "pressure": {
+        "max_iterations": 100,
+        "time_limit_s": 30.0,
+        "population_size": 64,
         "trace_limit": 8,
     },
 }
@@ -416,3 +422,4 @@ def metadata_highlights(metadata: dict[str, Any]) -> list[str]:
         if key in metadata:
             highlights.append(f"{key}={metadata[key]}")
     return highlights
+
