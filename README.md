@@ -10,7 +10,7 @@ cd /path/to/opt-agent/benchmarks
 
 ## `cases/` 模块
 
-`cases/` 是 benchmark case 的声明层，负责定义每个可运行实例的元数据、问题类型、规模信息、建模方式和结果解码逻辑。这里不存放 dashboard 结果，只存放 `benchmarks.run`、suite runner 和 dashboard 能共同理解的 case 定义。
+`cases/` 是 benchmark case 的声明层，负责定义每个可运行实例的元数据、问题类型、规模信息、建模方式和结果解码逻辑。这里不存放 dashboard 结果，只存放 `benchmarks.run`、suite runner 和 dashboard 能共同理解的 case 定义。1
 
 `cases/` 的结构说明见 [cases/README.md](cases/README.md)。
 
