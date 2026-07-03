@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -296,6 +296,11 @@ def normalize_result_row(row: dict[str, Any]) -> dict[str, Any]:
                 row.setdefault(key, metadata[key])
         if "budget_profile" in row:
             metadata.setdefault("budget_profile", row["budget_profile"])
+    diagnostics = row.get("diagnostics")
+    if isinstance(diagnostics, dict):
+        for key in SEARCH_DIAGNOSTIC_KEYS:
+            if key in diagnostics:
+                row.setdefault(key, diagnostics[key])
     _derive_presentation_fields(row)
     return row
 

@@ -10,7 +10,7 @@ import re
 import sys
 from typing import Any
 
-from benchmarks.presentation.common import write_json
+from benchmarks.presentation.common import SEARCH_DIAGNOSTIC_KEYS, write_json
 from benchmarks.presentation.generate_dashboard_data import (
     DEFAULT_AGGREGATES_ROOT,
     DEFAULT_RESULTS_ROOT,
@@ -186,6 +186,7 @@ def _summary_from_row(
             "runner": runner,
         },
         "metrics": _metrics(row),
+        "operator_diagnostics": _operator_diagnostics(row),
         "artifacts": {},
         "created_at": created_at,
     }
@@ -304,6 +305,28 @@ def _ms(*values: Any) -> int:
     if value is None:
         return 0
     return max(0, int(round(float(value) * 1000)))
+
+
+def _operator_diagnostics(row: dict[str, Any]) -> dict[str, Any]:
+    """Extract operator-level diagnostics from the benchmark row.
+
+    These counters/gauges are produced by the C++ search kernel and collected
+    by normalize_result_row during the suite run. Publishing them enables the
+    dashboard to display per-operator efficiency and identify which search
+    modules contribute most to solution quality.
+    """
+    diagnostics: dict[str, Any] = {}
+    for key in SEARCH_DIAGNOSTIC_KEYS:
+        value = row.get(key)
+        if value is not None:
+            diagnostics[key] = value
+    # Include iteration-level trace if the runner captured it.
+    # This is a list of per-iteration records: [{iteration, best_objective,
+    # operator_name, accepted}, ...] suitable for anytime curve rendering.
+    iteration_trace = row.get("iteration_trace")
+    if isinstance(iteration_trace, list) and iteration_trace:
+        diagnostics["iteration_trace"] = iteration_trace
+    return diagnostics
 
 
 if __name__ == "__main__":

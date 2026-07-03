@@ -1,0 +1,70 @@
+{
+  "artifacts": {
+    "metrics": "results/routing/alns/2026/07/routing-alns-tsplib-eil51-20260703-071000-41974fe-c14cb21/metrics.json"
+  },
+  "benchmark_group": "routing",
+  "benchmark_id": "tsplib_eil51",
+  "benchmarks": {
+    "commit": "804009dec3d899309a3af06bcd47aea66c264555",
+    "commit_url": "https://github.com/Dongbox/optagent-benchmarks/commit/804009dec3d899309a3af06bcd47aea66c264555"
+  },
+  "created_at": "2026-07-03T07:10:00Z",
+  "environment": {
+    "platform": "Linux-6.17.0-1018-azure-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "runner": "github-actions"
+  },
+  "family": "sequence_blackbox_tsp",
+  "metrics": {
+    "best_cost": 1150.0,
+    "evaluations_per_s": null,
+    "feasible": true,
+    "gap_rel": 1.699530516431925,
+    "improvement_per_second": null,
+    "objective": 1150.0,
+    "reference_cost": 426.0,
+    "runtime_ms": 59,
+    "status": "success",
+    "time_to_best_ms": 0,
+    "time_to_first_feasible_ms": 0
+  },
+  "operator_diagnostics": {
+    "alns_repair_applications": 5.0,
+    "alns_repair_failures": 0.0,
+    "parallel_matrix_enabled": false,
+    "thread_count": 1
+  },
+  "optagent": {
+    "commit": "cpp-python-boundary-redesign",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256:15fc3987167c12149e81ffb16468c7cea36a2f2d737fb6be8d6e2474fe8ce162"
+  },
+  "run_id": "routing-alns-tsplib-eil51-20260703-071000-41974fe-c14cb21",
+  "schema_version": 1,
+  "seed": 11,
+  "strategy": "alns",
+  "strategy_config": {
+    "acceptance": "not_worse",
+    "destroy_count": 4,
+    "enable_iteration_trace": false,
+    "exact_repair_fixed_assignments": {},
+    "exact_repair_max_calls": 1,
+    "exact_repair_on_stall": false,
+    "exact_repair_subproblem_variable_ids": [],
+    "exact_repair_time_budget_s": 0.25,
+    "initial_temperature": null,
+    "max_iterations": 5,
+    "name": "alns",
+    "repair_operators": [
+      "greedy",
+      "beam"
+    ],
+    "restart_after": 25,
+    "restart_limit": 0,
+    "snapshot_at_iteration": -1,
+    "unimproved_iteration_limit": null
+  },
+  "strategy_profile": "alns_tsp_blackbox_v1",
+  "tier": "smoke"
+}

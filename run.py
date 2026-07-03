@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -132,7 +132,7 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 
 
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
-    from optagent import AlnsConfig, GaConfig, LnsConfig, MilpConfig
+    from optagent import AlnsConfig, GaConfig, MilpConfig
 
     try:
         from optagent import AdvancedGaConfig
@@ -193,7 +193,8 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             )
         return AlnsConfig(**kwargs)
     if strategy_name == "lns":
-        return LnsConfig(max_iterations=max_iterations, destroy_count=max(2, min(16, dimension // 8)), lns_every=1)
+        # LnsConfig was consolidated into AlnsConfig; map lns requests to ALNS.
+        return AlnsConfig(max_iterations=max_iterations, destroy_count=max(2, min(16, dimension // 8)))
     raise ValueError(f"unsupported strategy for {case.benchmark_id}: {strategy_name}")
 
 
@@ -259,6 +260,7 @@ def _solver_solution_summary(solution: Any) -> dict[str, Any]:
         "feasible": bool(getattr(solution, "feasible", False)),
         "objective": getattr(solution, "objective_value", None),
         "metadata": dict(getattr(solution, "metadata", {}) or {}),
+        "diagnostics": dict(getattr(solution, "diagnostics", {}) or {}),
     }
 
 
