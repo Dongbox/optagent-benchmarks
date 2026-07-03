@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-03T06:51:56Z",
+  "generated_at": "2026-07-03T06:58:39Z",
   "schema_version": 1,
   "series": [
     {
@@ -46,6 +46,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-chr12a-20260703-065156-41974fe-5f13498.json"
+        },
+        {
+          "best_cost": 14484.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.5163316582914573,
+          "objective": 14484.0,
+          "run_id": "assignment-alns-qaplib-chr12a-20260703-065839-41974fe-ee6220d",
+          "runtime_ms": 47,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-chr12a-20260703-065839-41974fe-ee6220d.json"
         }
       ],
       "seed": 11,
@@ -160,6 +173,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-chr12a-20260703-065156-41974fe-e605701.json"
+        },
+        {
+          "best_cost": 26740.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 1.7994137353433837,
+          "objective": 26740.0,
+          "run_id": "assignment-ga-qaplib-chr12a-20260703-065839-41974fe-5c16965",
+          "runtime_ms": 8,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-chr12a-20260703-065839-41974fe-5c16965.json"
         }
       ],
       "seed": 11,
@@ -183,6 +209,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-esc16b-20260703-065156-41974fe-681fcc3.json"
+        },
+        {
+          "best_cost": 292.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 292.0,
+          "run_id": "assignment-alns-qaplib-esc16b-20260703-065839-41974fe-db99b23",
+          "runtime_ms": 54,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-esc16b-20260703-065839-41974fe-db99b23.json"
         }
       ],
       "seed": 11,
@@ -219,6 +258,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16b-20260703-065156-41974fe-fb2c687.json"
+        },
+        {
+          "best_cost": 298.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.02054794520547945,
+          "objective": 298.0,
+          "run_id": "assignment-ga-qaplib-esc16b-20260703-065839-41974fe-4139145",
+          "runtime_ms": 6,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16b-20260703-065839-41974fe-4139145.json"
         }
       ],
       "seed": 11,
@@ -242,6 +294,19 @@
           "runtime_ms": 1,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-esc16h-20260703-065156-41974fe-c238d78.json"
+        },
+        {
+          "best_cost": 996.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.0,
+          "objective": 996.0,
+          "run_id": "assignment-alns-qaplib-esc16h-20260703-065839-41974fe-1461fd9",
+          "runtime_ms": 55,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-esc16h-20260703-065839-41974fe-1461fd9.json"
         }
       ],
       "seed": 11,
@@ -278,6 +343,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16h-20260703-065156-41974fe-e64f96b.json"
+        },
+        {
+          "best_cost": 1246.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.25100401606425704,
+          "objective": 1246.0,
+          "run_id": "assignment-ga-qaplib-esc16h-20260703-065839-41974fe-501f02d",
+          "runtime_ms": 6,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16h-20260703-065839-41974fe-501f02d.json"
         }
       ],
       "seed": 11,
@@ -301,6 +379,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-had12-20260703-065156-41974fe-1504f30.json"
+        },
+        {
+          "best_cost": 1738.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.05205811138014528,
+          "objective": 1738.0,
+          "run_id": "assignment-alns-qaplib-had12-20260703-065839-41974fe-2a341c8",
+          "runtime_ms": 46,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-had12-20260703-065839-41974fe-2a341c8.json"
         }
       ],
       "seed": 11,
@@ -337,6 +428,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-had12-20260703-065156-41974fe-5f97ce4.json"
+        },
+        {
+          "best_cost": 1802.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.09079903147699758,
+          "objective": 1802.0,
+          "run_id": "assignment-ga-qaplib-had12-20260703-065839-41974fe-d60ce71",
+          "runtime_ms": 6,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-had12-20260703-065839-41974fe-d60ce71.json"
         }
       ],
       "seed": 11,
@@ -432,6 +536,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-nug12-20260703-065156-41974fe-926d30f.json"
+        },
+        {
+          "best_cost": 622.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.07612456747404844,
+          "objective": 622.0,
+          "run_id": "assignment-alns-qaplib-nug12-20260703-065839-41974fe-3a36fc0",
+          "runtime_ms": 46,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-nug12-20260703-065839-41974fe-3a36fc0.json"
         }
       ],
       "seed": 11,
@@ -546,6 +663,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-nug12-20260703-065156-41974fe-dab17c0.json"
+        },
+        {
+          "best_cost": 652.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.12802768166089964,
+          "objective": 652.0,
+          "run_id": "assignment-ga-qaplib-nug12-20260703-065839-41974fe-9202e32",
+          "runtime_ms": 9,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-nug12-20260703-065839-41974fe-9202e32.json"
         }
       ],
       "seed": 11,
@@ -615,6 +745,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-scr12-20260703-065156-41974fe-afd5ca7.json"
+        },
+        {
+          "best_cost": 33356.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.06195479146768545,
+          "objective": 33356.0,
+          "run_id": "assignment-alns-qaplib-scr12-20260703-065839-41974fe-abc01c5",
+          "runtime_ms": 48,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-scr12-20260703-065839-41974fe-abc01c5.json"
         }
       ],
       "seed": 11,
@@ -651,6 +794,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-scr12-20260703-065156-41974fe-70abeef.json"
+        },
+        {
+          "best_cost": 39490.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.2572429162687042,
+          "objective": 39490.0,
+          "run_id": "assignment-ga-qaplib-scr12-20260703-065839-41974fe-b7420d2",
+          "runtime_ms": 7,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-scr12-20260703-065839-41974fe-b7420d2.json"
         }
       ],
       "seed": 11,
@@ -674,6 +830,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-tai12b-20260703-065156-41974fe-d226cb3.json"
+        },
+        {
+          "best_cost": 48842495.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.2376178340640455,
+          "objective": 48842495.0,
+          "run_id": "assignment-alns-qaplib-tai12b-20260703-065839-41974fe-3976fa5",
+          "runtime_ms": 47,
+          "status": "success",
+          "summary_path": "/results/assignment/alns/2026/07/assignment-alns-qaplib-tai12b-20260703-065839-41974fe-3976fa5.json"
         }
       ],
       "seed": 11,
@@ -710,6 +879,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-tai12b-20260703-065156-41974fe-45b7d7a.json"
+        },
+        {
+          "best_cost": 63335225.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.6048484825449434,
+          "objective": 63335225.0,
+          "run_id": "assignment-ga-qaplib-tai12b-20260703-065839-41974fe-7ee2a0b",
+          "runtime_ms": 6,
+          "status": "success",
+          "summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-tai12b-20260703-065839-41974fe-7ee2a0b.json"
         }
       ],
       "seed": 11,
@@ -805,6 +987,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/routing/alns/2026/07/routing-alns-tsplib-berlin52-20260703-065156-41974fe-53318c7.json"
+        },
+        {
+          "best_cost": 17556.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 1.3277645186953062,
+          "objective": 17556.0,
+          "run_id": "routing-alns-tsplib-berlin52-20260703-065839-41974fe-2984b40",
+          "runtime_ms": 75,
+          "status": "success",
+          "summary_path": "/results/routing/alns/2026/07/routing-alns-tsplib-berlin52-20260703-065839-41974fe-2984b40.json"
         }
       ],
       "seed": 11,
@@ -893,6 +1088,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/routing/ga/2026/07/routing-ga-tsplib-berlin52-20260703-065156-41974fe-30315ea.json"
+        },
+        {
+          "best_cost": 21377.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 1.8343940599310529,
+          "objective": 21377.0,
+          "run_id": "routing-ga-tsplib-berlin52-20260703-065839-41974fe-4215ad2",
+          "runtime_ms": 10,
+          "status": "success",
+          "summary_path": "/results/routing/ga/2026/07/routing-ga-tsplib-berlin52-20260703-065839-41974fe-4215ad2.json"
         }
       ],
       "seed": 11,
@@ -942,6 +1150,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/routing/alns/2026/07/routing-alns-tsplib-eil51-20260703-065156-41974fe-9da8411.json"
+        },
+        {
+          "best_cost": 1150.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 1.699530516431925,
+          "objective": 1150.0,
+          "run_id": "routing-alns-tsplib-eil51-20260703-065839-41974fe-58de49f",
+          "runtime_ms": 72,
+          "status": "success",
+          "summary_path": "/results/routing/alns/2026/07/routing-alns-tsplib-eil51-20260703-065839-41974fe-58de49f.json"
         }
       ],
       "seed": 11,
@@ -1030,6 +1251,19 @@
           "runtime_ms": 0,
           "status": "error",
           "summary_path": "/results/routing/ga/2026/07/routing-ga-tsplib-eil51-20260703-065156-41974fe-1a38201.json"
+        },
+        {
+          "best_cost": 1279.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 2.0023474178403755,
+          "objective": 1279.0,
+          "run_id": "routing-ga-tsplib-eil51-20260703-065839-41974fe-12fbc0a",
+          "runtime_ms": 12,
+          "status": "success",
+          "summary_path": "/results/routing/ga/2026/07/routing-ga-tsplib-eil51-20260703-065839-41974fe-12fbc0a.json"
         }
       ],
       "seed": 11,
@@ -1240,6 +1474,19 @@
           "runtime_ms": 1,
           "status": "error",
           "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-ft06-20260703-065156-41974fe-b47c6a5.json"
+        },
+        {
+          "best_cost": null,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "scheduling-alns-jsplib-ft06-20260703-065839-41974fe-cc5cb9e",
+          "runtime_ms": 30,
+          "status": "fallback",
+          "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-ft06-20260703-065839-41974fe-cc5cb9e.json"
         }
       ],
       "seed": 11,
@@ -1338,6 +1585,19 @@
           "runtime_ms": 2,
           "status": "error",
           "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft06-20260703-065156-41974fe-be5c8c0.json"
+        },
+        {
+          "best_cost": 60.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.09090909090909091,
+          "objective": 60.0,
+          "run_id": "scheduling-ga-jsplib-ft06-20260703-065839-41974fe-7288ccb",
+          "runtime_ms": 50,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft06-20260703-065839-41974fe-7288ccb.json"
         }
       ],
       "seed": 11,
@@ -1387,6 +1647,19 @@
           "runtime_ms": 2,
           "status": "error",
           "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-ft10-20260703-065156-41974fe-5970831.json"
+        },
+        {
+          "best_cost": null,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "scheduling-alns-jsplib-ft10-20260703-065839-41974fe-8d26d9a",
+          "runtime_ms": 280,
+          "status": "fallback",
+          "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-ft10-20260703-065839-41974fe-8d26d9a.json"
         }
       ],
       "seed": 11,
@@ -1485,6 +1758,19 @@
           "runtime_ms": 2,
           "status": "error",
           "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft10-20260703-065156-41974fe-e3e01f9.json"
+        },
+        {
+          "best_cost": 1319.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.4182795698924731,
+          "objective": 1319.0,
+          "run_id": "scheduling-ga-jsplib-ft10-20260703-065839-41974fe-79a532f",
+          "runtime_ms": 235,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft10-20260703-065839-41974fe-79a532f.json"
         }
       ],
       "seed": 11,
@@ -1508,6 +1794,19 @@
           "runtime_ms": 2,
           "status": "error",
           "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-ft20-20260703-065156-41974fe-f98cc21.json"
+        },
+        {
+          "best_cost": null,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "scheduling-alns-jsplib-ft20-20260703-065839-41974fe-b0bdc23",
+          "runtime_ms": 173,
+          "status": "fallback",
+          "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-ft20-20260703-065839-41974fe-b0bdc23.json"
         }
       ],
       "seed": 11,
@@ -1544,6 +1843,19 @@
           "runtime_ms": 2,
           "status": "error",
           "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft20-20260703-065156-41974fe-42c95ca.json"
+        },
+        {
+          "best_cost": 1672.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.4351931330472103,
+          "objective": 1672.0,
+          "run_id": "scheduling-ga-jsplib-ft20-20260703-065839-41974fe-c48b930",
+          "runtime_ms": 215,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft20-20260703-065839-41974fe-c48b930.json"
         }
       ],
       "seed": 11,
@@ -1567,6 +1879,19 @@
           "runtime_ms": 1,
           "status": "error",
           "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-la01-20260703-065156-41974fe-923014f.json"
+        },
+        {
+          "best_cost": null,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": false,
+          "gap_rel": null,
+          "objective": null,
+          "run_id": "scheduling-alns-jsplib-la01-20260703-065839-41974fe-6e40437",
+          "runtime_ms": 72,
+          "status": "fallback",
+          "summary_path": "/results/scheduling/alns/2026/07/scheduling-alns-jsplib-la01-20260703-065839-41974fe-6e40437.json"
         }
       ],
       "seed": 11,
@@ -1603,6 +1928,19 @@
           "runtime_ms": 1,
           "status": "error",
           "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-la01-20260703-065156-41974fe-4478ac8.json"
+        },
+        {
+          "best_cost": 858.0,
+          "commit": "cpp-python-boundary-redesign",
+          "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "created_at": "2026-07-03T06:58:39Z",
+          "feasible": true,
+          "gap_rel": 0.2882882882882883,
+          "objective": 858.0,
+          "run_id": "scheduling-ga-jsplib-la01-20260703-065839-41974fe-8e1ba65",
+          "runtime_ms": 69,
+          "status": "success",
+          "summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-la01-20260703-065839-41974fe-8e1ba65.json"
         }
       ],
       "seed": 11,
