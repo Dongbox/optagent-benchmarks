@@ -260,6 +260,7 @@ def _solver_solution_summary(solution: Any) -> dict[str, Any]:
         "feasible": bool(getattr(solution, "feasible", False)),
         "objective": getattr(solution, "objective_value", None),
         "metadata": dict(getattr(solution, "metadata", {}) or {}),
+        "diagnostics": dict(getattr(solution, "diagnostics", {}) or {}),
     }
 
 
