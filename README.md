@@ -132,6 +132,23 @@ python -m benchmarks.presentation.suite \
 python -m benchmarks.presentation.generate_dashboard_data --check
 ```
 
+## 评分框架
+
+`scoring.py` 实现了五维度量化评分体系（Quality / Anytime / Efficiency / Stability / Dynamics），将 benchmark 原始结果转化为 0–100 分的综合评估。详细的设计动机、维度定义和计算规则见 [SCORING.md](SCORING.md)。
+
+快速上手：
+
+```bash
+# 从 run.py 管道输出评分
+python -m benchmarks.run --case tsplib_berlin52 --strategy ga | python -m benchmarks.scoring
+
+# 多文件评分并写入 dashboard 格式
+python -m benchmarks.scoring results.json --output strategy-scores.json
+
+# 从真实数据校准阈值
+python -m benchmarks.scoring --calibrate results/
+```
+
 ## 注意事项
 
 - 部分 strategy 依赖 OptAgent native search。如果当前环境没有启用 native search，运行可能会产出类似 `native search unsupported` 的 error row。

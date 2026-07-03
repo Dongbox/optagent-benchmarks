@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
-"""Strategy performance scoring engine.
+"""Strategy Performance Scoring Module.
 
-Accepts benchmark run results (from run.py JSON output) and computes
-D1–D5 dimension scores + composite score per the scoring framework at
-docs/plans/strategy-performance-scoring-2026-07-03.md.
+Implements the 5-dimension scoring framework for OptAgent search strategies:
+  D1: Solution Quality (35%) — gap relative to reference/BKS
+  D2: Anytime Performance (25%) — Primal Integral of incumbent evolution
+  D3: Runtime Efficiency (15%) — throughput + overhead ratio
+  D4: Stability (15%) — multi-seed consistency + feasibility + worst-case
+  D5: Search Dynamics (10%) — diversity, stagnation, termination quality
 
 Usage:
-    # Score a single run result (pipe from run.py)
-    python benchmarks/run.py --case jsplib_ft06 --strategy ga | python benchmarks/scoring.py
-
-    # Score a saved JSON file
-    python benchmarks/scoring.py results.json
-
-    # Score and write dashboard-compatible strategy-scores.json
-    python benchmarks/scoring.py results.json --output strategy-scores.json
-
-    # Score multiple files
-    python benchmarks/scoring.py run1.json run2.json --output scores.json
+  python -m benchmarks.scoring --input results/*.json --output strategy-scores.json
+  python -m benchmarks.scoring --input-dir public/data/results/ --output scores.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,43 +25,11 @@ from pathlib import Path
 from typing import Any
 
 
-# ---------------------------------------------------------------------------
-# Configuration — hardcoded per scoring plan (Phase 1)
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Configuration
+# =============================================================================
 
-# D1: Quality thresholds per problem group
-GAP_THRESHOLDS: dict[str, float] = {
-    "routing": 0.20,
-    "scheduling": 0.50,
-    "assignment": 0.30,
-}
-DEFAULT_GAP_THRESHOLD = 0.30
-
-# D2: Anytime — max integral = gap_threshold × T (computed dynamically)
-
-# D3: Efficiency — expected throughput baselines (evaluations/sec)
-EXPECTED_THROUGHPUT: dict[str, float] = {
-    "routing": 100_000,
-    "scheduling": 10_000,
-    "assignment": 50_000,
-}
-DEFAULT_EXPECTED_THROUGHPUT = 50_000
-
-# D4: Stability
-CV_THRESHOLD = 0.15
-
-# D5: Termination quality mapping
-TERMINATION_QUALITY_MAP: dict[str, float] = {
-    "converged": 100.0,
-    "optimal": 100.0,
-    "diversity_exhausted": 80.0,
-    "time_limit": 60.0,
-    "iteration_limit": 40.0,
-    "stagnation": 20.0,
-}
-DEFAULT_TERMINATION_QUALITY = 50.0
-
-# Composite weights (Phase 1 — four dimensions active, D2 degraded without trace)
+# Dimension weights (Phase 1)
 WEIGHTS = {
     "quality": 0.35,
     "anytime": 0.25,
@@ -75,517 +38,750 @@ WEIGHTS = {
     "dynamics": 0.10,
 }
 
+# Gap thresholds per benchmark group (used in D1 and D2 normalization)
+GAP_THRESHOLDS: dict[str, float] = {
+    "routing": 0.20,
+    "scheduling": 0.50,
+    "assignment": 0.30,
+}
+DEFAULT_GAP_THRESHOLD = 0.30
 
-# ---------------------------------------------------------------------------
-# Data structures
-# ---------------------------------------------------------------------------
+# Expected throughput (evaluations/s) per group — for D3 log-scale scoring
+EXPECTED_THROUGHPUT: dict[str, float] = {
+    "routing": 100_000,
+    "scheduling": 10_000,
+    "assignment": 50_000,
+}
+DEFAULT_EXPECTED_THROUGHPUT = 50_000
+
+# D4: coefficient of variation threshold
+CV_THRESHOLD = 0.15
+
+# D4: minimum seeds required for stability calculation
+MIN_SEEDS_FOR_STABILITY = 5
+
+# Termination reason → D5 score mapping
+TERMINATION_SCORES: dict[str, float] = {
+    "converged": 100.0,
+    "optimal": 100.0,
+    "diversity_exhausted": 80.0,
+    "time_limit": 60.0,
+    "iteration_limit": 40.0,
+    "stagnation": 20.0,
+}
+DEFAULT_TERMINATION_SCORE = 50.0
+
+
+# =============================================================================
+# Data Structures
+# =============================================================================
+
+
+@dataclass
+class IncumbentEvent:
+    elapsed_s: float
+    objective: float
+
+
+@dataclass
+class RunMetrics:
+    """Extracted metrics from a single benchmark run needed for scoring."""
+
+    # Identity
+    run_id: str = ""
+    benchmark_group: str = ""
+    benchmark_id: str = ""
+    strategy: str = ""
+    seed: int = 0
+
+    # D1: Quality
+    objective: float | None = None
+    feasible: bool = False
+    reference_cost: float | None = None
+
+    # D2: Anytime
+    incumbent_trace: list[IncumbentEvent] = field(default_factory=list)
+    time_budget_s: float = 30.0
+
+    # D3: Efficiency
+    wall_time_seconds: float = 0.0
+    loop_candidates_evaluated: int = 0
+    construct_candidates_evaluated: int = 0
+
+    # D5: Dynamics
+    total_iterations: int = 0
+    unimproved_iterations: int = 0
+    diversity_at_termination: float = 0.0
+    termination_reason: str = ""
+    restarts: int = 0
+
 
 @dataclass
 class DimensionScores:
     quality: float = 0.0
     anytime: float = 0.0
     efficiency: float = 0.0
-    stability: float = 0.0
+    stability: float = -1.0  # -1 = insufficient data
     dynamics: float = 0.0
 
 
 @dataclass
 class RunScore:
-    benchmark_id: str
-    strategy: str
-    family: str = ""
-    tier: str = ""
+    """Score for a single run."""
+
+    run_id: str = ""
+    benchmark_group: str = ""
+    benchmark_id: str = ""
+    strategy: str = ""
+    seed: int = 0
     composite: float = 0.0
     dimensions: DimensionScores = field(default_factory=DimensionScores)
+    gap_rel: float | None = None
     objective: float | None = None
     reference_cost: float | None = None
-    gap_rel: float | None = None
-    feasible: bool = False
-    elapsed_seconds: float = 0.0
-    time_to_best_seconds: float | None = None
-    termination_reason: str = ""
-    # Raw fields for aggregation
-    evaluations: int = 0
-    iterations: int = 0
+    primal_integral: float | None = None
+    incumbent_trace_path: str | None = None
 
 
 @dataclass
-class GroupScore:
-    benchmark_group: str
-    strategy: str
+class InstanceScore:
+    """Aggregated score for a (benchmark_id, strategy) pair across seeds."""
+
+    benchmark_id: str = ""
+    strategy: str = ""
+    benchmark_group: str = ""
     composite: float = 0.0
     dimensions: DimensionScores = field(default_factory=DimensionScores)
+    # Per-seed statistics
     run_count: int = 0
     seed_count: int = 0
-    instance_count: int = 0
-    instances: list[dict[str, Any]] = field(default_factory=list)
+    objectives: list[float] = field(default_factory=list)
+    gap_rels: list[float] = field(default_factory=list)
+    reference_cost: float | None = None
+    # Best run info
+    best_objective: float | None = None
+    best_gap_rel: float | None = None
+    incumbent_trace_path: str | None = None
 
 
 @dataclass
 class StrategyScore:
-    strategy: str
-    benchmark_group: str  # "all" for global
+    """Aggregated score for a strategy across benchmark groups."""
+
+    strategy: str = ""
+    benchmark_group: str = "all"  # "all" for global
     composite: float = 0.0
     dimensions: DimensionScores = field(default_factory=DimensionScores)
     run_count: int = 0
     seed_count: int = 0
     instance_count: int = 0
+    instances: list[InstanceScore] = field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
-# Scoring functions — per dimension
-# ---------------------------------------------------------------------------
-
-def _infer_group(family: str) -> str:
-    """Map family to benchmark_group."""
-    if "tsp" in family or "routing" in family:
-        return "routing"
-    if "job_shop" in family or "scheduling" in family or "cumulative" in family or "transition_penalty" in family:
-        return "scheduling"
-    if "assignment" in family or "qap" in family:
-        return "assignment"
-    return "other"
+# =============================================================================
+# D1: Solution Quality
+# =============================================================================
 
 
-def score_d1_quality(
-    objective: float | None,
-    reference_cost: float | None,
-    feasible: bool,
-    group: str,
-) -> tuple[float, float | None]:
-    """D1: Solution Quality. Returns (score, gap_rel)."""
+def score_quality(objective: float | None, reference_cost: float | None,
+                  feasible: bool, benchmark_group: str) -> float:
+    """D1: Quality score based on relative gap to reference."""
     if not feasible or objective is None:
-        return 0.0, None
-    if reference_cost is None or reference_cost == 0:
-        # No BKS — can't compute gap, give neutral score
-        return 50.0, None
+        return 0.0
+
+    if reference_cost is None or reference_cost == 0.0:
+        # No meaningful reference: give moderate default score if feasible
+        return 50.0 if objective is not None else 0.0
+
     gap_rel = (objective - reference_cost) / abs(reference_cost)
-    threshold = GAP_THRESHOLDS.get(group, DEFAULT_GAP_THRESHOLD)
-    score = max(0.0, 100.0 * (1.0 - gap_rel / threshold))
-    return min(100.0, score), gap_rel
+    gap_threshold = GAP_THRESHOLDS.get(benchmark_group, DEFAULT_GAP_THRESHOLD)
+
+    if gap_rel <= 0.0:
+        return 100.0  # At or better than reference
+
+    score = max(0.0, 100.0 * (1.0 - gap_rel / gap_threshold))
+    return score
 
 
-def score_d2_anytime(
-    incumbent_trace: list[dict[str, float]] | None,
-    reference_cost: float | None,
-    time_budget_s: float,
-    group: str,
-) -> float:
-    """D2: Anytime Performance (Primal Integral).
+def compute_gap_rel(objective: float | None, reference_cost: float | None,
+                    feasible: bool) -> float | None:
+    """Compute relative gap."""
+    if not feasible or objective is None or reference_cost is None or reference_cost == 0.0:
+        return None
+    return (objective - reference_cost) / abs(reference_cost)
 
-    If no incumbent_trace is available, degrades to a TTB-based heuristic.
+
+# =============================================================================
+# D2: Anytime Performance (Primal Integral)
+# =============================================================================
+
+
+def compute_primal_integral(trace: list[IncumbentEvent], reference_cost: float,
+                            time_budget_s: float) -> float:
+    """Compute primal integral: ∫₀ᵀ gap(t) dt using step function interpolation.
+
+    Returns the integral value (lower is better).
     """
-    if not incumbent_trace or not reference_cost or reference_cost == 0 or time_budget_s <= 0:
-        # Degraded: no trace data available yet
-        return -1.0  # Sentinel: exclude from scoring
+    if not trace or reference_cost == 0.0 or time_budget_s <= 0.0:
+        return float("inf")
 
-    threshold = GAP_THRESHOLDS.get(group, DEFAULT_GAP_THRESHOLD)
-    max_integral = threshold * time_budget_s
-
-    # Compute primal integral using step function interpolation
     integral = 0.0
     prev_time = 0.0
-    prev_gap = threshold  # assume worst before first feasible
+    prev_gap = GAP_THRESHOLDS.get("scheduling", DEFAULT_GAP_THRESHOLD)  # worst-case start
 
-    for event in incumbent_trace:
-        t = event.get("elapsed_s", 0.0)
-        obj = event.get("objective")
-        if obj is None:
-            continue
-        gap = (obj - reference_cost) / abs(reference_cost)
-        gap = max(0.0, min(gap, threshold))  # clamp
+    # Use initial gap from first event's objective before any improvement
+    if trace:
+        first_gap = (trace[0].objective - reference_cost) / abs(reference_cost)
+        prev_gap = max(0.0, first_gap)
 
-        # Area of rectangle from prev_time to t at prev_gap
+    for event in trace:
+        t = min(event.elapsed_s, time_budget_s)
         if t > prev_time:
             integral += prev_gap * (t - prev_time)
+        gap = (event.objective - reference_cost) / abs(reference_cost)
+        prev_gap = max(0.0, gap)
         prev_time = t
-        prev_gap = gap
+        if t >= time_budget_s:
+            break
 
-    # Final segment from last event to time_budget
-    if time_budget_s > prev_time:
+    # Fill remaining time with last known gap
+    if prev_time < time_budget_s:
         integral += prev_gap * (time_budget_s - prev_time)
 
-    if max_integral <= 0:
-        return 100.0
-    score = max(0.0, 100.0 * (1.0 - integral / max_integral))
-    return min(100.0, score)
+    return integral
 
 
-def score_d2_degraded(
-    time_to_best_s: float | None,
-    time_budget_s: float,
-    quality_score: float,
-) -> float:
-    """D2 fallback when no incumbent trace: TTB ratio × quality."""
-    if time_to_best_s is None or time_budget_s <= 0:
-        # Can't compute — use quality as proxy
-        return quality_score * 0.7  # penalized
-    ttb_ratio = time_to_best_s / time_budget_s
-    ttb_score = max(0.0, 100.0 * (1.0 - ttb_ratio))
-    # Blend TTB with quality (early convergence to good solution = high score)
-    return ttb_score * 0.6 + quality_score * 0.4
+def score_anytime(trace: list[IncumbentEvent], reference_cost: float | None,
+                  time_budget_s: float, benchmark_group: str,
+                  feasible: bool) -> tuple[float, float | None]:
+    """D2: Anytime score from primal integral.
+
+    Returns (score, primal_integral).
+    """
+    if not feasible or not trace or reference_cost is None or reference_cost == 0.0:
+        return (0.0, None)
+
+    gap_threshold = GAP_THRESHOLDS.get(benchmark_group, DEFAULT_GAP_THRESHOLD)
+    primal_integral = compute_primal_integral(trace, reference_cost, time_budget_s)
+
+    max_integral = gap_threshold * time_budget_s
+    if max_integral <= 0.0:
+        return (0.0, primal_integral)
+
+    score = max(0.0, 100.0 * (1.0 - primal_integral / max_integral))
+    return (score, primal_integral)
 
 
-def score_d3_efficiency(
-    evaluations: int,
-    elapsed_seconds: float,
-    group: str,
-) -> float:
-    """D3: Runtime Efficiency (throughput score)."""
-    if elapsed_seconds <= 0 or evaluations <= 0:
+# =============================================================================
+# D3: Runtime Efficiency
+# =============================================================================
+
+
+def score_efficiency(wall_time_seconds: float, loop_candidates: int,
+                     construct_candidates: int, benchmark_group: str) -> float:
+    """D3: Efficiency score from throughput.
+
+    Uses log-scale scoring: throughput_score = min(100, 100 * log10(evals/s) / log10(expected))
+    Cost balance simplified: just evaluating throughput for Phase 1.
+    """
+    total_candidates = loop_candidates + construct_candidates
+    if wall_time_seconds <= 0.0 or total_candidates <= 0:
         return 0.0
-    eval_per_s = evaluations / elapsed_seconds
-    expected = EXPECTED_THROUGHPUT.get(group, DEFAULT_EXPECTED_THROUGHPUT)
-    if expected <= 1:
-        return 50.0
-    score = 100.0 * math.log10(max(1, eval_per_s)) / math.log10(expected)
-    return min(100.0, max(0.0, score))
+
+    evaluations_per_s = total_candidates / wall_time_seconds
+    expected = EXPECTED_THROUGHPUT.get(benchmark_group, DEFAULT_EXPECTED_THROUGHPUT)
+
+    if evaluations_per_s <= 1.0:
+        return 0.0
+
+    throughput_score = min(100.0, 100.0 * math.log10(evaluations_per_s) / math.log10(expected))
+    return max(0.0, throughput_score)
 
 
-def score_d5_dynamics(
-    termination_reason: str,
-    diversity: float | None = None,
-    unimproved_iterations: int | None = None,
-    total_iterations: int | None = None,
-) -> float:
-    """D5: Search Dynamics."""
-    # Sub-score 1: Diversity
-    if diversity is not None:
-        diversity_score = min(100.0, diversity * 200.0)
+# =============================================================================
+# D4: Stability (computed at instance level from multiple seeds)
+# =============================================================================
+
+
+def score_stability(objectives: list[float], reference_cost: float | None,
+                    feasible_count: int, total_count: int,
+                    benchmark_group: str) -> float:
+    """D4: Stability score from multi-seed statistics.
+
+    stability = 0.5 * consistency + 0.3 * feasibility + 0.2 * worst_case
+    Returns -1 if insufficient seeds.
+    """
+    if total_count < MIN_SEEDS_FOR_STABILITY:
+        return -1.0
+
+    # Feasibility rate
+    feasibility_score = (feasible_count / total_count) * 100.0
+
+    if len(objectives) < 2:
+        # All infeasible or only one feasible run
+        return 0.3 * feasibility_score
+
+    # Consistency (CV-based)
+    mean_obj = sum(objectives) / len(objectives)
+    if mean_obj == 0.0:
+        consistency_score = 100.0  # Perfect consistency at zero
     else:
-        diversity_score = 50.0  # neutral when unknown
+        variance = sum((o - mean_obj) ** 2 for o in objectives) / len(objectives)
+        std_obj = math.sqrt(variance)
+        cv = std_obj / abs(mean_obj)
+        consistency_score = max(0.0, 100.0 * (1.0 - cv / CV_THRESHOLD))
 
-    # Sub-score 2: Stagnation
-    if unimproved_iterations is not None and total_iterations and total_iterations > 0:
+    # Worst-case control
+    worst_case_score = 50.0  # Default when no reference
+    if reference_cost is not None and reference_cost != 0.0:
+        worst_obj = max(objectives)
+        worst_gap = (worst_obj - reference_cost) / abs(reference_cost)
+        gap_threshold = GAP_THRESHOLDS.get(benchmark_group, DEFAULT_GAP_THRESHOLD)
+        worst_case_score = max(0.0, 100.0 * (1.0 - worst_gap / gap_threshold))
+
+    raw = 0.5 * consistency_score + 0.3 * feasibility_score + 0.2 * worst_case_score
+    return min(100.0, raw)
+
+
+def compute_statistics(objectives: list[float]) -> dict[str, float | None]:
+    """Compute descriptive statistics for a list of objectives."""
+    if not objectives:
+        return {"mean": None, "median": None, "std": None, "best": None,
+                "worst": None, "p5": None, "p95": None}
+
+    sorted_objs = sorted(objectives)
+    n = len(sorted_objs)
+    mean = sum(sorted_objs) / n
+    variance = sum((o - mean) ** 2 for o in sorted_objs) / n
+    std = math.sqrt(variance)
+
+    def percentile(data: list[float], p: float) -> float:
+        idx = (p / 100.0) * (len(data) - 1)
+        lower = int(math.floor(idx))
+        upper = min(lower + 1, len(data) - 1)
+        frac = idx - lower
+        return data[lower] * (1 - frac) + data[upper] * frac
+
+    return {
+        "mean": mean,
+        "median": percentile(sorted_objs, 50),
+        "std": std,
+        "best": sorted_objs[0],
+        "worst": sorted_objs[-1],
+        "p5": percentile(sorted_objs, 5),
+        "p95": percentile(sorted_objs, 95),
+    }
+
+
+# =============================================================================
+# D5: Search Dynamics
+# =============================================================================
+
+
+def score_dynamics(total_iterations: int, unimproved_iterations: int,
+                   diversity_at_termination: float, termination_reason: str) -> float:
+    """D5: Search dynamics health score.
+
+    dynamics = (diversity_score + stagnation_score + termination_quality) / 3
+    """
+    # Diversity health
+    diversity_score = min(100.0, diversity_at_termination * 200.0)
+
+    # Stagnation control
+    if total_iterations > 0:
         stagnation_ratio = unimproved_iterations / total_iterations
         stagnation_score = max(0.0, 100.0 * (1.0 - stagnation_ratio / 0.8))
     else:
-        stagnation_score = 50.0  # neutral
+        stagnation_score = 0.0
 
-    # Sub-score 3: Termination quality
-    reason_key = termination_reason.lower().strip() if termination_reason else ""
-    termination_score = TERMINATION_QUALITY_MAP.get(reason_key, DEFAULT_TERMINATION_QUALITY)
-
-    return (diversity_score + stagnation_score + termination_score) / 3.0
-
-
-# ---------------------------------------------------------------------------
-# Per-run scoring
-# ---------------------------------------------------------------------------
-
-def score_run(run: dict[str, Any], *, time_budget_s: float | None = None) -> RunScore:
-    """Score a single benchmark run result from run.py output."""
-    benchmark_id = run.get("benchmark_id", "unknown")
-    strategy = run.get("strategy", "unknown")
-    family = run.get("family", "")
-    tier = run.get("tier", "")
-    group = _infer_group(family)
-
-    objective = run.get("objective")
-    reference_cost = run.get("reference_objective")
-    feasible = bool(run.get("feasible", False))
-    elapsed = float(run.get("elapsed_seconds", 0))
-    ttb = run.get("time_to_best_seconds")
-
-    # Extract metadata/diagnostics
-    metadata = run.get("metadata", {}) or {}
-    diagnostics = run.get("diagnostics", {}) or {}
-    combined_meta = {**metadata, **diagnostics}
-
-    termination_reason = str(combined_meta.get("termination_reason", run.get("termination_reason", "")))
-    iterations = int(combined_meta.get("iterations", combined_meta.get("ga_generation_count", 0)) or 0)
-    evaluations = int(
-        combined_meta.get("ga_offspring_evaluated", 0)
-        or combined_meta.get("alns_candidates_evaluated", 0)
-        or combined_meta.get("loop_candidates_evaluated", 0)
-        or 0
+    # Termination quality
+    termination_quality = TERMINATION_SCORES.get(
+        termination_reason, DEFAULT_TERMINATION_SCORE
     )
-    diversity = combined_meta.get("diversity")
-    if diversity is not None:
-        try:
-            diversity = float(diversity)
-        except (TypeError, ValueError):
-            diversity = None
-    unimproved = combined_meta.get("unimproved_iterations")
-    if unimproved is not None:
-        try:
-            unimproved = int(unimproved)
-        except (TypeError, ValueError):
-            unimproved = None
 
-    # Incumbent trace (if available)
-    incumbent_trace = combined_meta.get("incumbent_trace")
-    if isinstance(incumbent_trace, str):
-        try:
-            incumbent_trace = json.loads(incumbent_trace)
-        except (json.JSONDecodeError, TypeError):
-            incumbent_trace = None
+    return (diversity_score + stagnation_score + termination_quality) / 3.0
 
-    # Effective time budget
-    budget = time_budget_s or elapsed or 5.0
 
-    # --- Score each dimension ---
-    d1, gap_rel = score_d1_quality(objective, reference_cost, feasible, group)
+# =============================================================================
+# Composite Score
+# =============================================================================
 
-    d2_full = score_d2_anytime(incumbent_trace, reference_cost, budget, group)
-    if d2_full < 0:
-        # No trace — use degraded scoring
-        d2 = score_d2_degraded(ttb, budget, d1)
-    else:
-        d2 = d2_full
 
-    d3 = score_d3_efficiency(evaluations, elapsed, group)
+def composite_score(dimensions: DimensionScores) -> float:
+    """Compute weighted composite score from dimensions.
 
-    # D4 (Stability) requires multi-seed — computed at aggregation level
-    d4 = -1.0  # sentinel: per-run cannot compute
+    If stability is unavailable (-1), redistribute its weight proportionally.
+    """
+    scores = {
+        "quality": dimensions.quality,
+        "anytime": dimensions.anytime,
+        "efficiency": dimensions.efficiency,
+        "stability": dimensions.stability,
+        "dynamics": dimensions.dynamics,
+    }
 
-    d5 = score_d5_dynamics(termination_reason, diversity, unimproved, iterations)
-
-    # Composite (exclude D4 at per-run level, redistribute its weight)
-    if d4 < 0:
-        # Redistribute D4 weight proportionally to other dimensions
-        active_weight = WEIGHTS["quality"] + WEIGHTS["anytime"] + WEIGHTS["efficiency"] + WEIGHTS["dynamics"]
-        composite = (
-            WEIGHTS["quality"] / active_weight * d1
-            + WEIGHTS["anytime"] / active_weight * d2
-            + WEIGHTS["efficiency"] / active_weight * d3
-            + WEIGHTS["dynamics"] / active_weight * d5
+    if dimensions.stability < 0:
+        # Stability unavailable: redistribute weight to other dimensions
+        available_weight = sum(v for k, v in WEIGHTS.items() if k != "stability")
+        total = sum(
+            scores[k] * (WEIGHTS[k] / available_weight)
+            for k in WEIGHTS
+            if k != "stability"
         )
     else:
-        composite = (
-            WEIGHTS["quality"] * d1
-            + WEIGHTS["anytime"] * d2
-            + WEIGHTS["efficiency"] * d3
-            + WEIGHTS["stability"] * d4
-            + WEIGHTS["dynamics"] * d5
-        )
+        total = sum(scores[k] * WEIGHTS[k] for k in WEIGHTS)
+
+    return total
+
+
+# =============================================================================
+# Per-Run Scoring
+# =============================================================================
+
+
+def score_run(metrics: RunMetrics) -> RunScore:
+    """Score a single benchmark run across all dimensions."""
+    # D1
+    quality = score_quality(
+        metrics.objective, metrics.reference_cost,
+        metrics.feasible, metrics.benchmark_group
+    )
+    gap_rel = compute_gap_rel(metrics.objective, metrics.reference_cost, metrics.feasible)
+
+    # D2
+    anytime, primal_integral = score_anytime(
+        metrics.incumbent_trace, metrics.reference_cost,
+        metrics.time_budget_s, metrics.benchmark_group, metrics.feasible
+    )
+
+    # D3
+    efficiency = score_efficiency(
+        metrics.wall_time_seconds,
+        metrics.loop_candidates_evaluated,
+        metrics.construct_candidates_evaluated,
+        metrics.benchmark_group,
+    )
+
+    # D5 (D4 is per-instance)
+    dynamics = score_dynamics(
+        metrics.total_iterations,
+        metrics.unimproved_iterations,
+        metrics.diversity_at_termination,
+        metrics.termination_reason,
+    )
+
+    dimensions = DimensionScores(
+        quality=quality,
+        anytime=anytime,
+        efficiency=efficiency,
+        stability=-1.0,  # Per-instance only
+        dynamics=dynamics,
+    )
 
     return RunScore(
-        benchmark_id=benchmark_id,
-        strategy=strategy,
-        family=family,
-        tier=tier,
-        composite=round(composite, 1),
-        dimensions=DimensionScores(
-            quality=round(d1, 1),
-            anytime=round(d2, 1),
-            efficiency=round(d3, 1),
-            stability=round(d4, 1) if d4 >= 0 else -1.0,
-            dynamics=round(d5, 1),
-        ),
-        objective=objective,
-        reference_cost=reference_cost,
-        gap_rel=round(gap_rel, 4) if gap_rel is not None else None,
-        feasible=feasible,
-        elapsed_seconds=elapsed,
-        time_to_best_seconds=ttb,
-        termination_reason=termination_reason,
-        evaluations=evaluations,
-        iterations=iterations,
+        run_id=metrics.run_id,
+        benchmark_group=metrics.benchmark_group,
+        benchmark_id=metrics.benchmark_id,
+        strategy=metrics.strategy,
+        seed=metrics.seed,
+        composite=composite_score(dimensions),
+        dimensions=dimensions,
+        gap_rel=gap_rel,
+        objective=metrics.objective,
+        reference_cost=metrics.reference_cost,
+        primal_integral=primal_integral,
     )
 
 
-# ---------------------------------------------------------------------------
-# Aggregation — multi-run → per-instance / per-group / global
-# ---------------------------------------------------------------------------
-
-def score_d4_stability(objectives: list[float], reference_cost: float | None, group: str) -> float:
-    """D4: Stability — computed from multiple seed runs."""
-    if len(objectives) < 3:
-        return -1.0  # insufficient data
-
-    mean_obj = sum(objectives) / len(objectives)
-    if mean_obj == 0:
-        return 50.0
-
-    # Consistency (CV)
-    variance = sum((x - mean_obj) ** 2 for x in objectives) / len(objectives)
-    std = math.sqrt(variance)
-    cv = std / abs(mean_obj)
-    consistency_score = max(0.0, 100.0 * (1.0 - cv / CV_THRESHOLD))
-
-    # Feasibility rate — all provided objectives are feasible by definition
-    feasibility_score = 100.0
-
-    # Worst case
-    if reference_cost and reference_cost != 0:
-        threshold = GAP_THRESHOLDS.get(group, DEFAULT_GAP_THRESHOLD)
-        worst = max(objectives)  # assuming minimization
-        worst_gap = (worst - reference_cost) / abs(reference_cost)
-        worst_case_score = max(0.0, 100.0 * (1.0 - worst_gap / threshold))
-    else:
-        worst_case_score = 50.0
-
-    return 0.5 * consistency_score + 0.3 * feasibility_score + 0.2 * worst_case_score
+# =============================================================================
+# Aggregation: Instance → Group → Global
+# =============================================================================
 
 
-def aggregate_scores(run_scores: list[RunScore]) -> list[StrategyScore]:
-    """Aggregate per-run scores into per-group and global strategy scores."""
+def aggregate_instance(run_scores: list[RunScore], benchmark_group: str) -> InstanceScore:
+    """Aggregate multiple seed runs of the same (benchmark_id, strategy) into an InstanceScore."""
+    if not run_scores:
+        return InstanceScore()
+
+    first = run_scores[0]
+
+    # Collect feasible objectives for stability
+    feasible_objectives = [
+        r.objective for r in run_scores
+        if r.objective is not None and r.dimensions.quality > 0
+    ]
+    feasible_count = sum(1 for r in run_scores if r.dimensions.quality > 0)
+
+    # D4: Stability
+    stability = score_stability(
+        feasible_objectives, first.reference_cost,
+        feasible_count, len(run_scores),
+        benchmark_group,
+    )
+
+    # Average dimension scores across seeds
+    n = len(run_scores)
+    avg_quality = sum(r.dimensions.quality for r in run_scores) / n
+    avg_anytime = sum(r.dimensions.anytime for r in run_scores) / n
+    avg_efficiency = sum(r.dimensions.efficiency for r in run_scores) / n
+    avg_dynamics = sum(r.dimensions.dynamics for r in run_scores) / n
+
+    dimensions = DimensionScores(
+        quality=avg_quality,
+        anytime=avg_anytime,
+        efficiency=avg_efficiency,
+        stability=stability,
+        dynamics=avg_dynamics,
+    )
+
+    # Best run info
+    best_run = min(run_scores, key=lambda r: r.objective if r.objective is not None else float("inf"))
+
+    seeds = set(r.seed for r in run_scores)
+    gap_rels = [r.gap_rel for r in run_scores if r.gap_rel is not None]
+
+    return InstanceScore(
+        benchmark_id=first.benchmark_id,
+        strategy=first.strategy,
+        benchmark_group=benchmark_group,
+        composite=composite_score(dimensions),
+        dimensions=dimensions,
+        run_count=n,
+        seed_count=len(seeds),
+        objectives=feasible_objectives,
+        gap_rels=gap_rels,
+        reference_cost=first.reference_cost,
+        best_objective=best_run.objective,
+        best_gap_rel=best_run.gap_rel,
+        incumbent_trace_path=best_run.incumbent_trace_path,
+    )
+
+
+def aggregate_group(instance_scores: list[InstanceScore], strategy: str,
+                    benchmark_group: str) -> StrategyScore:
+    """Aggregate InstanceScores into a group-level StrategyScore."""
+    if not instance_scores:
+        return StrategyScore(strategy=strategy, benchmark_group=benchmark_group)
+
+    n = len(instance_scores)
+    avg_quality = sum(i.dimensions.quality for i in instance_scores) / n
+    avg_anytime = sum(i.dimensions.anytime for i in instance_scores) / n
+    avg_efficiency = sum(i.dimensions.efficiency for i in instance_scores) / n
+    avg_dynamics = sum(i.dimensions.dynamics for i in instance_scores) / n
+
+    # Stability: average of available scores, skip -1
+    stability_scores = [i.dimensions.stability for i in instance_scores if i.dimensions.stability >= 0]
+    avg_stability = sum(stability_scores) / len(stability_scores) if stability_scores else -1.0
+
+    dimensions = DimensionScores(
+        quality=avg_quality,
+        anytime=avg_anytime,
+        efficiency=avg_efficiency,
+        stability=avg_stability,
+        dynamics=avg_dynamics,
+    )
+
+    total_runs = sum(i.run_count for i in instance_scores)
+    total_seeds = max(i.seed_count for i in instance_scores) if instance_scores else 0
+
+    return StrategyScore(
+        strategy=strategy,
+        benchmark_group=benchmark_group,
+        composite=composite_score(dimensions),
+        dimensions=dimensions,
+        run_count=total_runs,
+        seed_count=total_seeds,
+        instance_count=n,
+        instances=instance_scores,
+    )
+
+
+def aggregate_global(group_scores: list[StrategyScore], strategy: str) -> StrategyScore:
+    """Aggregate multiple group scores into a global strategy score."""
+    if not group_scores:
+        return StrategyScore(strategy=strategy, benchmark_group="all")
+
+    n = len(group_scores)
+    avg_quality = sum(g.dimensions.quality for g in group_scores) / n
+    avg_anytime = sum(g.dimensions.anytime for g in group_scores) / n
+    avg_efficiency = sum(g.dimensions.efficiency for g in group_scores) / n
+    avg_dynamics = sum(g.dimensions.dynamics for g in group_scores) / n
+
+    stability_scores = [g.dimensions.stability for g in group_scores if g.dimensions.stability >= 0]
+    avg_stability = sum(stability_scores) / len(stability_scores) if stability_scores else -1.0
+
+    dimensions = DimensionScores(
+        quality=avg_quality,
+        anytime=avg_anytime,
+        efficiency=avg_efficiency,
+        stability=avg_stability,
+        dynamics=avg_dynamics,
+    )
+
+    total_runs = sum(g.run_count for g in group_scores)
+    total_seeds = max(g.seed_count for g in group_scores) if group_scores else 0
+    total_instances = sum(g.instance_count for g in group_scores)
+
+    return StrategyScore(
+        strategy=strategy,
+        benchmark_group="all",
+        composite=composite_score(dimensions),
+        dimensions=dimensions,
+        run_count=total_runs,
+        seed_count=total_seeds,
+        instance_count=total_instances,
+    )
+
+
+# =============================================================================
+# Metrics Extraction from Benchmark Run JSON
+# =============================================================================
+
+
+def extract_metrics(run_data: dict[str, Any]) -> RunMetrics:
+    """Extract RunMetrics from a BenchmarkRun JSON object."""
+    metrics = run_data.get("metrics", {})
+    diag = run_data.get("operator_diagnostics", {})
+
+    # Incumbent trace: check both diagnostics and metrics
+    incumbent_trace: list[IncumbentEvent] = []
+    trace_json = diag.get("incumbent_trace_json") or metrics.get("incumbent_trace_json")
+    if isinstance(trace_json, str):
+        try:
+            raw_trace = json.loads(trace_json)
+            incumbent_trace = [
+                IncumbentEvent(elapsed_s=e["elapsed_s"], objective=e["objective"])
+                for e in raw_trace
+            ]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+
+    # Reference cost: from metrics or strategy_config
+    reference_cost = metrics.get("reference_cost") or metrics.get("best_known_solution")
+    if reference_cost is not None:
+        reference_cost = float(reference_cost)
+
+    # Time budget
+    strategy_config = run_data.get("strategy_config", {})
+    time_budget = metrics.get("time_budget_s") or strategy_config.get("time_limit_s", 30.0)
+
+    # Termination reason: from diagnostics or metrics
+    termination_reason = (
+        diag.get("termination_reason")
+        or metrics.get("termination_reason")
+        or ""
+    )
+
+    return RunMetrics(
+        run_id=run_data.get("run_id", ""),
+        benchmark_group=run_data.get("benchmark_group", ""),
+        benchmark_id=run_data.get("benchmark_id", ""),
+        strategy=run_data.get("strategy", ""),
+        seed=run_data.get("seed", 0),
+        objective=_safe_float(metrics.get("objective") or metrics.get("best_cost")),
+        feasible=bool(metrics.get("feasible", False)),
+        reference_cost=reference_cost,
+        incumbent_trace=incumbent_trace,
+        time_budget_s=float(time_budget) if time_budget else 30.0,
+        wall_time_seconds=_safe_float(metrics.get("runtime_ms", 0)) / 1000.0
+        if metrics.get("runtime_ms") is not None
+        else _safe_float(diag.get("wall_time_seconds", 0)),
+        loop_candidates_evaluated=int(
+            diag.get("loop_candidates_evaluated", 0)
+            or metrics.get("loop_candidates_evaluated", 0)
+            or diag.get("ga_offspring_evaluated", 0)
+            or diag.get("alns_candidates_evaluated", 0)
+        ),
+        construct_candidates_evaluated=int(
+            diag.get("construct_candidates_evaluated", 0)
+            or metrics.get("construct_candidates_evaluated", 0)
+        ),
+        total_iterations=int(
+            diag.get("total_iterations", 0)
+            or metrics.get("iterations", 0)
+        ),
+        unimproved_iterations=int(
+            diag.get("unimproved_iterations", 0)
+            or metrics.get("unimproved_iterations", 0)
+        ),
+        diversity_at_termination=_safe_float(
+            diag.get("diversity_at_termination", 0)
+            or metrics.get("diversity_at_termination", 0)
+        ),
+        termination_reason=str(termination_reason),
+        restarts=int(diag.get("restarts", 0) or metrics.get("restarts", 0)),
+    )
+
+
+def _safe_float(value: Any) -> float:
+    """Safely convert to float, returning 0.0 on failure."""
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return 0.0
+
+
+# =============================================================================
+# Full Pipeline
+# =============================================================================
+
+
+def score_all_runs(run_data_list: list[dict[str, Any]]) -> dict[str, Any]:
+    """Score all runs and produce the complete strategy-scores.json output.
+
+    Returns the StrategyScoreData dict ready for JSON serialization.
+    """
+    # Extract metrics and score each run
+    run_scores: list[RunScore] = []
+    for run_data in run_data_list:
+        metrics = extract_metrics(run_data)
+        if not metrics.strategy or not metrics.benchmark_group:
+            continue
+        scored = score_run(metrics)
+        run_scores.append(scored)
+
+    if not run_scores:
+        return _empty_output()
+
+    # Group by (strategy, benchmark_group, benchmark_id)
+    # Level 2: per-instance
     from collections import defaultdict
 
-    # Group by (strategy, group)
-    by_strategy_group: dict[tuple[str, str], list[RunScore]] = defaultdict(list)
+    by_instance: dict[tuple[str, str, str], list[RunScore]] = defaultdict(list)
     for rs in run_scores:
-        group = _infer_group(rs.family)
-        by_strategy_group[(rs.strategy, group)].append(rs)
+        key = (rs.strategy, rs.benchmark_group, rs.benchmark_id)
+        by_instance[key].append(rs)
 
-    results: list[StrategyScore] = []
+    instance_scores: list[InstanceScore] = []
+    for (strategy, group, bench_id), scores in by_instance.items():
+        instance_scores.append(aggregate_instance(scores, group))
 
-    # Per-group scores
-    strategy_totals: dict[str, list[StrategyScore]] = defaultdict(list)
+    # Level 3: per-group
+    by_strategy_group: dict[tuple[str, str], list[InstanceScore]] = defaultdict(list)
+    for inst in instance_scores:
+        by_strategy_group[(inst.strategy, inst.benchmark_group)].append(inst)
 
-    for (strategy, group), runs in sorted(by_strategy_group.items()):
-        # Compute D4 from feasible objectives
-        feasible_objectives = [r.objective for r in runs if r.feasible and r.objective is not None]
-        ref = runs[0].reference_cost if runs else None
-        d4 = score_d4_stability(feasible_objectives, ref, group)
+    group_scores: list[StrategyScore] = []
+    for (strategy, group), instances in by_strategy_group.items():
+        group_scores.append(aggregate_group(instances, strategy, group))
 
-        # Average D1, D2, D3, D5 across runs
-        d1_avg = _mean([r.dimensions.quality for r in runs])
-        d2_avg = _mean([r.dimensions.anytime for r in runs])
-        d3_avg = _mean([r.dimensions.efficiency for r in runs])
-        d5_avg = _mean([r.dimensions.dynamics for r in runs])
+    # Level 4: global per-strategy
+    by_strategy: dict[str, list[StrategyScore]] = defaultdict(list)
+    for gs in group_scores:
+        by_strategy[gs.strategy].append(gs)
 
-        # Composite
-        if d4 >= 0:
-            composite = (
-                WEIGHTS["quality"] * d1_avg
-                + WEIGHTS["anytime"] * d2_avg
-                + WEIGHTS["efficiency"] * d3_avg
-                + WEIGHTS["stability"] * d4
-                + WEIGHTS["dynamics"] * d5_avg
-            )
-        else:
-            active_w = WEIGHTS["quality"] + WEIGHTS["anytime"] + WEIGHTS["efficiency"] + WEIGHTS["dynamics"]
-            composite = (
-                WEIGHTS["quality"] / active_w * d1_avg
-                + WEIGHTS["anytime"] / active_w * d2_avg
-                + WEIGHTS["efficiency"] / active_w * d3_avg
-                + WEIGHTS["dynamics"] / active_w * d5_avg
-            )
+    global_scores: list[StrategyScore] = []
+    for strategy, groups in by_strategy.items():
+        global_scores.append(aggregate_global(groups, strategy))
 
-        instances = set(r.benchmark_id for r in runs)
-        seeds = len(runs)  # approximation
+    # Build output
+    all_scores = global_scores + group_scores
 
-        gs = StrategyScore(
-            strategy=strategy,
-            benchmark_group=group,
-            composite=round(composite, 1),
-            dimensions=DimensionScores(
-                quality=round(d1_avg, 1),
-                anytime=round(d2_avg, 1),
-                efficiency=round(d3_avg, 1),
-                stability=round(d4, 1) if d4 >= 0 else -1.0,
-                dynamics=round(d5_avg, 1),
-            ),
-            run_count=len(runs),
-            seed_count=seeds,
-            instance_count=len(instances),
-        )
-        results.append(gs)
-        strategy_totals[strategy].append(gs)
-
-    # Global per-strategy
-    for strategy, group_scores in strategy_totals.items():
-        total_runs = sum(gs.run_count for gs in group_scores)
-        total_instances = sum(gs.instance_count for gs in group_scores)
-        # Weighted average by run_count
-        if total_runs > 0:
-            composite = sum(gs.composite * gs.run_count for gs in group_scores) / total_runs
-            d1 = sum(gs.dimensions.quality * gs.run_count for gs in group_scores) / total_runs
-            d2 = sum(gs.dimensions.anytime * gs.run_count for gs in group_scores) / total_runs
-            d3 = sum(gs.dimensions.efficiency * gs.run_count for gs in group_scores) / total_runs
-            d4_vals = [gs.dimensions.stability for gs in group_scores if gs.dimensions.stability >= 0]
-            d4 = _mean(d4_vals) if d4_vals else -1.0
-            d5 = sum(gs.dimensions.dynamics * gs.run_count for gs in group_scores) / total_runs
-        else:
-            composite = d1 = d2 = d3 = d4 = d5 = 0.0
-
-        results.append(StrategyScore(
-            strategy=strategy,
-            benchmark_group="all",
-            composite=round(composite, 1),
-            dimensions=DimensionScores(
-                quality=round(d1, 1),
-                anytime=round(d2, 1),
-                efficiency=round(d3, 1),
-                stability=round(d4, 1) if d4 >= 0 else -1.0,
-                dynamics=round(d5, 1),
-            ),
-            run_count=total_runs,
-            seed_count=total_runs,
-            instance_count=total_instances,
-        ))
-
-    return results
-
-
-def _mean(values: list[float]) -> float:
-    valid = [v for v in values if v >= 0]
-    return sum(valid) / len(valid) if valid else 0.0
-
-
-# ---------------------------------------------------------------------------
-# Output formatting
-# ---------------------------------------------------------------------------
-
-def format_terminal_report(run_scores: list[RunScore], strategy_scores: list[StrategyScore]) -> str:
-    """Format a human-readable terminal report."""
-    lines: list[str] = []
-    lines.append("=" * 78)
-    lines.append("  Strategy Performance Scoring Report")
-    lines.append("=" * 78)
-
-    # Global scores
-    global_scores = [s for s in strategy_scores if s.benchmark_group == "all"]
-    if global_scores:
-        lines.append("")
-        lines.append("  OVERALL SCORES")
-        lines.append(f"  {'Strategy':<16} {'Composite':>9} {'Quality':>8} {'Anytime':>8} {'Effic.':>7} {'Stab.':>6} {'Dynam.':>7}")
-        lines.append(f"  {'-'*72}")
-        for s in sorted(global_scores, key=lambda x: -x.composite):
-            stab = f"{s.dimensions.stability:.1f}" if s.dimensions.stability >= 0 else "n/a"
-            lines.append(
-                f"  {s.strategy:<16} {s.composite:>8.1f}  "
-                f"{s.dimensions.quality:>7.1f} {s.dimensions.anytime:>7.1f} "
-                f"{s.dimensions.efficiency:>6.1f} {stab:>5} {s.dimensions.dynamics:>6.1f}"
-            )
-
-    # Per-group
-    group_scores = [s for s in strategy_scores if s.benchmark_group != "all"]
-    groups = sorted(set(s.benchmark_group for s in group_scores))
-    for group in groups:
-        gs = [s for s in group_scores if s.benchmark_group == group]
-        lines.append("")
-        lines.append(f"  [{group.upper()}]")
-        for s in sorted(gs, key=lambda x: -x.composite):
-            lines.append(f"    {s.strategy:<14} composite={s.composite:.1f}  Q={s.dimensions.quality:.0f} A={s.dimensions.anytime:.0f} E={s.dimensions.efficiency:.0f} D={s.dimensions.dynamics:.0f}  ({s.run_count} runs)")
-
-    # Per-run details
-    if run_scores:
-        lines.append("")
-        lines.append("  PER-RUN DETAILS")
-        lines.append(f"  {'Case':<24} {'Strategy':<12} {'Score':>6} {'Obj':>10} {'Gap%':>7} {'Time':>6} {'Term'}")
-        lines.append(f"  {'-'*78}")
-        for r in sorted(run_scores, key=lambda x: (x.strategy, x.benchmark_id)):
-            obj_str = f"{r.objective:.1f}" if r.objective is not None else "n/a"
-            gap_str = f"{r.gap_rel*100:.1f}%" if r.gap_rel is not None else "n/a"
-            lines.append(
-                f"  {r.benchmark_id:<24} {r.strategy:<12} {r.composite:>5.1f} "
-                f"{obj_str:>10} {gap_str:>7} {r.elapsed_seconds:>5.2f}s {r.termination_reason}"
-            )
-
-    lines.append("")
-    lines.append("=" * 78)
-    return "\n".join(lines)
-
-
-def to_dashboard_json(strategy_scores: list[StrategyScore], *, commit: str = "local") -> dict[str, Any]:
-    """Convert scores to dashboard strategy-scores.json format."""
     return {
         "schema_version": 1,
-        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds") + "Z",
-        "optagent_commit": commit,
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "config": {
             "weights": WEIGHTS,
             "thresholds": {
@@ -594,115 +790,251 @@ def to_dashboard_json(strategy_scores: list[StrategyScore], *, commit: str = "lo
                 "cv_threshold": CV_THRESHOLD,
             },
         },
-        "scores": [
-            {
-                "strategy": s.strategy,
-                "benchmark_group": s.benchmark_group,
-                "composite": s.composite,
-                "dimensions": asdict(s.dimensions),
-                "run_count": s.run_count,
-                "seed_count": s.seed_count,
-                "instance_count": s.instance_count,
-            }
-            for s in strategy_scores
-        ],
+        "scores": [_strategy_score_to_dict(s) for s in all_scores],
     }
 
 
-# ---------------------------------------------------------------------------
+def _strategy_score_to_dict(s: StrategyScore) -> dict[str, Any]:
+    """Convert StrategyScore to output dict."""
+    result: dict[str, Any] = {
+        "strategy": s.strategy,
+        "benchmark_group": s.benchmark_group,
+        "composite": round(s.composite, 1),
+        "dimensions": {
+            "quality": round(s.dimensions.quality, 1),
+            "anytime": round(s.dimensions.anytime, 1),
+            "efficiency": round(s.dimensions.efficiency, 1),
+            "stability": round(s.dimensions.stability, 1),
+            "dynamics": round(s.dimensions.dynamics, 1),
+        },
+        "run_count": s.run_count,
+        "seed_count": s.seed_count,
+        "instance_count": s.instance_count,
+    }
+    # Include instance details for group-level scores (not global)
+    if s.benchmark_group != "all" and s.instances:
+        result["instances"] = [
+            {
+                "benchmark_id": i.benchmark_id,
+                "composite": round(i.composite, 1),
+                "quality": round(i.dimensions.quality, 1),
+                "anytime": round(i.dimensions.anytime, 1),
+                "gap_rel": round(i.best_gap_rel, 4) if i.best_gap_rel is not None else None,
+                "objective": i.best_objective,
+                "reference_cost": i.reference_cost,
+                "incumbent_trace_path": i.incumbent_trace_path,
+            }
+            for i in s.instances
+        ]
+    return result
+
+
+def _empty_output() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "config": {
+            "weights": WEIGHTS,
+            "thresholds": {
+                "gap_thresholds": GAP_THRESHOLDS,
+                "expected_throughput": EXPECTED_THROUGHPUT,
+                "cv_threshold": CV_THRESHOLD,
+            },
+        },
+        "scores": [],
+    }
+
+
+# =============================================================================
 # CLI
-# ---------------------------------------------------------------------------
+# =============================================================================
+
+
+def load_runs_from_paths(paths: list[str]) -> list[dict[str, Any]]:
+    """Load benchmark run JSON files from paths."""
+    runs = []
+    for path_str in paths:
+        path = Path(path_str)
+        if path.is_dir():
+            for json_file in sorted(path.rglob("*.json")):
+                if json_file.name == "index.json":
+                    continue
+                try:
+                    data = json.loads(json_file.read_text())
+                    if "run_id" in data and "metrics" in data:
+                        runs.append(data)
+                except (json.JSONDecodeError, OSError):
+                    continue
+        elif path.is_file():
+            try:
+                data = json.loads(path.read_text())
+                if isinstance(data, list):
+                    runs.extend(data)
+                elif "run_id" in data and "metrics" in data:
+                    runs.append(data)
+            except (json.JSONDecodeError, OSError):
+                continue
+    return runs
+
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Score benchmark run results (D1–D5 + composite).",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
+    parser = argparse.ArgumentParser(description="Strategy Performance Scoring")
+    parser.add_argument(
+        "--input", "-i", nargs="+",
+        help="Input run JSON files or directories",
     )
     parser.add_argument(
-        "input",
-        nargs="*",
-        help="JSON file(s) containing run.py output. Reads stdin if omitted.",
+        "--input-dir",
+        help="Input directory containing benchmark results",
     )
     parser.add_argument(
-        "--output", "-o",
-        help="Write strategy-scores.json to this path (dashboard format).",
+        "--output", "-o", default="-",
+        help="Output file path (- for stdout)",
     )
     parser.add_argument(
-        "--time-budget", type=float, default=None,
-        help="Override time budget (seconds) for D2 scoring.",
+        "--commit",
+        help="OptAgent commit hash to include in output",
     )
     parser.add_argument(
-        "--commit", default="local",
-        help="OptAgent commit hash for the output JSON.",
+        "--calibrate", action="store_true",
+        help="Output calibrated thresholds from input data (P75-based)",
     )
-    parser.add_argument(
-        "--quiet", "-q", action="store_true",
-        help="Suppress terminal report, only write --output.",
-    )
-    parser.add_argument(
-        "--json", action="store_true",
-        help="Output per-run scores as JSON to stdout.",
-    )
+
     args = parser.parse_args()
 
-    # Load input
-    runs: list[dict[str, Any]] = []
+    # Collect input paths
+    input_paths: list[str] = []
     if args.input:
-        for path_str in args.input:
-            path = Path(path_str)
-            data = json.loads(path.read_text())
-            if isinstance(data, list):
-                runs.extend(data)
-            else:
-                runs.append(data)
-    else:
-        # Read from stdin
-        raw = sys.stdin.read().strip()
-        if not raw:
-            print("Error: no input provided. Pipe from run.py or pass JSON files.", file=sys.stderr)
-            return 1
-        data = json.loads(raw)
-        if isinstance(data, list):
-            runs.extend(data)
-        else:
-            runs.append(data)
+        input_paths.extend(args.input)
+    if args.input_dir:
+        input_paths.append(args.input_dir)
 
-    if not runs:
-        print("Error: no benchmark runs found in input.", file=sys.stderr)
+    if not input_paths:
+        print("Error: no input specified. Use --input or --input-dir.", file=sys.stderr)
         return 1
 
-    # Filter out error runs without objectives (can still score partial data)
-    scoreable = [r for r in runs if r.get("status") != "error" or r.get("objective") is not None]
-    if not scoreable:
-        print(f"Warning: all {len(runs)} runs are errors with no objective. Scoring error runs.", file=sys.stderr)
-        scoreable = runs
+    runs = load_runs_from_paths(input_paths)
+    if not runs:
+        print(f"Warning: no valid run data found in {input_paths}", file=sys.stderr)
 
-    # Score each run
-    run_scores = [score_run(r, time_budget_s=args.time_budget) for r in scoreable]
+    # Calibration mode
+    if args.calibrate:
+        thresholds = calibrate_thresholds(runs)
+        print(json.dumps(thresholds, indent=2, ensure_ascii=False))
+        return 0
 
-    # Aggregate
-    strategy_scores = aggregate_scores(run_scores)
+    output = score_all_runs(runs)
 
-    # Output
-    if args.json:
-        output = [asdict(rs) for rs in run_scores]
-        print(json.dumps(output, indent=2, ensure_ascii=False))
-    elif not args.quiet:
-        report = format_terminal_report(run_scores, strategy_scores)
-        print(report)
+    # Add optional commit
+    if args.commit:
+        output["optagent_commit"] = args.commit
 
-    # Write dashboard JSON
-    if args.output:
-        dashboard_data = to_dashboard_json(strategy_scores, commit=args.commit)
-        output_path = Path(args.output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(json.dumps(dashboard_data, indent=2, ensure_ascii=False) + "\n")
-        if not args.quiet:
-            print(f"\n  Dashboard scores written to: {output_path}")
+    # Write output
+    output_json = json.dumps(output, indent=2, ensure_ascii=False)
+    if args.output == "-":
+        print(output_json)
+    else:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(output_json + "\n")
+        print(f"Written: {args.output} ({len(output['scores'])} scores)", file=sys.stderr)
 
     return 0
 
 
+# =============================================================================
+# Calibration (Item 6)
+# =============================================================================
+
+
+def calibrate_thresholds(run_data_list: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compute calibrated thresholds from real benchmark data.
+
+    Uses P75 of gaps for gap_thresholds and P75 of throughput for expected_throughput.
+    Call with a large set of diverse benchmark runs to get meaningful calibration.
+
+    Returns a thresholds dict in the same format as the scoring config.
+    """
+    from collections import defaultdict
+
+    by_group: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for run_data in run_data_list:
+        group = run_data.get("benchmark_group", "")
+        if group:
+            by_group[group].append(run_data)
+
+    gap_thresholds: dict[str, float] = {}
+    expected_throughput: dict[str, float] = {}
+    cv_values: list[float] = []
+
+    for group, runs in by_group.items():
+        gaps: list[float] = []
+        throughputs: list[float] = []
+        objectives_by_instance: dict[str, list[float]] = defaultdict(list)
+
+        for run_data in runs:
+            metrics = run_data.get("metrics", {})
+            diag = run_data.get("operator_diagnostics", {})
+
+            obj = metrics.get("objective")
+            ref = metrics.get("reference_cost") or metrics.get("best_known_solution")
+            feasible = metrics.get("feasible", False)
+
+            if feasible and obj is not None and ref and ref != 0:
+                gap = (obj - ref) / abs(ref)
+                if gap > 0:
+                    gaps.append(gap)
+
+            # Throughput
+            wall = _safe_float(diag.get("wall_time_seconds", 0))
+            evals = int(
+                diag.get("ga_offspring_evaluated", 0)
+                or diag.get("loop_candidates_evaluated", 0)
+                or diag.get("alns_candidates_evaluated", 0)
+                or 0
+            )
+            if wall > 0 and evals > 0:
+                throughputs.append(evals / wall)
+
+            # CV data
+            bench_id = run_data.get("benchmark_id", "")
+            if feasible and obj is not None:
+                objectives_by_instance[bench_id].append(obj)
+
+        # P75 gap threshold
+        if gaps:
+            gaps.sort()
+            p75_idx = int(0.75 * (len(gaps) - 1))
+            gap_thresholds[group] = round(gaps[p75_idx], 3)
+
+        # P75 throughput
+        if throughputs:
+            throughputs.sort()
+            p75_idx = int(0.75 * (len(throughputs) - 1))
+            expected_throughput[group] = round(throughputs[p75_idx])
+
+        # CV per instance
+        for inst_objs in objectives_by_instance.values():
+            if len(inst_objs) >= 3:
+                mean = sum(inst_objs) / len(inst_objs)
+                if mean != 0:
+                    std = math.sqrt(sum((o - mean) ** 2 for o in inst_objs) / len(inst_objs))
+                    cv_values.append(std / abs(mean))
+
+    # CV threshold: P75 of observed CVs
+    cv_threshold = CV_THRESHOLD
+    if cv_values:
+        cv_values.sort()
+        p75_idx = int(0.75 * (len(cv_values) - 1))
+        cv_threshold = round(cv_values[p75_idx], 3)
+
+    return {
+        "gap_thresholds": gap_thresholds or GAP_THRESHOLDS,
+        "expected_throughput": expected_throughput or EXPECTED_THROUGHPUT,
+        "cv_threshold": cv_threshold,
+        "sample_size": len(run_data_list),
+        "groups_calibrated": list(by_group.keys()),
+    }
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())
