@@ -1,0 +1,46 @@
+{
+  "artifacts": {
+    "metrics": "results/scheduling/ga/2026/07/scheduling-ga-jsplib-la01-20260703-023252-41974fe-925e025/metrics.json"
+  },
+  "benchmark_group": "scheduling",
+  "benchmark_id": "jsplib_la01",
+  "benchmarks": {
+    "commit": "7a41dae11263dfdf04e06bd493126aff39d67548",
+    "commit_url": "https://github.com/Dongbox/optagent-benckmarks/commit/7a41dae11263dfdf04e06bd493126aff39d67548"
+  },
+  "created_at": "2026-07-03T02:32:52Z",
+  "environment": {
+    "platform": "Linux-6.17.0-1018-azure-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "runner": "github-actions"
+  },
+  "family": "interval_job_shop",
+  "metrics": {
+    "best_cost": null,
+    "error_message": "cannot import name 'LnsConfig' from 'optagent' (/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/optagent/__init__.py)",
+    "error_type": "ImportError",
+    "evaluations_per_s": null,
+    "feasible": false,
+    "gap_rel": null,
+    "improvement_per_second": null,
+    "objective": null,
+    "reference_cost": 666.0,
+    "runtime_ms": 1,
+    "status": "error",
+    "time_to_best_ms": 0,
+    "time_to_first_feasible_ms": 0
+  },
+  "optagent": {
+    "commit": "cpp-python-boundary-redesign",
+    "commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+    "version": "1.1.0",
+    "wheel_sha256": "sha256:f52b978e2bd76aa62587a784c09d1d6575ca2abbe7cb9245e9a20a16dc69cc02"
+  },
+  "run_id": "scheduling-ga-jsplib-la01-20260703-023252-41974fe-925e025",
+  "schema_version": 1,
+  "seed": 11,
+  "strategy": "ga",
+  "strategy_config": {},
+  "strategy_profile": "ga_scheduling_feasibility_v1",
+  "tier": "smoke"
+}

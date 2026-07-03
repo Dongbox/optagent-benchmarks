@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-06-24T06:51:20Z",
+  "generated_at": "2026-07-03T02:32:52Z",
   "groups": {
     "assignment": {
-      "benchmark_count": 4,
+      "benchmark_count": 9,
       "entries": [
         {
           "benchmark_group": "assignment",
@@ -29,18 +29,42 @@
           "best_run_id": "assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67",
           "best_runtime_ms": 4,
           "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T02:34:13Z",
+          "feasible_rate": 0.6666666666666666,
+          "latest_created_at": "2026-07-03T02:32:52Z",
           "optagent_commit": "cpp-python-boundary-redesign",
           "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
           "rank": 2,
-          "run_count": 14,
+          "run_count": 21,
           "strategy": "ga",
-          "success_rate": 1.0
+          "success_rate": 0.6666666666666666
         }
       ],
-      "run_count": 20,
+      "run_count": 27,
       "strategy_count": 2
+    },
+    "exact-regression": {
+      "benchmark_count": 2,
+      "entries": [
+        {
+          "benchmark_group": "exact-regression",
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "exact-regression-ga-miplib2017-ran14x18-disj-8-20260703-023252-41974fe-4bfaf77",
+          "best_runtime_ms": 643,
+          "best_summary_path": "/results/exact-regression/ga/2026/07/exact-regression-ga-miplib2017-ran14x18-disj-8-20260703-023252-41974fe-4bfaf77.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 1,
+          "run_count": 2,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "run_count": 2,
+      "strategy_count": 1
     },
     "routing": {
       "benchmark_count": 4,
@@ -70,21 +94,21 @@
           "best_run_id": "routing-ga-tsplib-pr76-20260623-023413-41974fe-f45bdca",
           "best_runtime_ms": 17,
           "best_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-pr76-20260623-023413-41974fe-f45bdca.json",
-          "feasible_rate": 0.6,
-          "latest_created_at": "2026-06-24T06:51:20Z",
+          "feasible_rate": 0.5,
+          "latest_created_at": "2026-07-03T02:32:52Z",
           "optagent_commit": "cpp-python-boundary-redesign",
           "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
           "rank": 2,
-          "run_count": 10,
+          "run_count": 12,
           "strategy": "ga",
-          "success_rate": 0.6
+          "success_rate": 0.5
         }
       ],
-      "run_count": 16,
+      "run_count": 18,
       "strategy_count": 2
     },
     "scheduling": {
-      "benchmark_count": 8,
+      "benchmark_count": 10,
       "entries": [
         {
           "benchmark_group": "scheduling",
@@ -111,14 +135,14 @@
           "best_run_id": "scheduling-ga-psplib-j90-2-4-20260623-023413-41974fe-381ca65",
           "best_runtime_ms": 103,
           "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-psplib-j90-2-4-20260623-023413-41974fe-381ca65.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T02:34:13Z",
+          "feasible_rate": 0.7142857142857143,
+          "latest_created_at": "2026-07-03T02:32:52Z",
           "optagent_commit": "cpp-python-boundary-redesign",
           "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
           "rank": 2,
-          "run_count": 10,
+          "run_count": 14,
           "strategy": "ga",
-          "success_rate": 1.0
+          "success_rate": 0.7142857142857143
         },
         {
           "benchmark_group": "scheduling",
@@ -138,8 +162,32 @@
           "success_rate": 0.0
         }
       ],
-      "run_count": 30,
+      "run_count": 34,
       "strategy_count": 3
+    },
+    "sequence-transition-penalty": {
+      "benchmark_count": 1,
+      "entries": [
+        {
+          "benchmark_group": "sequence-transition-penalty",
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "sequence-transition-penalty-ga-custom-steel-sequence-toy-20260703-023252-41974fe-6c20002",
+          "best_runtime_ms": 1,
+          "best_summary_path": "/results/sequence-transition-penalty/ga/2026/07/sequence-transition-penalty-ga-custom-steel-sequence-toy-20260703-023252-41974fe-6c20002.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "optagent_commit": "cpp-python-boundary-redesign",
+          "optagent_commit_url": "https://github.com/Dongbox/optagent/commit/cpp-python-boundary-redesign",
+          "rank": 1,
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "run_count": 1,
+      "strategy_count": 1
     }
   },
   "schema_version": 1

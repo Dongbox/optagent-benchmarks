@@ -22,21 +22,93 @@
           "success_rate": 1.0
         },
         {
-          "avg_runtime_ms": 6.833333333333333,
+          "avg_runtime_ms": 5.857142857142857,
           "best_cost": 9552.0,
           "best_gap_rel": 0.0,
           "best_objective": 9552.0,
           "best_run_id": "assignment-ga-qaplib-chr12a-20260623-022453-41974fe-1c6adba",
           "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-022453-41974fe-1c6adba.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T02:34:13Z",
-          "latest_feasible": true,
-          "latest_run_id": "assignment-ga-qaplib-chr12a-20260623-023413-41974fe-1d6695f",
-          "latest_status": "success",
-          "latest_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-chr12a-20260623-023413-41974fe-1d6695f.json",
-          "run_count": 6,
+          "feasible_rate": 0.8571428571428571,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-chr12a-20260703-023252-41974fe-038ffa3",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-chr12a-20260703-023252-41974fe-038ffa3.json",
+          "run_count": 7,
           "strategy": "ga",
-          "success_rate": 1.0
+          "success_rate": 0.8571428571428571
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_esc16b",
+      "strategies": [
+        {
+          "avg_runtime_ms": 0,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "assignment-ga-qaplib-esc16b-20260703-023252-41974fe-84138db",
+          "best_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16b-20260703-023252-41974fe-84138db.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-esc16b-20260703-023252-41974fe-84138db",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16b-20260703-023252-41974fe-84138db.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_esc16h",
+      "strategies": [
+        {
+          "avg_runtime_ms": 0,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "assignment-ga-qaplib-esc16h-20260703-023252-41974fe-a74a99e",
+          "best_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16h-20260703-023252-41974fe-a74a99e.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-esc16h-20260703-023252-41974fe-a74a99e",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-esc16h-20260703-023252-41974fe-a74a99e.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_had12",
+      "strategies": [
+        {
+          "avg_runtime_ms": 0,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "assignment-ga-qaplib-had12-20260703-023252-41974fe-dea167a",
+          "best_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-had12-20260703-023252-41974fe-dea167a.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-had12-20260703-023252-41974fe-dea167a",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-had12-20260703-023252-41974fe-dea167a.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
         }
       ],
       "tier": "smoke"
@@ -104,21 +176,21 @@
           "success_rate": 1.0
         },
         {
-          "avg_runtime_ms": 4.833333333333333,
+          "avg_runtime_ms": 4.142857142857143,
           "best_cost": 578.0,
           "best_gap_rel": 0.0,
           "best_objective": 578.0,
           "best_run_id": "assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67",
           "best_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-012612-41974fe-8a5ff67.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T02:34:13Z",
-          "latest_feasible": true,
-          "latest_run_id": "assignment-ga-qaplib-nug12-20260623-023413-41974fe-b433f45",
-          "latest_status": "success",
-          "latest_summary_path": "/results/assignment/ga/2026/06/assignment-ga-qaplib-nug12-20260623-023413-41974fe-b433f45.json",
-          "run_count": 6,
+          "feasible_rate": 0.8571428571428571,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-nug12-20260703-023252-41974fe-30a363e",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-nug12-20260703-023252-41974fe-30a363e.json",
+          "run_count": 7,
           "strategy": "ga",
-          "success_rate": 1.0
+          "success_rate": 0.8571428571428571
         }
       ],
       "tier": "smoke"
@@ -165,6 +237,102 @@
       "tier": "calibration"
     },
     {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_scr12",
+      "strategies": [
+        {
+          "avg_runtime_ms": 0,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "assignment-ga-qaplib-scr12-20260703-023252-41974fe-003f94d",
+          "best_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-scr12-20260703-023252-41974fe-003f94d.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-scr12-20260703-023252-41974fe-003f94d",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-scr12-20260703-023252-41974fe-003f94d.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "assignment",
+      "benchmark_id": "qaplib_tai12b",
+      "strategies": [
+        {
+          "avg_runtime_ms": 0,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "assignment-ga-qaplib-tai12b-20260703-023252-41974fe-913070a",
+          "best_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-tai12b-20260703-023252-41974fe-913070a.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "assignment-ga-qaplib-tai12b-20260703-023252-41974fe-913070a",
+          "latest_status": "error",
+          "latest_summary_path": "/results/assignment/ga/2026/07/assignment-ga-qaplib-tai12b-20260703-023252-41974fe-913070a.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "exact-regression",
+      "benchmark_id": "miplib2017_50v-10",
+      "strategies": [
+        {
+          "avg_runtime_ms": 821,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "exact-regression-ga-miplib2017-50v-10-20260703-023252-41974fe-03b0a7e",
+          "best_summary_path": "/results/exact-regression/ga/2026/07/exact-regression-ga-miplib2017-50v-10-20260703-023252-41974fe-03b0a7e.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "exact-regression-ga-miplib2017-50v-10-20260703-023252-41974fe-03b0a7e",
+          "latest_status": "error",
+          "latest_summary_path": "/results/exact-regression/ga/2026/07/exact-regression-ga-miplib2017-50v-10-20260703-023252-41974fe-03b0a7e.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "exact-regression",
+      "benchmark_id": "miplib2017_ran14x18-disj-8",
+      "strategies": [
+        {
+          "avg_runtime_ms": 643,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "exact-regression-ga-miplib2017-ran14x18-disj-8-20260703-023252-41974fe-4bfaf77",
+          "best_summary_path": "/results/exact-regression/ga/2026/07/exact-regression-ga-miplib2017-ran14x18-disj-8-20260703-023252-41974fe-4bfaf77.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "exact-regression-ga-miplib2017-ran14x18-disj-8-20260703-023252-41974fe-4bfaf77",
+          "latest_status": "error",
+          "latest_summary_path": "/results/exact-regression/ga/2026/07/exact-regression-ga-miplib2017-ran14x18-disj-8-20260703-023252-41974fe-4bfaf77.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
       "benchmark_group": "routing",
       "benchmark_id": "tsplib_berlin52",
       "strategies": [
@@ -186,21 +354,21 @@
           "success_rate": 1.0
         },
         {
-          "avg_runtime_ms": 4.5,
+          "avg_runtime_ms": 3.6,
           "best_cost": 22091.0,
           "best_gap_rel": 1.9290639087775125,
           "best_objective": 22091.0,
           "best_run_id": "routing-ga-tsplib-berlin52-20260623-023413-41974fe-e0b40a6",
           "best_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260623-023413-41974fe-e0b40a6.json",
-          "feasible_rate": 0.5,
-          "latest_created_at": "2026-06-24T06:51:20Z",
+          "feasible_rate": 0.4,
+          "latest_created_at": "2026-07-03T02:32:52Z",
           "latest_feasible": false,
-          "latest_run_id": "routing-ga-tsplib-berlin52-20260624-065120-41974fe-f538831",
+          "latest_run_id": "routing-ga-tsplib-berlin52-20260703-023252-41974fe-40f2bb5",
           "latest_status": "error",
-          "latest_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-berlin52-20260624-065120-41974fe-f538831.json",
-          "run_count": 4,
+          "latest_summary_path": "/results/routing/ga/2026/07/routing-ga-tsplib-berlin52-20260703-023252-41974fe-40f2bb5.json",
+          "run_count": 5,
           "strategy": "ga",
-          "success_rate": 0.5
+          "success_rate": 0.4
         }
       ],
       "tier": "smoke"
@@ -227,21 +395,21 @@
           "success_rate": 1.0
         },
         {
-          "avg_runtime_ms": 5,
+          "avg_runtime_ms": 4,
           "best_cost": 1293.0,
           "best_gap_rel": 2.035211267605634,
           "best_objective": 1293.0,
           "best_run_id": "routing-ga-tsplib-eil51-20260623-023413-41974fe-037b636",
           "best_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260623-023413-41974fe-037b636.json",
-          "feasible_rate": 0.5,
-          "latest_created_at": "2026-06-24T06:51:20Z",
+          "feasible_rate": 0.4,
+          "latest_created_at": "2026-07-03T02:32:52Z",
           "latest_feasible": false,
-          "latest_run_id": "routing-ga-tsplib-eil51-20260624-065120-41974fe-28112b3",
+          "latest_run_id": "routing-ga-tsplib-eil51-20260703-023252-41974fe-ba4e7c3",
           "latest_status": "error",
-          "latest_summary_path": "/results/routing/ga/2026/06/routing-ga-tsplib-eil51-20260624-065120-41974fe-28112b3.json",
-          "run_count": 4,
+          "latest_summary_path": "/results/routing/ga/2026/07/routing-ga-tsplib-eil51-20260703-023252-41974fe-ba4e7c3.json",
+          "run_count": 5,
           "strategy": "ga",
-          "success_rate": 0.5
+          "success_rate": 0.4
         }
       ],
       "tier": "smoke"
@@ -391,23 +559,6 @@
       "benchmark_id": "jsplib_ft06",
       "strategies": [
         {
-          "avg_runtime_ms": 22.5,
-          "best_cost": 60.0,
-          "best_gap_rel": 0.09090909090909091,
-          "best_objective": 60.0,
-          "best_run_id": "scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a",
-          "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T02:34:13Z",
-          "latest_feasible": true,
-          "latest_run_id": "scheduling-ga-jsplib-ft06-20260623-023413-41974fe-b08e702",
-          "latest_status": "success",
-          "latest_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-023413-41974fe-b08e702.json",
-          "run_count": 2,
-          "strategy": "ga",
-          "success_rate": 1.0
-        },
-        {
           "avg_runtime_ms": 26,
           "best_cost": 152.0,
           "best_gap_rel": 1.7636363636363637,
@@ -423,6 +574,23 @@
           "run_count": 2,
           "strategy": "alns",
           "success_rate": 1.0
+        },
+        {
+          "avg_runtime_ms": 15.333333333333334,
+          "best_cost": 60.0,
+          "best_gap_rel": 0.09090909090909091,
+          "best_objective": 60.0,
+          "best_run_id": "scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a",
+          "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft06-20260623-022453-41974fe-bc5784a.json",
+          "feasible_rate": 0.6666666666666666,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "scheduling-ga-jsplib-ft06-20260703-023252-41974fe-3d99f67",
+          "latest_status": "error",
+          "latest_summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft06-20260703-023252-41974fe-3d99f67.json",
+          "run_count": 3,
+          "strategy": "ga",
+          "success_rate": 0.6666666666666666
         },
         {
           "avg_runtime_ms": 0.5,
@@ -449,23 +617,6 @@
       "benchmark_id": "jsplib_ft10",
       "strategies": [
         {
-          "avg_runtime_ms": 121,
-          "best_cost": 1319.0,
-          "best_gap_rel": 0.4182795698924731,
-          "best_objective": 1319.0,
-          "best_run_id": "scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2",
-          "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2.json",
-          "feasible_rate": 1.0,
-          "latest_created_at": "2026-06-23T02:34:13Z",
-          "latest_feasible": true,
-          "latest_run_id": "scheduling-ga-jsplib-ft10-20260623-023413-41974fe-99c9a4a",
-          "latest_status": "success",
-          "latest_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft10-20260623-023413-41974fe-99c9a4a.json",
-          "run_count": 2,
-          "strategy": "ga",
-          "success_rate": 1.0
-        },
-        {
           "avg_runtime_ms": 129.5,
           "best_cost": 3394.0,
           "best_gap_rel": 2.649462365591398,
@@ -483,6 +634,23 @@
           "success_rate": 1.0
         },
         {
+          "avg_runtime_ms": 81.33333333333333,
+          "best_cost": 1319.0,
+          "best_gap_rel": 0.4182795698924731,
+          "best_objective": 1319.0,
+          "best_run_id": "scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2",
+          "best_summary_path": "/results/scheduling/ga/2026/06/scheduling-ga-jsplib-ft10-20260623-022453-41974fe-d6d63d2.json",
+          "feasible_rate": 0.6666666666666666,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "scheduling-ga-jsplib-ft10-20260703-023252-41974fe-72996be",
+          "latest_status": "error",
+          "latest_summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft10-20260703-023252-41974fe-72996be.json",
+          "run_count": 3,
+          "strategy": "ga",
+          "success_rate": 0.6666666666666666
+        },
+        {
           "avg_runtime_ms": 1,
           "best_cost": null,
           "best_gap_rel": null,
@@ -497,6 +665,54 @@
           "latest_summary_path": "/results/scheduling/cpsat/2026/06/scheduling-cpsat-jsplib-ft10-20260623-023413-41974fe-653c78a.json",
           "run_count": 2,
           "strategy": "cpsat",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_ft20",
+      "strategies": [
+        {
+          "avg_runtime_ms": 2,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "scheduling-ga-jsplib-ft20-20260703-023252-41974fe-f167b49",
+          "best_summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft20-20260703-023252-41974fe-f167b49.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "scheduling-ga-jsplib-ft20-20260703-023252-41974fe-f167b49",
+          "latest_status": "error",
+          "latest_summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-ft20-20260703-023252-41974fe-f167b49.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
+    },
+    {
+      "benchmark_group": "scheduling",
+      "benchmark_id": "jsplib_la01",
+      "strategies": [
+        {
+          "avg_runtime_ms": 1,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "scheduling-ga-jsplib-la01-20260703-023252-41974fe-925e025",
+          "best_summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-la01-20260703-023252-41974fe-925e025.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "scheduling-ga-jsplib-la01-20260703-023252-41974fe-925e025",
+          "latest_status": "error",
+          "latest_summary_path": "/results/scheduling/ga/2026/07/scheduling-ga-jsplib-la01-20260703-023252-41974fe-925e025.json",
+          "run_count": 1,
+          "strategy": "ga",
           "success_rate": 0.0
         }
       ],
@@ -791,8 +1007,32 @@
         }
       ],
       "tier": "calibration"
+    },
+    {
+      "benchmark_group": "sequence-transition-penalty",
+      "benchmark_id": "custom_steel_sequence_toy",
+      "strategies": [
+        {
+          "avg_runtime_ms": 1,
+          "best_cost": null,
+          "best_gap_rel": null,
+          "best_objective": null,
+          "best_run_id": "sequence-transition-penalty-ga-custom-steel-sequence-toy-20260703-023252-41974fe-6c20002",
+          "best_summary_path": "/results/sequence-transition-penalty/ga/2026/07/sequence-transition-penalty-ga-custom-steel-sequence-toy-20260703-023252-41974fe-6c20002.json",
+          "feasible_rate": 0.0,
+          "latest_created_at": "2026-07-03T02:32:52Z",
+          "latest_feasible": false,
+          "latest_run_id": "sequence-transition-penalty-ga-custom-steel-sequence-toy-20260703-023252-41974fe-6c20002",
+          "latest_status": "error",
+          "latest_summary_path": "/results/sequence-transition-penalty/ga/2026/07/sequence-transition-penalty-ga-custom-steel-sequence-toy-20260703-023252-41974fe-6c20002.json",
+          "run_count": 1,
+          "strategy": "ga",
+          "success_rate": 0.0
+        }
+      ],
+      "tier": "smoke"
     }
   ],
-  "generated_at": "2026-06-24T06:51:20Z",
+  "generated_at": "2026-07-03T02:32:52Z",
   "schema_version": 1
 }
