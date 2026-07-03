@@ -19,4 +19,16 @@ EIL51 = make_tsp_case(
     mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/eil51.tsp',),
 )
 
-CASES = (EIL51,)
+EIL101 = make_tsp_case(
+    benchmark_id='tsplib_eil101',
+    instance='eil101',
+    tier='calibration',
+    nodes=101,
+    raw_path=RAW_DIR / 'eil101.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/eil101.tsp.gz',
+    objective=629,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/eil101.tsp',),
+)
+
+CASES = (EIL51, EIL101)

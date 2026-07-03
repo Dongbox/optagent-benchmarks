@@ -10,7 +10,7 @@ CASE_MODULE = __name__
 KROA100 = make_tsp_case(
     benchmark_id='tsplib_kroa100',
     instance='kroa100',
-    tier='calibration',
+    tier='smoke',
     nodes=100,
     raw_path=RAW_DIR / 'kroa100.tsp',
     instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/kroA100.tsp.gz',
@@ -19,4 +19,16 @@ KROA100 = make_tsp_case(
     mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/kroA100.tsp',),
 )
 
-CASES = (KROA100,)
+KROA150 = make_tsp_case(
+    benchmark_id='tsplib_kroa150',
+    instance='kroa150',
+    tier='calibration',
+    nodes=150,
+    raw_path=RAW_DIR / 'kroA150.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/kroA150.tsp.gz',
+    objective=26524,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/kroA150.tsp',),
+)
+
+CASES = (KROA100, KROA150)

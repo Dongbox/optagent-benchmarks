@@ -47,6 +47,12 @@ class TspInstance:
             return int(raw + 0.5)
         if self.edge_weight_type == "CEIL_2D":
             return int(math.ceil(raw))
+        if self.edge_weight_type == "ATT":
+            pseudo = math.sqrt((dx * dx + dy * dy) / 10.0)
+            rounded = int(pseudo + 0.5)
+            return rounded if rounded >= pseudo else rounded + 1
+        if self.edge_weight_type == "GEO":
+            return _geo_distance((left_x, left_y), (right_x, right_y))
         raise ValueError(f"unsupported TSPLIB edge weight type: {self.edge_weight_type}")
 
     def tour_length(self, order: list[int] | tuple[int, ...], *, include_return_edge: bool = True) -> int:
@@ -185,7 +191,7 @@ def parse_tsplib_text(text: str) -> TspInstance:
         upper = line.upper()
         if upper == "EOF":
             break
-        if upper in {"NODE_COORD_SECTION", "EDGE_WEIGHT_SECTION"}:
+        if upper in {"NODE_COORD_SECTION", "EDGE_WEIGHT_SECTION", "DISPLAY_DATA_SECTION"}:
             section = upper
             continue
 
@@ -288,6 +294,7 @@ def _parse_explicit_matrix(
     dimension: int,
     edge_weight_format: str,
 ) -> tuple[tuple[int, ...], ...]:
+    matrix = [[0 for _ in range(dimension)] for _ in range(dimension)]
     if edge_weight_format == "FULL_MATRIX":
         expected = dimension * dimension
         if len(weights) != expected:
@@ -296,7 +303,71 @@ def _parse_explicit_matrix(
             tuple(weights[row * dimension + col] for col in range(dimension))
             for row in range(dimension)
         )
+    if edge_weight_format == "UPPER_ROW":
+        expected = dimension * (dimension - 1) // 2
+        if len(weights) != expected:
+            raise ValueError(f"expected {expected} UPPER_ROW weights, found {len(weights)}")
+        index = 0
+        for row in range(dimension - 1):
+            for col in range(row + 1, dimension):
+                value = weights[index]
+                matrix[row][col] = value
+                matrix[col][row] = value
+                index += 1
+        return tuple(tuple(row) for row in matrix)
+    if edge_weight_format == "LOWER_ROW":
+        expected = dimension * (dimension - 1) // 2
+        if len(weights) != expected:
+            raise ValueError(f"expected {expected} LOWER_ROW weights, found {len(weights)}")
+        index = 0
+        for row in range(1, dimension):
+            for col in range(row):
+                value = weights[index]
+                matrix[row][col] = value
+                matrix[col][row] = value
+                index += 1
+        return tuple(tuple(row) for row in matrix)
+    if edge_weight_format == "UPPER_DIAG_ROW":
+        expected = dimension * (dimension + 1) // 2
+        if len(weights) != expected:
+            raise ValueError(f"expected {expected} UPPER_DIAG_ROW weights, found {len(weights)}")
+        index = 0
+        for row in range(dimension):
+            for col in range(row, dimension):
+                value = weights[index]
+                matrix[row][col] = value
+                matrix[col][row] = value
+                index += 1
+        return tuple(tuple(row) for row in matrix)
+    if edge_weight_format == "LOWER_DIAG_ROW":
+        expected = dimension * (dimension + 1) // 2
+        if len(weights) != expected:
+            raise ValueError(f"expected {expected} LOWER_DIAG_ROW weights, found {len(weights)}")
+        index = 0
+        for row in range(dimension):
+            for col in range(row + 1):
+                value = weights[index]
+                matrix[row][col] = value
+                matrix[col][row] = value
+                index += 1
+        return tuple(tuple(row) for row in matrix)
     raise ValueError(f"unsupported TSPLIB EDGE_WEIGHT_FORMAT: {edge_weight_format}")
+
+
+def _geo_distance(left: tuple[float, float], right: tuple[float, float]) -> int:
+    def to_radians(value: float) -> float:
+        degrees = int(value)
+        minutes = value - degrees
+        return math.pi * (degrees + 5.0 * minutes / 3.0) / 180.0
+
+    left_lat, left_lon = to_radians(left[0]), to_radians(left[1])
+    right_lat, right_lon = to_radians(right[0]), to_radians(right[1])
+    q1 = math.cos(left_lon - right_lon)
+    q2 = math.cos(left_lat - right_lat)
+    q3 = math.cos(left_lat + right_lat)
+    value = 0.5 * ((1.0 + q1) * q2 - (1.0 - q1) * q3)
+    value = max(-1.0, min(1.0, value))
+    return int(6378.388 * math.acos(value) + 1.0)
 
 
 def _download_bytes(url: str, *, timeout: int) -> bytes:
