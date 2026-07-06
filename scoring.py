@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Strategy Performance Scoring Module.
 
-Implements the 5-dimension scoring framework for OptAgent search strategies:
-  D1: Solution Quality (35%) — gap relative to reference/BKS
-  D2: Anytime Performance (25%) — Primal Integral of incumbent evolution
+Implements the 4-dimension scoring framework for OptAgent search strategies:
+  D1: Solution Quality (40%) — gap relative to reference/BKS
+  D2: Anytime Performance (30%) — Primal Integral of incumbent evolution
   D3: Runtime Efficiency (15%) — throughput + overhead ratio
   D4: Stability (15%) — multi-seed consistency + feasibility + worst-case
-  D5: Search Dynamics (10%) — diversity, stagnation, termination quality
+  D5: Search Dynamics (not scored) — diversity, stagnation, termination quality (diagnostic only)
 
 Usage:
   python -m benchmarks.scoring --input results/*.json --output strategy-scores.json
@@ -30,12 +30,12 @@ from typing import Any
 # =============================================================================
 
 # Dimension weights (Phase 1)
+# D5 (dynamics) is computed but NOT included in composite score (diagnostic only)
 WEIGHTS = {
-    "quality": 0.35,
-    "anytime": 0.25,
+    "quality": 0.40,
+    "anytime": 0.30,
     "efficiency": 0.15,
     "stability": 0.15,
-    "dynamics": 0.10,
 }
 
 # Gap thresholds per benchmark group (used in D1 and D2 normalization)
@@ -408,28 +408,36 @@ def score_dynamics(total_iterations: int, unimproved_iterations: int,
 
 
 def composite_score(dimensions: DimensionScores) -> float:
-    """Compute weighted composite score from dimensions.
+    """Compute weighted composite score from dimension scores.
 
-    If stability is unavailable (-1), redistribute its weight proportionally.
+    Only D1-D4 participate in scoring. D5 (dynamics) is diagnostic only.
+
+    If stability is unavailable (< MIN_SEEDS_FOR_STABILITY), its weight is
+    redistributed proportionally among D1-D3.
+
+    Returns composite score [0, 100].
     """
+    # Only these dimensions participate in composite score (D5 excluded)
+    scoring_dimensions = ["quality", "anytime", "efficiency", "stability"]
+    
     scores = {
         "quality": dimensions.quality,
         "anytime": dimensions.anytime,
         "efficiency": dimensions.efficiency,
         "stability": dimensions.stability,
-        "dynamics": dimensions.dynamics,
     }
 
     if dimensions.stability < 0:
-        # Stability unavailable: redistribute weight to other dimensions
-        available_weight = sum(v for k, v in WEIGHTS.items() if k != "stability")
+        # Stability unavailable: redistribute weight to D1-D3 only
+        available_weight = sum(WEIGHTS[k] for k in scoring_dimensions if k != "stability")
         total = sum(
             scores[k] * (WEIGHTS[k] / available_weight)
-            for k in WEIGHTS
-            if k != "stability"
+            for k in scoring_dimensions
+            if k != "stability" and scores[k] >= 0
         )
     else:
-        total = sum(scores[k] * WEIGHTS[k] for k in WEIGHTS)
+        # All scoring dimensions available
+        total = sum(scores[k] * WEIGHTS[k] for k in scoring_dimensions if scores[k] >= 0)
 
     return total
 
