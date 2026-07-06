@@ -132,9 +132,11 @@ python -m benchmarks.presentation.suite \
 python -m benchmarks.presentation.generate_dashboard_data --check
 ```
 
-## 评分框架
+## 评估框架
 
-`scoring.py` 实现了五维度量化评分体系（Quality / Anytime / Efficiency / Stability / Dynamics），将 benchmark 原始结果转化为 0–100 分的综合评估。详细的设计动机、维度定义和计算规则见 [SCORING.md](SCORING.md)。
+`scoring.py` 实现了策略性能评估体系，将 benchmark 原始结果转化为系统化的证据链（Outcome / Efficiency / Robustness / Search Diagnostics）。详细的设计哲学、证据链结构和计算规则见 [EVALUATION.md](EVALUATION.md)。
+
+核心理念：**原始指标（Evidence）具有长期稳定性，评分公式（Score）可以随经验演进**。
 
 快速上手：
 
