@@ -6,13 +6,33 @@
 
 ## 评估哲学 (Evaluation Philosophy)
 
-工业界优化算法 benchmark 的核心不是"打分"，而是**系统化地收集证据**，回答三个问题：
+### 核心原则
+
+现代启发式算法评估已经**放弃寻找类似 MIP Gap 的统一指标** [15]，而是采用**多维证据链（Evidence Chain）**来系统化地证明改进有效。
+
+工业界优化算法 benchmark 回答三个问题：
 
 1. **算法达到了什么结果？**（Outcome）
 2. **用了多少资源？**（Efficiency）
 3. **结果可靠吗？**（Robustness）
 
 评分（Composite Score）只是基于这些证据生成的**便于排序的摘要指标**，可以随经验调整。真正具有长期价值的是**原始指标（Raw Metrics）**和**证据链（Evidence Chain）**。
+
+### Effectiveness vs Efficiency 分离
+
+Rankey & Nelson (2025) [15] 明确提出：应该将 **Effectiveness（结果好不好）** 和 **Efficiency（达到这个结果花了多少预算）** 彻底分开评估，而不是只看最终 objective。真正应该评价的是 **Quality × Cost**，其中 Cost 通常是 **Objective Evaluations** 或 **Runtime**。
+
+这也是为什么 OptAgent 将 Outcome 和 Efficiency 作为独立的证据层，而不是混合为单一指标。
+
+### Anytime Performance 的中心地位
+
+Brockhoff et al. (2022) [16] 在黑盒优化基准测试综述中提出：
+
+> **Runtime（达到目标质量所需预算）才是最具有通用意义的性能指标。**
+
+不是最终目标值，而是**需要多少 Evaluation 才能达到 Target**。这种 **Anytime Performance Assessment** 已成为现代 Metaheuristic 评估的核心范式。
+
+横轴通常使用 **Function Evaluations (FEs)** 而非时间，因为不同语言、机器、CPU 的时间不可比，而 Objective Evaluation 几乎所有优化问题都有 [16]。
 
 ### 工业标准参考
 
@@ -414,3 +434,7 @@ python -m benchmarks.scoring --calibrate results/
 [13] Hoos, H. H., & Stützle, T. (2004). *Stochastic Local Search: Foundations and Applications.* Elsevier.
 
 [14] Demšar, J. (2006). *Statistical Comparisons of Classifiers over Multiple Data Sets.* Journal of Machine Learning Research, 7, 1-30.
+
+[15] Rankey, E., & Nelson, B. L. (2025). *Measuring the Effectiveness and Efficiency of Simulation Optimization Metaheuristic Algorithms.* Journal of Heuristics. https://doi.org/10.1007/s10732-025-09549-2
+
+[16] Brockhoff, D., et al. (2022). *Anytime Performance Assessment in Blackbox Optimization Benchmarking.* ResearchGate. https://www.researchgate.net/publication/364046734
