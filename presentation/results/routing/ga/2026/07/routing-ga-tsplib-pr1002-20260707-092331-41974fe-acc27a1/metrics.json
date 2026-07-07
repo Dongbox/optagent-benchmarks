@@ -1,0 +1,13 @@
+{
+  "best_cost": 349403.0,
+  "evaluations_per_s": 18.61914548340448,
+  "feasible": true,
+  "gap_rel": 0.3488119824740875,
+  "improvement_per_second": null,
+  "objective": 349403.0,
+  "reference_cost": 259045.0,
+  "runtime_ms": 269,
+  "status": "success",
+  "time_to_best_ms": 0,
+  "time_to_first_feasible_ms": 0
+}
