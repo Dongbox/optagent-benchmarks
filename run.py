@@ -134,11 +134,6 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
     from optagent import AlnsConfig, GaConfig, MilpConfig
 
-    try:
-        from optagent import AdvancedGaConfig
-    except ImportError:
-        AdvancedGaConfig = GaConfig
-
     max_iterations = int(getattr(budget, "max_iterations", 40))
     population_size = max(4, int(getattr(budget, "population_size", 10)))
     thread_count = int(getattr(budget, "thread_count", 1))
@@ -150,10 +145,9 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
     if family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
         backend = "mathopt_mp" if strategy_name == "mathopt_mp" else "optx"
         return MilpConfig(backend=backend, time_limit_s=time_limit_s, threads=thread_count)
-    if strategy_name in {"ga", "advanced_ga"}:
-        config_class = AdvancedGaConfig if strategy_name == "advanced_ga" else GaConfig
+    if strategy_name == "ga":
         if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
-            return config_class(
+            return GaConfig(
                 max_iterations=max_iterations,
                 population_size=population_size,
                 mutation_count=max(2, population_size // 3),
@@ -164,7 +158,7 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
                 local_improvement_strategy="lns",
                 local_improvement_top_k=2,
             )
-        return config_class(
+        return GaConfig(
             max_iterations=max_iterations,
             population_size=population_size,
             mutation_count=max(2, population_size // 3),
