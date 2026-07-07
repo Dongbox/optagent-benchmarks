@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Strategy Performance Scoring Module.
+"""Legacy strategy performance scoring module.
+
+Phase 3 benchmark statistics use ``benchmarks.telemetry_metrics`` as the
+canonical telemetry-only entrypoint. This module is quarantined as a historical
+row/diagnostics scoring implementation and should not be used for new
+statistics paths.
 
 Implements the 4-dimension scoring framework for OptAgent search strategies:
   D1: Solution Quality (40%) — gap relative to reference/BKS

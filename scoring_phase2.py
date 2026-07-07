@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Phase 2 Extensions for Strategy Performance Scoring.
+"""Legacy Phase 2 extensions for strategy performance scoring.
+
+Phase 3 benchmark statistics use ``benchmarks.telemetry_metrics`` as the
+canonical telemetry-only entrypoint. This module is quarantined as a historical
+row/diagnostics helper and should not be extended for new statistics paths.
 
 Implements:
   - D6: Operator Contribution (算子贡献归因)

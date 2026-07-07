@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import benchmarks.telemetry_artifacts as telemetry_artifacts
 from benchmarks.bootstrap import prefer_local_development_paths
 from benchmarks.presentation.common import REPO_ROOT, normalize_result_row, utc_timestamp, write_json
 from benchmarks.presentation.compare import compare_run_dirs
@@ -22,12 +23,52 @@ THROUGHPUT_FIELDS = (
 
 
 def generate_dashboard(
+    artifact_dir: str | Path,
+    *,
+    output_root: str | Path = DEFAULT_DASHBOARD_ROOT,
+    dashboard_id: str | None = None,
+) -> dict[str, Any]:
+    """Generate dashboard files from published telemetry artifacts only."""
+
+    artifact_path = Path(artifact_dir)
+    published = telemetry_artifacts.load_published_artifacts(artifact_path)
+    output_dir = Path(output_root) / (dashboard_id or f"dashboard-{utc_timestamp()}")
+    output_dir.mkdir(parents=True, exist_ok=False)
+
+    dashboard = dict(published["dashboard"])
+    dashboard.update(
+        {
+            "dashboard_id": output_dir.name,
+            "artifact_dir": str(artifact_path),
+            "manifest": published["manifest"],
+            "artifacts": {
+                "manifest_json": str(output_dir / "manifest.json"),
+                "dashboard_json": str(output_dir / "dashboard.json"),
+                "dashboard_md": str(output_dir / "dashboard.md"),
+            },
+        }
+    )
+    write_json(output_dir / "manifest.json", published["manifest"])
+    write_json(output_dir / "dashboard.json", dashboard)
+    (output_dir / "dashboard.md").write_text(
+        telemetry_artifacts.render_dashboard_markdown(dashboard),
+        encoding="utf-8",
+    )
+    return {
+        **dashboard,
+        "output_dir": str(output_dir),
+    }
+
+
+def generate_legacy_results_dashboard(
     candidate_dir: str | Path,
     *,
     baseline_dir: str | Path | None = None,
     output_root: str | Path = DEFAULT_DASHBOARD_ROOT,
     dashboard_id: str | None = None,
 ) -> dict[str, Any]:
+    """Legacy dashboard generator for old ``results.jsonl`` run directories."""
+
     candidate_path = Path(candidate_dir)
     baseline_path = Path(baseline_dir) if baseline_dir is not None else None
     output_dir = Path(output_root) / (dashboard_id or f"dashboard-{utc_timestamp()}")
@@ -167,16 +208,14 @@ def render_dashboard_markdown(
 
 def main() -> int:
     prefer_local_development_paths()
-    parser = argparse.ArgumentParser(description="Generate static OptAgent benchmark dashboard artifacts.")
-    parser.add_argument("candidate_dir")
-    parser.add_argument("--baseline-dir")
+    parser = argparse.ArgumentParser(description="Generate static OptAgent telemetry artifact dashboard.")
+    parser.add_argument("artifact_dir")
     parser.add_argument("--output-root", default=str(DEFAULT_DASHBOARD_ROOT))
     parser.add_argument("--dashboard-id")
     args = parser.parse_args()
 
     dashboard = generate_dashboard(
-        args.candidate_dir,
-        baseline_dir=args.baseline_dir,
+        args.artifact_dir,
         output_root=args.output_root,
         dashboard_id=args.dashboard_id,
     )

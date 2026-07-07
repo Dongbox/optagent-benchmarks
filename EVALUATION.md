@@ -1,6 +1,15 @@
 # 策略性能评估框架 (Strategy Performance Evaluation)
 
-本文档说明 OptAgent 策略性能评估的设计哲学、证据链结构与计算规则。评估实现见 [`scoring.py`](scoring.py)。
+本文档说明 OptAgent 策略性能评估的设计哲学、证据链结构与计算规则。
+
+当前统计实现入口是 [`telemetry_metrics.py`](telemetry_metrics.py)。它只接受
+OptAgent canonical runtime telemetry（protobuf 或由 protobuf 生成的 JSON
+projection），并从归一化 rows / curves 派生五维指标。旧
+[`scoring.py`](scoring.py) 和 [`scoring_phase2.py`](scoring_phase2.py)
+保留为历史回归资产，不再作为新 benchmark 统计链路的公开输入路径。
+Dashboard 发布入口是 [`telemetry_artifacts.py`](telemetry_artifacts.py)，它
+生成 `manifest.json`、`rows.jsonl`、`curves.jsonl`、`throughput.jsonl`、
+`five_dimensional_metrics.json`、`statistical_tests.json` 和 `dashboard.json`。
 
 ---
 
@@ -44,7 +53,10 @@ Brockhoff et al. (2022) [16] 在黑盒优化基准测试综述中提出：
 | **SCIP** [4] | Per-heuristic calls/success/time/improvement，透明化算子贡献 |
 | **CP Profiler** [5] | Search tree visualization + diagnostic metrics，强调可解释性 |
 
-OptAgent 采用类似设计：**原始 telemetry → 证据指标 → 综合评分（可选）**，保证历史数据长期可比。
+OptAgent 采用类似设计：**canonical runtime telemetry → normalized rows /
+curves → five-dimensional metrics → immutable artifacts → dashboard**。
+Runtime 只产生 facts；gap、rank、robustness、anytime integral 和统计检验由
+benchmark 层派生。Dashboard 只读取已发布 artifacts，不读取 runner 私有输出。
 
 ---
 

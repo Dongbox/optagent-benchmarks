@@ -1,6 +1,14 @@
-# Benchmark Results
+# Legacy Benchmark Results
 
-This directory stores Git-managed benchmark result JSON under `presentation/results/`.
+This directory stores historical Git-managed benchmark result JSON under
+`presentation/results/`.
+
+The supported five-dimensional telemetry metrics publication path now uses
+`benchmarks.telemetry_artifacts` to generate immutable artifact directories with
+`manifest.json`, `rows.jsonl`, `curves.jsonl`, `throughput.jsonl`,
+`five_dimensional_metrics.json`, `statistical_tests.json`, and `dashboard.json`.
+Dashboard rendering should read those artifacts, not this legacy result summary
+tree.
 
 Current Phase:
 
@@ -34,7 +42,8 @@ presentation/results/
 
 Do not append new facts to a shared `history.json`. Add a new run file instead.
 
-After adding or changing run summary files, regenerate dashboard data:
+Only when maintaining historical run summary files, regenerate legacy dashboard
+data:
 
 ```bash
 python -m benchmarks.presentation.generate_dashboard_data
@@ -50,7 +59,7 @@ aggregates/strategy-comparison.json
 aggregates/runtime-quality.json
 ```
 
-Use validation-only mode in review or CI:
+Use validation-only mode for legacy aggregate review:
 
 ```bash
 python -m benchmarks.presentation.generate_dashboard_data --check

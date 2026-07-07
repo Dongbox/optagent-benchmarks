@@ -11,7 +11,9 @@ Run commands from this directory with `PYTHONPATH=..` when invoking `benchmarks.
 - `PYTHONPATH=.. python -m benchmarks.run --list-cases`: list registered benchmark cases.
 - `PYTHONPATH=.. python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`: quick local smoke run for one case.
 - `PYTHONPATH=.. python -m benchmarks.presentation.suite --list-inventory --family sequence_blackbox_tsp --tier smoke --timestamp local-smoke`: validate suite inventory without running solvers.
-- `PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data --check`: verify generated dashboard index and aggregates are current.
+- `PYTHONPATH=.. python -m benchmarks.telemetry_artifacts <telemetry-json> --output-dir <artifact-dir>`: publish the supported telemetry metrics artifact set.
+- `PYTHONPATH=.. python -m benchmarks.presentation.dashboard <artifact-dir>`: render a dashboard from published telemetry artifacts.
+- `PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data --check`: legacy-only check for Git-managed historical `presentation/results/` aggregates.
 - `python -m compileall cases presentation`: catch Python syntax errors quickly.
 
 CI uses Python 3.12 and builds or installs OptAgent before executing benchmark suites.
@@ -22,7 +24,7 @@ Use standard Python style with 4-space indentation, type annotations where they 
 
 ## Testing Guidelines
 
-There is no local test suite in this package; use focused smoke commands instead. For case changes, run `compileall`, `--list-cases`, and at least one tiny `benchmarks.run` invocation for the affected family. For dashboard result changes, always run `generate_dashboard_data --check` or regenerate with `python -m benchmarks.presentation.generate_dashboard_data`.
+There is no local test suite in this package; use focused smoke commands instead. For case changes, run `compileall`, `--list-cases`, and at least one tiny `benchmarks.run` invocation for the affected family. For supported telemetry dashboard changes, publish artifacts with `benchmarks.telemetry_artifacts` and render them with `benchmarks.presentation.dashboard`. Use `generate_dashboard_data --check` only for legacy Git-managed `presentation/results/` aggregates.
 
 ## Commit & Pull Request Guidelines
 

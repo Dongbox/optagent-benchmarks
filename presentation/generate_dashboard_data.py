@@ -1,3 +1,10 @@
+"""Legacy dashboard aggregate generator for Git-managed run summaries.
+
+The supported telemetry metrics dashboard path is
+``benchmarks.telemetry_artifacts`` plus ``benchmarks.presentation.dashboard``.
+This module remains only for historical `presentation/results/` aggregates.
+"""
+
 from __future__ import annotations
 
 import argparse

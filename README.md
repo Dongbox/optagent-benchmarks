@@ -126,7 +126,9 @@ python -m benchmarks.presentation.suite \
   --timestamp local-smoke
 ```
 
-修改 `presentation/results/` 或 `presentation/aggregates/` 后，用下面的命令校验 dashboard 数据是否仍然同步：
+当前五维指标 dashboard 发布路径是 `benchmarks.telemetry_artifacts` 生成的
+artifact set。`presentation/results/` 与 `presentation/aggregates/` 是历史
+dashboard facts；只有维护旧数据时才使用下面的 legacy 校验：
 
 ```bash
 python -m benchmarks.presentation.generate_dashboard_data --check
@@ -134,22 +136,48 @@ python -m benchmarks.presentation.generate_dashboard_data --check
 
 ## 评估框架
 
-`scoring.py` 实现了策略性能评估体系，将 benchmark 原始结果转化为系统化的证据链（Outcome / Efficiency / Robustness / Search Diagnostics）。详细的设计哲学、证据链结构和计算规则见 [EVALUATION.md](EVALUATION.md)。
+Phase 3 之后，benchmark 统计的公开入口是 `benchmarks.telemetry_metrics`。
+它只接受 OptAgent canonical runtime telemetry（protobuf 或由 protobuf
+生成的 JSON projection），并派生五维指标：
 
-核心理念：**原始指标（Evidence）具有长期稳定性，评分公式（Score）可以随经验演进**。
+- Effectiveness
+- Efficiency
+- Robustness
+- Anytime Performance
+- Statistical Validity
 
-快速上手：
+旧 `scoring.py` / `scoring_phase2.py` 仍作为历史回归资产保留，但不再是
+新统计链路的公开输入路径；旧 flat diagnostics、ad-hoc rows 和 dashboard
+summary 会被 canonical reader 拒绝。详细边界见 [EVALUATION.md](EVALUATION.md)。
 
-```bash
-# 从 run.py 管道输出评分
-python -m benchmarks.run --case tsplib_berlin52 --strategy ga | python -m benchmarks.scoring
+程序化入口：
 
-# 多文件评分并写入 dashboard 格式
-python -m benchmarks.scoring results.json --output strategy-scores.json
+```python
+from benchmarks.telemetry_metrics import (
+    build_metric_dataset,
+    derive_five_dimensional_metrics,
+)
 
-# 从真实数据校准阈值
-python -m benchmarks.scoring --calibrate results/
+dataset = build_metric_dataset(run_telemetry_payloads)
+metrics = derive_five_dimensional_metrics(dataset, references=best_known_objectives)
 ```
+
+发布 dashboard 可消费的不可变产物时，使用 `benchmarks.telemetry_artifacts`：
+
+```python
+from benchmarks.telemetry_artifacts import publish_telemetry_artifacts
+
+publish_telemetry_artifacts(
+    run_telemetry_payloads,
+    "docs/evals/benchmark-suite/artifacts/local-smoke",
+    references=best_known_objectives,
+)
+```
+
+产物目录包含 `manifest.json`、`rows.jsonl`、`curves.jsonl`、
+`throughput.jsonl`、`five_dimensional_metrics.json`、
+`statistical_tests.json` 和 `dashboard.json`。Dashboard 入口只读取这些已发布
+artifacts；旧 `results.jsonl` dashboard 逻辑保留为 legacy helper。
 
 ## 注意事项
 
