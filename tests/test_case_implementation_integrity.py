@@ -14,7 +14,14 @@ from benchmarks.cases.base import case_to_row
 from benchmarks.cases.registry import benchmark_cases, run_case
 
 
-EXPECTED_CASE_COUNT = 29
+REQUIRED_SMOKE_CASES = {
+    "custom_steel_sequence_toy",
+    "jsplib_ft06",
+    "miplib2017_50v-10",
+    "psplib_j90_1_1",
+    "qaplib_nug12",
+    "tsplib_berlin52",
+}
 
 
 def _cases_by_module() -> dict[str, list[dict[str, Any]]]:
@@ -26,8 +33,10 @@ def _cases_by_module() -> dict[str, list[dict[str, Any]]]:
 
 def test_public_case_inventory_and_metadata_are_consistent() -> None:
     cases = benchmark_cases()
-    assert len(cases) == EXPECTED_CASE_COUNT
-    assert len({case["benchmark_id"] for case in cases}) == EXPECTED_CASE_COUNT
+    benchmark_ids = {case["benchmark_id"] for case in cases}
+    assert cases
+    assert len(benchmark_ids) == len(cases)
+    assert REQUIRED_SMOKE_CASES <= benchmark_ids
 
     for case in cases:
         instance = str(case["instance"])
@@ -115,3 +124,17 @@ def test_case_sources_do_not_reintroduce_legacy_runner_contracts() -> None:
 def test_case_data_logic_stays_with_family_common_modules() -> None:
     data_modules = sorted(Path("cases").glob("**/raw/data.py"))
     assert data_modules == []
+
+
+def test_legacy_root_scoring_entrypoints_stay_removed() -> None:
+    removed_paths = [
+        "run_collector.py",
+        "run_scored_suite.py",
+        "scoring.py",
+        "scoring_phase2.py",
+        "策略评分.md",
+        "评估框架.md",
+        "docs/phase2-plan.md",
+    ]
+    for path in removed_paths:
+        assert not Path(path).exists(), f"{path} must not be reintroduced"

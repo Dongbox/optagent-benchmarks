@@ -1,35 +1,53 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Project Structure
 
-This repository is the `benchmarks` Python package for OptAgent benchmark cases and dashboard data. Core benchmark declarations live in `cases/`, grouped by source library and domain, for example `cases/tsplib/routing/tsp/` and `cases/qaplib/assignment/quadratic_assignment/`. Presentation and artifact tooling lives in `presentation/`, including suite runners, dashboard publishers, aggregate generation, and telemetry helpers. Long-lived dashboard facts are checked in under `presentation/results/`; generated summaries are under `presentation/aggregates/`. Design notes and data contracts live in `docs/`.
+This repository is the `benchmarks` Python package for OptAgent benchmark cases,
+telemetry metrics, and dashboard artifacts.
 
-## Build, Test, and Development Commands
+- `cases/`: benchmark case declarations and source-specific loaders.
+- `presentation/`: suite execution, artifact dashboard rendering, and historical
+  presentation helpers.
+- `docs/`: current contracts and responsibility boundaries.
+- `tests/`: telemetry, artifact, and case-governance regression tests.
 
-Run commands from this directory with `PYTHONPATH=..` when invoking `benchmarks.*` modules locally.
+## Supported Commands
 
-- `PYTHONPATH=.. python -m benchmarks.run --list-cases`: list registered benchmark cases.
-- `PYTHONPATH=.. python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`: quick local smoke run for one case.
-- `PYTHONPATH=.. python -m benchmarks.presentation.suite --list-inventory --family sequence_blackbox_tsp --tier smoke --timestamp local-smoke`: validate suite inventory without running solvers.
-- `PYTHONPATH=.. python -m benchmarks.telemetry_artifacts <telemetry-json> --output-dir <artifact-dir>`: publish the supported telemetry metrics artifact set.
-- `PYTHONPATH=.. python -m benchmarks.presentation.dashboard <artifact-dir>`: render a dashboard from published telemetry artifacts.
-- `PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data --check`: legacy-only check for Git-managed historical `presentation/results/` aggregates.
-- `python -m compileall cases presentation`: catch Python syntax errors quickly.
+Run commands from this directory with `PYTHONPATH=..`.
 
-CI uses Python 3.12 and builds or installs OptAgent before executing benchmark suites.
+- `PYTHONPATH=.. python -m benchmarks.run --list-cases`
+- `PYTHONPATH=.. python -m benchmarks.run --case tsplib_berlin52 --strategy local_search --no-download --max-iterations 1 --time-limit-s 0.1`
+- `PYTHONPATH=.. python -m benchmarks.presentation.suite --list-inventory --family sequence_blackbox_tsp --tier smoke --timestamp local-smoke`
+- `PYTHONPATH=.. python -m benchmarks.telemetry_artifacts <telemetry-json> --output-dir <artifact-dir>`
+- `PYTHONPATH=.. python -m benchmarks.presentation.dashboard <artifact-dir>`
+- `python -m compileall cases presentation telemetry_metrics.py telemetry_artifacts.py`
 
-## Coding Style & Naming Conventions
+## Coding Style
 
-Use standard Python style with 4-space indentation, type annotations where they clarify data contracts, and `from __future__ import annotations` in new modules. Keep benchmark ids lowercase with library prefixes, such as `jsplib_ft06`, `psplib_j90_1_1`, or `tsplib_berlin52`. Prefer dataclasses and explicit dictionaries matching the existing result contracts over ad hoc tuples.
+Use standard Python style with 4-space indentation and type annotations where
+they clarify data contracts. Prefer dataclasses and explicit dictionaries that
+match documented artifact contracts over ad-hoc tuples.
 
-## Testing Guidelines
+Benchmark ids are lowercase with source prefixes, such as `jsplib_ft06`,
+`psplib_j90_1_1`, `qaplib_nug12`, and `tsplib_berlin52`.
 
-There is no local test suite in this package; use focused smoke commands instead. For case changes, run `compileall`, `--list-cases`, and at least one tiny `benchmarks.run` invocation for the affected family. For supported telemetry dashboard changes, publish artifacts with `benchmarks.telemetry_artifacts` and render them with `benchmarks.presentation.dashboard`. Use `generate_dashboard_data --check` only for legacy Git-managed `presentation/results/` aggregates.
+## Testing
 
-## Commit & Pull Request Guidelines
+Run focused tests for the touched surface:
 
-Recent commits use short imperative subjects such as `Document dashboard data source boundaries` and `Regenerate benchmark dashboard data`. Keep commits focused: separate code changes from large generated result updates when practical. Pull requests should describe changed benchmark families, commands run, whether downloads were enabled, and any updates to `presentation/results/` or `presentation/aggregates/`. Link related issues or OptAgent commits when benchmark output depends on upstream behavior.
+- case declarations: `tests/test_case_implementation_integrity.py`
+- telemetry metrics: `tests/test_telemetry_metrics.py`
+- artifact publication: `tests/test_telemetry_artifacts.py`
 
-## Results & Configuration Notes
+For case changes, also run `compileall`, `--list-cases`, and at least one small
+`benchmarks.run` invocation for the affected family.
 
-Do not edit `presentation/results/index.json` or `presentation/aggregates/*.json` by hand; regenerate them. Add new immutable run summary JSON files instead of rewriting historical facts unless correcting a documented data error.
+## Results And Artifacts
+
+Canonical five-dimensional dashboard data is published through
+`benchmarks.telemetry_artifacts`. Generated artifact directories are immutable
+evidence and should include `manifest.json` plus checksummed metric files.
+
+Historical `presentation/results/` and `presentation/aggregates/` files are
+legacy static dashboard facts. Do not edit generated indexes or aggregates by
+hand.
