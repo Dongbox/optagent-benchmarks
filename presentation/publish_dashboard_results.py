@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
 import re
@@ -184,7 +185,13 @@ def _summary_from_row(
             "python": sys.version.split()[0],
             "platform": platform.platform(),
             "runner": runner,
+            "machine": platform.machine(),
+            "processor": platform.processor() or "unknown",
+            "cpu_count": os.cpu_count(),
+            "memory_total_bytes": _total_memory_bytes(),
         },
+        "budget": _effective_budget(row),
+        "case_size": _case_size(row),
         "metrics": _metrics(row),
         "operator_diagnostics": _operator_diagnostics(row),
         "artifacts": {},
@@ -212,6 +219,16 @@ def _metrics(row: dict[str, Any]) -> dict[str, Any]:
         "time_to_best_ms": _ms(row.get("time_to_best_seconds")),
         "evaluations_per_s": _number(row.get("evaluations_per_s")),
         "improvement_per_second": _number(row.get("improvement_per_second")),
+        "cpu_time_s": _number(row.get("cpu_time_s"), _diagnostic(row, "cpu_time_s")),
+        "peak_rss_bytes": _number(row.get("peak_rss_bytes"), _diagnostic(row, "peak_rss_bytes")),
+        "moves_attempted": _number(_diagnostic(row, "attempted_moves")),
+        "moves_accepted": _number(_diagnostic(row, "accepted_moves")),
+        "moves_improved": _number(_diagnostic(row, "improved_moves")),
+        "trace_entry_count": _number(_diagnostic(row, "trace_entry_count")),
+        "restarts": _number(_diagnostic(row, "restarts")),
+        "unimproved_iterations": _number(_diagnostic(row, "unimproved_iterations")),
+        "diversity_at_termination": _number(_diagnostic(row, "diversity_at_termination")),
+        "operator_weight_updates": _number(_diagnostic(row, "operator_weight_updates")),
     }
     error = row.get("error")
     if isinstance(error, dict):
@@ -231,6 +248,21 @@ def _strategy_config(row: dict[str, Any]) -> dict[str, Any]:
 def _effective_budget(row: dict[str, Any]) -> dict[str, Any]:
     budget = row.get("effective_budget")
     return budget if isinstance(budget, dict) else {}
+
+
+def _case_size(row: dict[str, Any]) -> dict[str, Any]:
+    case_size = row.get("case_size")
+    if isinstance(case_size, dict):
+        return {str(key): value for key, value in sorted(case_size.items()) if isinstance(value, (str, int, float, bool))}
+    keys = ("dimension", "jobs", "machines", "operations", "nodes", "activities", "resources", "facilities")
+    return {key: row[key] for key in keys if isinstance(row.get(key), (str, int, float, bool))}
+
+
+def _diagnostic(row: dict[str, Any], key: str) -> Any:
+    diagnostics = row.get("diagnostics")
+    if isinstance(diagnostics, dict) and key in diagnostics:
+        return diagnostics.get(key)
+    return row.get(key)
 
 
 def _summary_path(results_root: Path, summary: dict[str, Any]) -> Path:
@@ -305,6 +337,18 @@ def _ms(*values: Any) -> int:
     if value is None:
         return 0
     return max(0, int(round(float(value) * 1000)))
+
+
+def _total_memory_bytes() -> int | None:
+    try:
+        if hasattr(os, "sysconf"):
+            page_size = os.sysconf("SC_PAGE_SIZE")
+            page_count = os.sysconf("SC_PHYS_PAGES")
+            if isinstance(page_size, int) and isinstance(page_count, int) and page_size > 0 and page_count > 0:
+                return int(page_size * page_count)
+    except (OSError, ValueError, TypeError):
+        return None
+    return None
 
 
 def _operator_diagnostics(row: dict[str, Any]) -> dict[str, Any]:

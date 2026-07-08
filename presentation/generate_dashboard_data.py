@@ -47,6 +47,11 @@ def generate_dashboard_data(
         ),
         "runtime-quality.json": build_runtime_quality(runs, results_root=results_path, generated_at=effective_generated_at),
     }
+    aggregates["strategy-scores.json"] = build_strategy_scores(runs, generated_at=effective_generated_at)
+    aggregates["strategy-scores-history.json"] = build_strategy_scores_history(
+        runs,
+        generated_at=effective_generated_at,
+    )
 
     outputs = {
         results_path / "index.json": index,
@@ -204,6 +209,14 @@ def build_commit_history(
                     "best_cost": _number(metrics.get("best_cost")),
                     "gap_rel": _number(metrics.get("gap_rel")),
                     "runtime_ms": _number(metrics.get("runtime_ms")),
+                    "moves_attempted": _number(metrics.get("moves_attempted")),
+                    "moves_accepted": _number(metrics.get("moves_accepted")),
+                    "moves_improved": _number(metrics.get("moves_improved")),
+                    "trace_entry_count": _number(metrics.get("trace_entry_count")),
+                    "restarts": _number(metrics.get("restarts")),
+                    "unimproved_iterations": _number(metrics.get("unimproved_iterations")),
+                    "diversity_at_termination": _number(metrics.get("diversity_at_termination")),
+                    "operator_weight_updates": _number(metrics.get("operator_weight_updates")),
                 }
             )
         series.append(
@@ -325,6 +338,14 @@ def build_runtime_quality(
                 "time_to_best_ms": _number(metrics.get("time_to_best_ms")),
                 "evaluations_per_s": _number(metrics.get("evaluations_per_s")),
                 "improvement_per_second": _number(metrics.get("improvement_per_second")),
+                "moves_attempted": _number(metrics.get("moves_attempted")),
+                "moves_accepted": _number(metrics.get("moves_accepted")),
+                "moves_improved": _number(metrics.get("moves_improved")),
+                "trace_entry_count": _number(metrics.get("trace_entry_count")),
+                "restarts": _number(metrics.get("restarts")),
+                "unimproved_iterations": _number(metrics.get("unimproved_iterations")),
+                "diversity_at_termination": _number(metrics.get("diversity_at_termination")),
+                "operator_weight_updates": _number(metrics.get("operator_weight_updates")),
             }
         )
     points.sort(key=lambda item: (str(item["benchmark_group"]), str(item["benchmark_id"]), str(item["strategy"]), str(item["created_at"]), str(item["run_id"])))
@@ -332,6 +353,116 @@ def build_runtime_quality(
         "schema_version": GENERATED_SCHEMA_VERSION,
         "generated_at": generated_at or _latest_created_at(runs),
         "points": points,
+    }
+
+
+def build_strategy_scores(
+    runs: list[dict[str, Any]],
+    *,
+    generated_at: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "schema_version": GENERATED_SCHEMA_VERSION,
+        "generated_at": generated_at or _latest_created_at(runs),
+        "optagent_commit": _latest_optagent_commit(runs),
+        "config": _strategy_score_config(),
+        "scores": _build_strategy_score_entries(runs),
+    }
+
+
+def build_strategy_scores_history(
+    runs: list[dict[str, Any]],
+    *,
+    generated_at: str | None = None,
+) -> dict[str, Any]:
+    by_commit: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for run in runs:
+        optagent = _optagent(run)
+        commit = str(optagent.get("commit") or "unknown")
+        created_at = str(run.get("created_at") or "")
+        by_commit[(created_at, commit)].append(run)
+
+    entries = []
+    for (created_at, commit), commit_runs in sorted(by_commit.items(), reverse=True):
+        commit_url = ""
+        for run in commit_runs:
+            candidate = _optagent(run).get("commit_url")
+            if candidate:
+                commit_url = str(candidate)
+                break
+        entries.append(
+            {
+                "optagent_commit": commit,
+                "optagent_commit_url": commit_url,
+                "created_at": created_at,
+                "scores": _build_strategy_score_entries(commit_runs),
+            }
+        )
+    return {
+        "schema_version": GENERATED_SCHEMA_VERSION,
+        "generated_at": generated_at or _latest_created_at(runs),
+        "entries": entries,
+    }
+
+
+def build_dataset_manifest(
+    runs: list[dict[str, Any]],
+    *,
+    dataset_id: str,
+    generated_at: str | None = None,
+    source_run_dir: str | None = None,
+) -> dict[str, Any]:
+    effective_generated_at = generated_at or _latest_created_at(runs)
+    optagent = _optagent(max(runs, key=_run_sort_key)) if runs else {}
+    benchmarks = _benchmarks(max(runs, key=_run_sort_key)) if runs else {}
+    environments = [_environment(run) for run in runs]
+    by_strategy: dict[str, float] = defaultdict(float)
+    by_strategy_runs: dict[str, int] = defaultdict(int)
+    cpu_time_values: list[Any] = []
+    peak_rss_values: list[Any] = []
+    for run in runs:
+        strategy = str(run.get("strategy") or "unknown")
+        metrics = _metrics(run)
+        runtime_ms = _number(metrics.get("runtime_ms"))
+        if runtime_ms is not None:
+            by_strategy[strategy] += float(runtime_ms)
+        by_strategy_runs[strategy] += 1
+        cpu_time_values.append(metrics.get("cpu_time_s"))
+        peak_rss_values.append(metrics.get("peak_rss_bytes"))
+    return {
+        "schema_version": GENERATED_SCHEMA_VERSION,
+        "dataset_id": dataset_id,
+        "label": dataset_id,
+        "created_at": effective_generated_at,
+        "generated_at": effective_generated_at,
+        "source_run_dir": source_run_dir,
+        "paths": {
+            "root": f"/data/{dataset_id}",
+            "results": f"/data/{dataset_id}/results",
+            "aggregates": f"/data/{dataset_id}/aggregates",
+        },
+        "counts": {
+            "runs": len(runs),
+            "strategies": len({run.get("strategy") for run in runs}),
+            "benchmark_groups": len({run.get("benchmark_group") for run in runs}),
+            "instances": len({run.get("benchmark_id") for run in runs}),
+        },
+        "runtime": {
+            "total_ms": sum(by_strategy.values()),
+            "by_strategy_ms": dict(sorted(by_strategy.items())),
+            "run_count_by_strategy": dict(sorted(by_strategy_runs.items())),
+            "cpu_time_s": _sum_numbers(cpu_time_values),
+            "peak_rss_bytes": _max_number(peak_rss_values),
+        },
+        "resources": _resource_summary(runs, environments),
+        "compute_parameters": _compute_parameter_summary(runs),
+        "commits": {
+            "optagent": optagent.get("commit") or "unknown",
+            "optagent_url": optagent.get("commit_url") or "",
+            "benchmarks": benchmarks.get("commit") or "unknown",
+            "benchmarks_url": benchmarks.get("commit_url") or "",
+        },
+        "environment": _environment_summary(environments),
     }
 
 
@@ -481,6 +612,337 @@ def _latest_created_at(runs: list[dict[str, Any]]) -> str:
     return datetime.fromtimestamp(0, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _latest_optagent_commit(runs: list[dict[str, Any]]) -> str:
+    if not runs:
+        return "unknown"
+    latest = max(runs, key=_run_sort_key)
+    return str(_optagent(latest).get("commit") or "unknown")
+
+
+def _strategy_score_config() -> dict[str, Any]:
+    return {
+        "weights": {
+            "quality": 0.45,
+            "anytime": 0.15,
+            "efficiency": 0.2,
+            "stability": 0.1,
+            "dynamics": 0.1,
+        },
+        "thresholds": {
+            "source": "benchmark dashboard aggregate",
+            "note": "Generated by benchmarks.presentation.generate_dashboard_data from immutable run summaries.",
+        },
+    }
+
+
+def _build_strategy_score_entries(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_strategy: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    by_strategy_group: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for run in runs:
+        strategy = str(run.get("strategy") or "unknown")
+        group = str(run.get("benchmark_group") or "unknown")
+        by_strategy[strategy].append(run)
+        by_strategy_group[(strategy, group)].append(run)
+
+    entries = []
+    for strategy in sorted(by_strategy):
+        entries.append(_strategy_score_entry(strategy, "all", by_strategy[strategy]))
+        for (entry_strategy, group), group_runs in sorted(by_strategy_group.items()):
+            if entry_strategy == strategy:
+                entries.append(_strategy_score_entry(strategy, group, group_runs))
+    return entries
+
+
+def _strategy_score_entry(strategy: str, benchmark_group: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    run_count = len(runs)
+    feasible_count = sum(1 for run in runs if _metrics(run).get("feasible") is True)
+    success_count = sum(1 for run in runs if _metrics(run).get("status") == "success")
+    feasible_rate = feasible_count / run_count if run_count else 0.0
+    success_rate = success_count / run_count if run_count else 0.0
+    mean_gap = _mean(
+        [_number(_metrics(run).get("gap_rel")) for run in runs],
+    )
+    mean_runtime_ms = _mean(
+        [_number(_metrics(run).get("runtime_ms")) for run in runs],
+    )
+    quality = _quality_score(feasible_rate, mean_gap)
+    efficiency = _runtime_score(mean_runtime_ms)
+    stability = _clamp(success_rate * 100.0) if run_count >= 2 else -1.0
+    dynamics = _dynamics_score(runs)
+    anytime = quality if efficiency < 0 else _clamp(quality * 0.65 + efficiency * 0.35)
+    dimensions = {
+        "quality": quality,
+        "anytime": anytime,
+        "efficiency": efficiency,
+        "stability": stability,
+        "dynamics": dynamics,
+    }
+    return {
+        "strategy": strategy,
+        "benchmark_group": benchmark_group,
+        "composite": _composite_score(dimensions),
+        "dimensions": dimensions,
+        "run_count": run_count,
+        "seed_count": len({run.get("seed") for run in runs}),
+        "instance_count": len({run.get("benchmark_id") for run in runs}),
+        "instances": [_instance_score(run) for run in runs],
+    }
+
+
+def _instance_score(run: dict[str, Any]) -> dict[str, Any]:
+    metrics = _metrics(run)
+    objective = _number(metrics.get("objective"))
+    gap_rel = _number(metrics.get("gap_rel"))
+    reference_cost = 0.0
+    if objective is not None and gap_rel is not None:
+        reference_cost = float(objective) / (1.0 + max(0.0, float(gap_rel)))
+    quality = _quality_score(1.0 if metrics.get("feasible") is True else 0.0, gap_rel)
+    time_to_best_ms = _number(metrics.get("time_to_best_ms"))
+    return {
+        "benchmark_id": run.get("benchmark_id"),
+        "composite": quality,
+        "quality": quality,
+        "anytime": quality if time_to_best_ms is None else _runtime_score(time_to_best_ms),
+        "gap_rel": gap_rel,
+        "objective": objective,
+        "reference_cost": reference_cost,
+        "incumbent_trace_path": None,
+        "feasible": metrics.get("feasible"),
+        "run_id": run.get("run_id"),
+        "runtime_ms": _number(metrics.get("runtime_ms")),
+        "time_to_first_feasible_ms": _number(metrics.get("time_to_first_feasible_ms")),
+        "time_to_best_ms": _number(metrics.get("time_to_best_ms")),
+        "evaluations_per_s": _number(metrics.get("evaluations_per_s")),
+        "cpu_time_s": _number(metrics.get("cpu_time_s")),
+        "peak_rss_bytes": _number(metrics.get("peak_rss_bytes")),
+        "seed": run.get("seed"),
+        "status": metrics.get("status"),
+        "strategy_profile": run.get("strategy_profile"),
+        "family": run.get("family"),
+        "tier": run.get("tier"),
+        "case_size": _case_size(run),
+        "budget": _budget(run),
+        "strategy_config": _strategy_config(run),
+        "summary_path": run.get("_summary_path"),
+    }
+
+
+def _quality_score(feasible_rate: float, mean_gap: float | int | None) -> float:
+    if feasible_rate <= 0:
+        return 0.0
+    if mean_gap is None:
+        return _clamp(feasible_rate * 100.0)
+    return _clamp(feasible_rate * 100.0 / (1.0 + max(0.0, float(mean_gap))))
+
+
+def _runtime_score(mean_runtime_ms: float | int | None) -> float:
+    if mean_runtime_ms is None:
+        return -1.0
+    import math
+
+    return _clamp(100.0 - math.log10(max(1.0, float(mean_runtime_ms)) + 1.0) * 18.0)
+
+
+def _dynamics_score(runs: list[dict[str, Any]]) -> float:
+    values = [_point_dynamics_score(run) for run in runs]
+    values = [value for value in values if value is not None]
+    return _mean(values) if values else -1.0
+
+
+def _point_dynamics_score(run: dict[str, Any]) -> float | None:
+    metrics = _metrics(run)
+    attempted = _positive_number(metrics.get("moves_attempted"))
+    accepted = _non_negative_number(metrics.get("moves_accepted"))
+    improved = _non_negative_number(metrics.get("moves_improved"))
+    trace_entries = _non_negative_number(metrics.get("trace_entry_count"))
+    diversity = _non_negative_number(metrics.get("diversity_at_termination"))
+    parts: list[tuple[float, float, bool]] = []
+    if attempted is not None and accepted is not None:
+        parts.append((_healthy_acceptance_score(float(accepted) / float(attempted)), 0.3, True))
+    if attempted is not None and improved is not None:
+        parts.append((_improvement_activity_score(float(improved), float(attempted)), 0.4, True))
+    if trace_entries is not None:
+        parts.append((_clamp((float(trace_entries) / 8.0) * 100.0), 0.15, False))
+    if diversity is not None:
+        parts.append((_diversity_score(float(diversity)), 0.15, True))
+    response = _stagnation_response_score(run)
+    if response is not None:
+        parts.append((response, 0.1, True))
+    if not any(part[2] for part in parts):
+        return None
+    total_weight = sum(part[1] for part in parts)
+    if total_weight <= 0:
+        return None
+    return sum(part[0] * part[1] for part in parts) / total_weight
+
+
+def _healthy_acceptance_score(ratio: float) -> float:
+    if ratio <= 0 or ratio >= 1:
+        return 0.0
+    target = 0.35
+    if ratio <= target:
+        return _clamp((ratio / target) * 100.0)
+    return _clamp((1.0 - (ratio - target) / (1.0 - target)) * 100.0)
+
+
+def _improvement_activity_score(improved: float, attempted: float) -> float:
+    if improved <= 0 or attempted <= 0:
+        return 0.0
+    import math
+
+    return _clamp((math.log10(improved + 1.0) / math.log10(attempted + 1.0)) * 100.0)
+
+
+def _diversity_score(value: float) -> float:
+    if value <= 0:
+        return 0.0
+    if value <= 1:
+        return _clamp(value * 100.0)
+    import math
+
+    return _clamp(math.log10(value + 1.0) * 25.0)
+
+
+def _stagnation_response_score(run: dict[str, Any]) -> float | None:
+    metrics = _metrics(run)
+    attempted = _positive_number(metrics.get("moves_attempted"))
+    unimproved = _non_negative_number(metrics.get("unimproved_iterations"))
+    restarts = _non_negative_number(metrics.get("restarts"))
+    scores = []
+    if attempted is not None and unimproved is not None:
+        scores.append(_clamp((1.0 - min(float(unimproved) / float(attempted), 1.0)) * 100.0))
+    if restarts is not None and restarts > 0:
+        scores.append(_clamp((min(float(restarts), 3.0) / 3.0) * 100.0))
+    return _mean(scores) if scores else None
+
+
+def _composite_score(dimensions: dict[str, float]) -> float:
+    weights = {
+        "quality": 0.45,
+        "anytime": 0.15,
+        "efficiency": 0.2,
+        "stability": 0.1,
+        "dynamics": 0.1,
+    }
+    weighted = 0.0
+    total_weight = 0.0
+    for key, weight in weights.items():
+        value = dimensions[key]
+        if value >= 0:
+            weighted += value * weight
+            total_weight += weight
+    return weighted / total_weight if total_weight > 0 else 0.0
+
+
+def _mean(values: list[Any]) -> float | None:
+    numbers = [float(value) for value in values if _number(value) is not None]
+    if not numbers:
+        return None
+    return sum(numbers) / len(numbers)
+
+
+def _non_negative_number(value: Any) -> float | int | None:
+    number = _number(value)
+    return number if number is not None and number >= 0 else None
+
+
+def _positive_number(value: Any) -> float | int | None:
+    number = _number(value)
+    return number if number is not None and number > 0 else None
+
+
+def _clamp(value: float) -> float:
+    return min(100.0, max(0.0, value))
+
+
+def _sum_numbers(values: list[Any]) -> float | None:
+    numbers = [float(value) for value in values if _number(value) is not None]
+    return sum(numbers) if numbers else None
+
+
+def _max_number(values: list[Any]) -> float | int | None:
+    numbers = [_number(value) for value in values]
+    numbers = [value for value in numbers if value is not None]
+    return max(numbers) if numbers else None
+
+
+def _case_size(run: dict[str, Any]) -> dict[str, Any]:
+    case_size = run.get("case_size")
+    return case_size if isinstance(case_size, dict) else {}
+
+
+def _budget(run: dict[str, Any]) -> dict[str, Any]:
+    budget = run.get("budget")
+    return budget if isinstance(budget, dict) else {}
+
+
+def _strategy_config(run: dict[str, Any]) -> dict[str, Any]:
+    config = run.get("strategy_config")
+    return config if isinstance(config, dict) else {}
+
+
+def _resource_summary(runs: list[dict[str, Any]], environments: list[dict[str, Any]]) -> dict[str, Any]:
+    environment = _environment_summary(environments)
+    metrics = [_metrics(run) for run in runs]
+    return {
+        "cpu_count": _first_environment_number(environment.get("cpu_count")),
+        "processor": environment.get("processor"),
+        "machine": environment.get("machine"),
+        "memory_total_bytes": _first_environment_number(environment.get("memory_total_bytes")),
+        "cpu_time_s": _sum_numbers([metric.get("cpu_time_s") for metric in metrics]),
+        "peak_rss_bytes": _max_number([metric.get("peak_rss_bytes") for metric in metrics]),
+        "thread_counts": _sorted_numeric_values([_budget(run).get("thread_count") or _strategy_config(run).get("parallel_workers") for run in runs]),
+    }
+
+
+def _compute_parameter_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "tiers": sorted({str(run.get("tier")) for run in runs if run.get("tier")}),
+        "families": sorted({str(run.get("family")) for run in runs if run.get("family")}),
+        "budget_profiles": sorted({str(_budget(run).get("profile")) for run in runs if _budget(run).get("profile")}),
+        "time_limit_s": _numeric_range([_budget(run).get("time_limit_s") for run in runs]),
+        "max_iterations": _numeric_range([_budget(run).get("max_iterations") for run in runs]),
+        "population_size": _numeric_range([_budget(run).get("population_size") for run in runs]),
+        "trace_limit": _numeric_range([_budget(run).get("trace_limit") for run in runs]),
+        "thread_count": _numeric_range([_budget(run).get("thread_count") for run in runs]),
+    }
+
+
+def _numeric_range(values: list[Any]) -> dict[str, float | int] | None:
+    numbers = [_number(value) for value in values]
+    numbers = [value for value in numbers if value is not None]
+    if not numbers:
+        return None
+    return {"min": min(numbers), "max": max(numbers)}
+
+
+def _sorted_numeric_values(values: list[Any]) -> list[float | int]:
+    numbers = {_number(value) for value in values if _number(value) is not None}
+    return sorted(numbers)
+
+
+def _first_environment_number(value: Any) -> float | int | None:
+    if isinstance(value, list):
+        for item in value:
+            number = _number(item)
+            if number is None:
+                number = _parse_number_text(item)
+            if number is not None:
+                return number
+        return None
+    return _number(value) or _parse_number_text(value)
+
+
+def _parse_number_text(value: Any) -> float | int | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        number = float(value)
+    except ValueError:
+        return None
+    return int(number) if number.is_integer() else number
+
+
 def _metrics(run: dict[str, Any]) -> dict[str, Any]:
     metrics = run.get("metrics")
     return metrics if isinstance(metrics, dict) else {}
@@ -494,6 +956,25 @@ def _optagent(run: dict[str, Any]) -> dict[str, Any]:
 def _benchmarks(run: dict[str, Any]) -> dict[str, Any]:
     benchmarks = run.get("benchmarks")
     return benchmarks if isinstance(benchmarks, dict) else {}
+
+
+def _environment(run: dict[str, Any]) -> dict[str, Any]:
+    environment = run.get("environment")
+    return environment if isinstance(environment, dict) else {}
+
+
+def _environment_summary(environments: list[dict[str, Any]]) -> dict[str, Any]:
+    if not environments:
+        return {}
+    keys = sorted({key for environment in environments for key in environment})
+    summary: dict[str, Any] = {}
+    for key in keys:
+        values = sorted({str(environment.get(key)) for environment in environments if environment.get(key) is not None})
+        if len(values) == 1:
+            summary[key] = values[0]
+        elif values:
+            summary[key] = values
+    return summary
 
 
 def _rate(runs: list[dict[str, Any]], predicate: Any) -> float:
