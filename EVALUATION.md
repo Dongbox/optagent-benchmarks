@@ -15,6 +15,9 @@ benchmarks.telemetry_metrics
 normalized rows / curves / derived metrics
         |
         v
+strategy optimization feedback
+        |
+        v
 benchmarks.telemetry_artifacts
         |
         v
@@ -25,7 +28,9 @@ benchmarks.presentation.dashboard
 ```
 
 Runtime produces facts. Benchmarks derive metrics. Dashboards render published
-artifacts.
+artifacts. Strategy optimization feedback interprets benchmark-owned metrics
+into conservative next-step tuning guidance for OptAgent strategy maintainers;
+it does not override explicit user-selected strategies.
 
 ## Inputs
 
@@ -54,7 +59,8 @@ Measures final solution quality:
 - final objective;
 - feasibility;
 - absolute and relative gap to reference or best known solution;
-- best-known-solution gap where a reference is available.
+- best-known-solution gap where a reference is available;
+- best, mean, and median normalized reference gap where reference data exists.
 
 ### Efficiency
 
@@ -76,7 +82,8 @@ Measures repeatability across matched runs:
 - solved ratio;
 - mean, median, variance, standard deviation;
 - coefficient of variation;
-- worst/best/quantile objective summaries.
+- worst/best/quantile objective summaries;
+- normalized gap distribution where reference data exists.
 
 ### Anytime Performance
 
@@ -86,6 +93,9 @@ Measures quality as budget is consumed:
 - time-to-target and evaluations-to-target;
 - empirical cumulative distribution data;
 - primal integral where objective, reference, and time curve are available;
+- normalized primal integral for budget-comparable summaries;
+- missed target runs counted at the effective run budget when budget data is
+  available;
 - trace truncation status.
 
 Improvement, restart, and termination progress events are preserved before
@@ -99,6 +109,9 @@ Measures whether observed differences are supported by sufficient matched data:
 - Friedman test for multi-strategy instance blocks;
 - Vargha-Delaney A12 as the primary effect size;
 - Cliff's Delta as a secondary effect size;
+- pairwise strategy tests use matched normalized reference gaps when available
+  and pairwise relative regret otherwise, so large-scale instances do not
+  dominate statistical comparisons;
 - insufficient-data status with required and actual sample counts.
 
 ## Artifact Contract
@@ -112,8 +125,13 @@ curves.jsonl
 throughput.jsonl
 five_dimensional_metrics.json
 statistical_tests.json
+strategy_optimization_feedback.json
 dashboard.json
 ```
+
+`strategy_optimization_feedback.json` records per-strategy signals, recommended
+optimization focus areas, regression guards, and statistical confidence derived
+from the five-dimensional metrics.
 
 `manifest.json` records schema version, generator, creation time, source count,
 artifact checksums, and provenance. Dashboard code reads these artifacts only;

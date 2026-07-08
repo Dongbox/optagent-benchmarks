@@ -22,6 +22,7 @@ from benchmarks.telemetry_metrics import (
     MetricRow,
     build_metric_dataset,
     derive_five_dimensional_metrics,
+    derive_strategy_optimization_feedback,
 )
 
 
@@ -34,6 +35,7 @@ CURVES_JSONL = "curves.jsonl"
 THROUGHPUT_JSONL = "throughput.jsonl"
 METRICS_JSON = "five_dimensional_metrics.json"
 STATISTICAL_TESTS_JSON = "statistical_tests.json"
+STRATEGY_OPTIMIZATION_FEEDBACK_JSON = "strategy_optimization_feedback.json"
 DASHBOARD_JSON = "dashboard.json"
 DASHBOARD_MD = "dashboard.md"
 MANIFEST_JSON = "manifest.json"
@@ -57,6 +59,7 @@ def publish_telemetry_artifacts(
     dataset = build_metric_dataset(payloads, provenance=[source_label])
     metrics = derive_five_dimensional_metrics(dataset, references=references, targets=targets)
     statistical_tests = metrics["statistical_validity"]
+    strategy_feedback = derive_strategy_optimization_feedback(dataset, metrics)
     effective_created_at = created_at or datetime.now(timezone.utc).isoformat()
 
     rows = [row_to_artifact(row) for row in dataset.rows]
@@ -68,6 +71,7 @@ def publish_telemetry_artifacts(
         throughput=throughput,
         metrics=metrics,
         statistical_tests=statistical_tests,
+        strategy_feedback=strategy_feedback,
         created_at=effective_created_at,
     )
 
@@ -76,6 +80,7 @@ def publish_telemetry_artifacts(
     _write_jsonl(out / THROUGHPUT_JSONL, throughput)
     _write_json(out / METRICS_JSON, metrics)
     _write_json(out / STATISTICAL_TESTS_JSON, statistical_tests)
+    _write_json(out / STRATEGY_OPTIMIZATION_FEEDBACK_JSON, strategy_feedback)
     _write_json(out / DASHBOARD_JSON, dashboard)
     (out / DASHBOARD_MD).write_text(render_dashboard_markdown(dashboard), encoding="utf-8")
 
@@ -113,6 +118,7 @@ def load_published_artifacts(artifact_dir: str | Path) -> dict[str, Any]:
         "throughput": _read_jsonl(root / THROUGHPUT_JSONL),
         "metrics": _read_json(root / METRICS_JSON),
         "statistical_tests": _read_json(root / STATISTICAL_TESTS_JSON),
+        "strategy_optimization_feedback": _read_json(root / STRATEGY_OPTIMIZATION_FEEDBACK_JSON),
         "dashboard": _read_json(root / DASHBOARD_JSON),
     }
 
@@ -174,6 +180,7 @@ def build_dashboard_artifact(
     throughput: Sequence[Mapping[str, Any]] = (),
     metrics: Mapping[str, Any],
     statistical_tests: Mapping[str, Any],
+    strategy_feedback: Mapping[str, Any],
     created_at: str,
 ) -> dict[str, Any]:
     """Build a dashboard summary from published artifact payloads only."""
@@ -189,17 +196,19 @@ def build_dashboard_artifact(
         "dashboard_schema_version": ARTIFACT_SCHEMA_VERSION,
         "created_at": created_at,
         "source_artifacts": [
-            ROWS_JSONL,
-            CURVES_JSONL,
-            THROUGHPUT_JSONL,
-            METRICS_JSON,
-            STATISTICAL_TESTS_JSON,
-        ],
+        ROWS_JSONL,
+        CURVES_JSONL,
+        THROUGHPUT_JSONL,
+        METRICS_JSON,
+        STATISTICAL_TESTS_JSON,
+        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
+    ],
         "strategy_count": len(strategies),
         "run_count": len(rows),
         "curve_point_count": len(curves),
         "strategies": strategies,
         "sections": sections,
+        "strategy_optimization_feedback": strategy_feedback,
         "availability_summary": availability_summary(
             {
                 "rows": rows,
@@ -207,6 +216,7 @@ def build_dashboard_artifact(
                 "throughput": throughput,
                 "metrics": metrics,
                 "statistical_tests": statistical_tests,
+                "strategy_optimization_feedback": strategy_feedback,
             }
         ),
     }
@@ -270,6 +280,7 @@ def build_manifest(
         THROUGHPUT_JSONL,
         METRICS_JSON,
         STATISTICAL_TESTS_JSON,
+        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
         DASHBOARD_JSON,
         DASHBOARD_MD,
     ]
@@ -306,6 +317,14 @@ def build_manifest(
             THROUGHPUT_JSONL: [source_label, ROWS_JSONL, THROUGHPUT_JSONL],
             METRICS_JSON: [source_label, ROWS_JSONL, CURVES_JSONL, METRICS_JSON],
             STATISTICAL_TESTS_JSON: [source_label, ROWS_JSONL, STATISTICAL_TESTS_JSON],
+            STRATEGY_OPTIMIZATION_FEEDBACK_JSON: [
+                source_label,
+                ROWS_JSONL,
+                CURVES_JSONL,
+                METRICS_JSON,
+                STATISTICAL_TESTS_JSON,
+                STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
+            ],
             DASHBOARD_JSON: [
                 source_label,
                 ROWS_JSONL,
@@ -313,6 +332,7 @@ def build_manifest(
                 THROUGHPUT_JSONL,
                 METRICS_JSON,
                 STATISTICAL_TESTS_JSON,
+                STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
                 DASHBOARD_JSON,
             ],
         },

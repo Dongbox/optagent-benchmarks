@@ -12,17 +12,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from benchmarks.telemetry_metrics import (
     AVAILABLE,
     INSUFFICIENT_DATA,
+    CurvePoint,
     MetricDataset,
     MetricRow,
     TelemetryInputError,
     bonferroni_correction,
     build_metric_dataset,
+    calculate_anytime,
+    calculate_effectiveness,
     calculate_statistical_validity,
     cliffs_delta,
     derive_five_dimensional_metrics,
+    derive_strategy_optimization_feedback,
     friedman_test,
     holm_correction,
     load_run_telemetry,
+    matched_normalized_outcomes,
     matched_objectives,
     vargha_delaney_a12,
     wilcoxon_signed_rank,
@@ -92,6 +97,28 @@ def test_derive_five_dimensions_from_fixture_telemetry():
     metric_entry = metrics["effectiveness"]["by_strategy"]["ga"]["mean_objective"]
     assert metric_entry["source"] == "benchmarks"
     assert metric_entry["provenance"][0] == "run-telemetry.pb"
+
+
+def test_strategy_optimization_feedback_translates_metrics_to_actionable_focus():
+    dataset = build_metric_dataset(_fixture_payloads())
+    metrics = derive_five_dimensional_metrics(
+        dataset,
+        references={
+            "toy-001": 10.0,
+            "alns-toy": 20.0,
+            "exact-toy": 4.0,
+        },
+    )
+
+    feedback = derive_strategy_optimization_feedback(dataset, metrics)
+
+    assert feedback["purpose"] == "strategy_optimization_feedback"
+    assert set(feedback["by_strategy"]) == {"ga", "alns", "cp_sat"}
+    alns_focus = {item["focus"] for item in feedback["by_strategy"]["alns"]["recommended_focus"]}
+    assert "solution_quality" in alns_focus
+    cp_sat_focus = {item["focus"] for item in feedback["by_strategy"]["cp_sat"]["recommended_focus"]}
+    assert "feasibility_and_repair" in cp_sat_focus
+    assert feedback["by_strategy"]["ga"]["signals"]["effectiveness"]["solved_ratio"]["value"] == 1.0
 
 
 def test_legacy_flat_diagnostics_are_rejected():
@@ -176,42 +203,133 @@ def test_statistical_validity_operates_on_matched_rows():
     assert stats["multiple_comparison_correction"]["holm"]["availability"] == AVAILABLE
 
 
-def _statistical_dataset(*, strategy_count: int, instance_count: int) -> MetricDataset:
+def test_effectiveness_uses_objective_sense_for_best_objective():
+    dataset = MetricDataset(
+        rows=[
+            _metric_row("s0:i0:0", "s0", "i0", objective=5.0, objective_sense="maximize"),
+            _metric_row("s0:i1:0", "s0", "i1", objective=10.0, objective_sense="maximize"),
+        ],
+        source_count=2,
+    )
+
+    metrics = calculate_effectiveness(dataset, references={})
+
+    assert metrics["by_strategy"]["s0"]["best_objective"]["value"] == 10.0
+
+
+def test_matched_normalized_outcomes_use_reference_gap_scale():
+    dataset = MetricDataset(
+        rows=[
+            _metric_row("a:i0:0", "a", "i0", objective=110.0),
+            _metric_row("b:i0:0", "b", "i0", objective=120.0),
+            _metric_row("a:i1:0", "a", "i1", objective=11000.0),
+            _metric_row("b:i1:0", "b", "i1", objective=10500.0),
+        ],
+        source_count=4,
+    )
+
+    left, right = matched_normalized_outcomes(dataset, "a", "b", references={"i0": 100.0, "i1": 10000.0})
+
+    assert left == [0.1, 0.1]
+    assert right == [0.2, 0.05]
+
+
+def test_anytime_counts_target_misses_at_budget():
+    row = _metric_row("s0:i0:0", "s0", "i0", objective=20.0)
+    dataset = MetricDataset(
+        rows=[row],
+        curves=[
+            CurvePoint(
+                run_id=row.run_id,
+                strategy=row.strategy,
+                instance_id=row.instance_id,
+                seed=row.seed,
+                elapsed_s=1.0,
+                objective=20.0,
+                objective_availability=AVAILABLE,
+                feasible=True,
+                iteration=1,
+                evaluated_candidates=1,
+                event_kind="incumbent",
+            )
+        ],
+        source_count=1,
+    )
+
+    metrics = calculate_anytime(dataset, references={}, targets={"i0": 10.0})
+
+    assert metrics["by_strategy"]["s0"]["mean_time_to_target_s"]["value"] == 1.0
+    assert metrics["by_strategy"]["s0"]["ecdf_target_hit_ratio"]["value"] == 0.0
+
+
+def test_friedman_ranks_maximize_objectives_as_higher_better():
+    dataset = _statistical_dataset(strategy_count=3, instance_count=10, objective_sense="maximize")
+
+    result = friedman_test(dataset)
+
+    assert result["availability"] == AVAILABLE
+    assert result["average_ranks"]["s2"] == 1.0
+    assert result["average_ranks"]["s0"] == 3.0
+
+
+def _statistical_dataset(
+    *,
+    strategy_count: int,
+    instance_count: int,
+    objective_sense: str = "minimize",
+) -> MetricDataset:
     rows: list[MetricRow] = []
     for instance_index in range(instance_count):
         for strategy_index in range(strategy_count):
             rows.append(
-                MetricRow(
-                    run_id=f"s{strategy_index}:i{instance_index}:0",
-                    strategy=f"s{strategy_index}",
-                    framework="test",
-                    profile="",
-                    solver_name="fixture",
-                    route="fixture",
-                    seed=0,
-                    instance_id=f"i{instance_index}",
-                    instance_name="",
-                    dataset="",
-                    family="",
-                    objective_sense="minimize",
-                    status="feasible",
-                    feasible=True,
+                _metric_row(
+                    f"s{strategy_index}:i{instance_index}:0",
+                    f"s{strategy_index}",
+                    f"i{instance_index}",
                     objective=float(100 + strategy_index + instance_index),
-                    objective_availability=AVAILABLE,
-                    best_bound=None,
-                    wall_time_s=1.0,
-                    cpu_time_s=None,
-                    peak_rss_bytes=None,
-                    iterations=None,
-                    evaluated_candidates=100,
-                    accepted_moves=None,
-                    improved_moves=None,
-                    attempted_moves=None,
-                    restarts=None,
-                    time_budget_s=1.0,
-                    trace_truncated=False,
-                    trace_event_count=0,
-                    source_schema_version=1,
+                    objective_sense=objective_sense,
                 )
             )
     return MetricDataset(rows=rows, curves=[], source_count=len(rows))
+
+
+def _metric_row(
+    run_id: str,
+    strategy: str,
+    instance_id: str,
+    *,
+    objective: float,
+    objective_sense: str = "minimize",
+) -> MetricRow:
+    return MetricRow(
+        run_id=run_id,
+        strategy=strategy,
+        framework="test",
+        profile="",
+        solver_name="fixture",
+        route="fixture",
+        seed=0,
+        instance_id=instance_id,
+        instance_name="",
+        dataset="",
+        family="",
+        objective_sense=objective_sense,
+        status="feasible",
+        feasible=True,
+        objective=objective,
+        objective_availability=AVAILABLE,
+        best_bound=None,
+        wall_time_s=1.0,
+        cpu_time_s=None,
+        peak_rss_bytes=None,
+        iterations=None,
+        evaluated_candidates=100,
+        accepted_moves=None,
+        improved_moves=None,
+        attempted_moves=None,
+        restarts=None,
+        time_budget_s=1.0,
+        trace_truncated=False,
+        trace_event_count=0,
+        source_schema_version=1,
+    )

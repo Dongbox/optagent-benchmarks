@@ -18,6 +18,7 @@ from benchmarks.telemetry_artifacts import (
     METRICS_JSON,
     ROWS_JSONL,
     STATISTICAL_TESTS_JSON,
+    STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
     THROUGHPUT_JSONL,
     load_published_artifacts,
     publish_telemetry_artifacts,
@@ -63,6 +64,7 @@ def test_publish_complete_phase4_artifact_set(tmp_path):
         THROUGHPUT_JSONL,
         METRICS_JSON,
         STATISTICAL_TESTS_JSON,
+        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
         DASHBOARD_JSON,
         DASHBOARD_MD,
     }
@@ -89,6 +91,8 @@ def test_publish_complete_phase4_artifact_set(tmp_path):
     assert len(loaded["curves"]) == 5
     assert loaded["metrics"]["effectiveness"]["by_strategy"]["ga"]["mean_objective"]["value"] == 10.0
     assert loaded["statistical_tests"] == loaded["metrics"]["statistical_validity"]
+    assert loaded["strategy_optimization_feedback"]["purpose"] == "strategy_optimization_feedback"
+    assert "ga" in loaded["strategy_optimization_feedback"]["by_strategy"]
 
 
 def test_dashboard_artifact_exposes_availability_and_provenance(tmp_path):
@@ -124,6 +128,7 @@ def test_dashboard_artifact_exposes_availability_and_provenance(tmp_path):
     assert all(metric["source_artifact"] == STATISTICAL_TESTS_JSON for metric in statistical_metrics)
     assert all(metric["schema_version"] == 1 for metric in statistical_metrics)
     assert all(metric["provenance"] for metric in statistical_metrics)
+    assert dashboard["strategy_optimization_feedback"]["by_strategy"]["alns"]["recommended_focus"]
 
     markdown = (output_dir / DASHBOARD_MD).read_text()
     assert "OptAgent Telemetry Metrics Dashboard" in markdown
@@ -158,6 +163,7 @@ def test_presentation_dashboard_reads_only_published_artifacts(tmp_path):
         THROUGHPUT_JSONL,
         METRICS_JSON,
         STATISTICAL_TESTS_JSON,
+        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
     ]
 
 
