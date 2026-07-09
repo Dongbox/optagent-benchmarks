@@ -122,7 +122,7 @@ def run_benchmark_case(
 
 
 def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
-    if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
+    if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
         return ("ga", "alns")
     if family in {"sequence_blackbox_tsp", "sequence_quadratic_assignment", "sequence_transition_penalty"}:
         return ("ga", "alns")
@@ -146,7 +146,7 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
         backend = "mathopt_mp" if strategy_name == "mathopt_mp" else "optx"
         return MilpConfig(backend=backend, time_limit_s=time_limit_s, threads=thread_count)
     if strategy_name == "ga":
-        if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
+        if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
             return GaConfig(
                 max_iterations=max_iterations,
                 population_size=population_size,
@@ -170,14 +170,14 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             local_improvement_top_k=2,
         )
     if strategy_name == "alns":
-        destroy_count = max(2, min(16, dimension // (8 if family in {"interval_job_shop", "cumulative_resource_scheduling"} else 12)))
+        destroy_count = max(2, min(16, dimension // (8 if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"} else 12)))
         kwargs: dict[str, Any] = {
             "max_iterations": max_iterations,
             "destroy_count": destroy_count,
             "repair_operators": ("greedy", "beam"),
             "acceptance": "not_worse",
         }
-        if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
+        if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
             kwargs.update(
                 {
                     "exact_repair_on_stall": True,
@@ -232,7 +232,7 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
         log_level="off",
         trace_output="full",
         trace_limit=int(getattr(budget, "trace_limit", 8)),
-        exact_repair=strategy_name == "alns" and case.family in {"interval_job_shop", "cumulative_resource_scheduling"},
+        exact_repair=strategy_name == "alns" and case.family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"},
     )
 
 

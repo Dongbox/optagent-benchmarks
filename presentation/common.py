@@ -175,6 +175,7 @@ DISPLAY_EDGE_TYPE_BY_FAMILY = {
     "cumulative_resource_scheduling": "rcpsp_cumulative",
     "exact_linear_mip": "mps_linear_mip",
     "interval_job_shop": "job_shop_interval",
+    "flexible_interval_job_shop": "flexible_job_shop_optional_interval",
     "sequence_blackbox_tsp": "tsp_route",
     "sequence_quadratic_assignment": "qap_quadratic",
     "sequence_transition_penalty": "transition_penalty",
@@ -192,7 +193,7 @@ def strategy_profile_name(
         if strategy in {"optx", "mathopt_mp"}:
             return f"{strategy}_mip_exact_v1"
         return f"{strategy}_exact_baseline_v1"
-    if family in {"interval_job_shop", "cumulative_resource_scheduling"}:
+    if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
         if strategy == "ga":
             return "ga_scheduling_feasibility_v1"
         if strategy == "alns":

@@ -13,6 +13,7 @@ MODEL_STYLE_BY_FAMILY = {
     "cumulative_resource_scheduling": "interval_var_cumulative_precedence",
     "exact_linear_mip": "mps_linear_mp",
     "interval_job_shop": "interval_var_sequence_no_overlap_precedence",
+    "flexible_interval_job_shop": "optional_interval_machine_choice_no_overlap_precedence",
     "sequence_blackbox_tsp": "sequence_var_external_call",
     "sequence_quadratic_assignment": "sequence_var_external_call",
     "sequence_transition_penalty": "sequence_var_external_transition_penalty",

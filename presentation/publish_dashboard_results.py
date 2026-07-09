@@ -21,6 +21,7 @@ from benchmarks.presentation.generate_dashboard_data import (
 
 FAMILY_GROUPS = {
     "interval_job_shop": "scheduling",
+    "flexible_interval_job_shop": "scheduling",
     "cumulative_resource_scheduling": "scheduling",
     "sequence_blackbox_tsp": "routing",
     "sequence_quadratic_assignment": "assignment",
