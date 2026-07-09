@@ -43,7 +43,7 @@ Useful options:
 
 - `--case <benchmark_id>`: select one or more cases.
 - `--family <family>`: select cases by family.
-- `--tier <smoke|calibration|full>`: select by benchmark tier.
+- `--tier <smoke|calibration|full|pressure>`: select by benchmark tier.
 - `--strategy <name>`: select one or more strategies.
 - `--model-style <style>`: select supported modeling variants.
 - `--no-download`: fail if required raw data is missing locally.

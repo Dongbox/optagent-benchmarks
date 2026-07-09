@@ -56,7 +56,7 @@ class BenchmarkCase:
     """来源内的实例名称，如 ``"j90_1_1"``。"""
 
     tier: str = "smoke"
-    """评估层级：``"smoke"`` | ``"calibration"`` | ``"full"``。"""
+    """评估层级：``"smoke"`` | ``"calibration"`` | ``"full"`` | ``"pressure"``。"""
 
     compare_key: str = ""
     """层级分组键，如 ``"psplib/scheduling/rcpsp/j90_1_1"``。"""
