@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -55,8 +55,9 @@ PUBLIC_STRATEGY_CONFIGS = (
     "LnsConfig",
     "AlnsConfig",
     "GaConfig",
+    "CpSatConfig",
 )
-DIRECT_EXACT_APIS = ("solve_milp",)
+DIRECT_EXACT_APIS = ("solve_milp", "solve_cpsat")
 CORE_ROW_FIELDS = (
     "benchmark_schema_version",
     "benchmark_id",
@@ -692,11 +693,15 @@ def _family_route_matrix() -> dict[str, dict[str, Any]]:
             "ignored_heuristic_metadata": "mip_heuristic_route_enabled=false",
         },
         "interval_job_shop": {
-            "routes": ["GaConfig", "AlnsConfig"],
+            "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "cumulative_resource_scheduling": {
-            "routes": ["GaConfig", "AlnsConfig"],
+            "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
+            "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
+        },
+        "flexible_interval_job_shop": {
+            "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "sequence_blackbox_tsp": {
@@ -1920,3 +1925,5 @@ def _fmt_pct(value: Any) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
