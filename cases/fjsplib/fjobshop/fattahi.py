@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from benchmarks.cases.fjsplib.fjobshop._domain import (
     make_flexible_job_shop_case,
@@ -57,9 +57,9 @@ SFJS04 = make_flexible_job_shop_case(
     objective=355,
     case_module=CASE_MODULE,
     reference={
-        'kind': 'bounds',
+        'kind': 'optimum',
         'objective': 355,
-        'lower_bound': 331,
+        'lower_bound': 355,
         'upper_bound': 355,
     },
 )
@@ -209,3 +209,4 @@ CASES = (
     MFJS02,
     MFJS07,
 )
+
