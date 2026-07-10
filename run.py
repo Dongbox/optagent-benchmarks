@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -132,7 +132,7 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 
 
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
-    from optagent import AlnsConfig, GaConfig, MilpConfig
+    from optagent import AlnsConfig, CpSatConfig, GaConfig, MilpConfig
 
     max_iterations = int(getattr(budget, "max_iterations", 40))
     population_size = max(4, int(getattr(budget, "population_size", 10)))
@@ -145,6 +145,8 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
     if family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
         backend = "mathopt_mp" if strategy_name == "mathopt_mp" else "optx"
         return MilpConfig(backend=backend, time_limit_s=time_limit_s, threads=thread_count)
+    if strategy_name == "cpsat":
+        return CpSatConfig(time_limit_s=time_limit_s, workers=thread_count, random_seed=int(getattr(budget, "seed", 11)))
     if strategy_name == "ga":
         if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
             return GaConfig(
@@ -177,14 +179,6 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             "repair_operators": ("greedy", "beam"),
             "acceptance": "not_worse",
         }
-        if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
-            kwargs.update(
-                {
-                    "exact_repair_on_stall": True,
-                    "exact_repair_max_calls": 1,
-                    "exact_repair_time_budget_s": min(1.0, max(0.1, time_limit_s / 4.0)),
-                }
-            )
         return AlnsConfig(**kwargs)
     if strategy_name == "lns":
         # LnsConfig was consolidated into AlnsConfig; map lns requests to ALNS.
@@ -217,12 +211,14 @@ def _run_single_strategy(
 
 
 def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strategy_config: Any, budget: Any) -> Any:
-    from optagent import solve, solve_milp
+    from optagent import solve, solve_cpsat, solve_milp
 
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
     thread_count = int(getattr(budget, "thread_count", 1))
     if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
         return solve_milp(model, config=strategy_config)
+    if strategy_name == "cpsat":
+        return solve_cpsat(model, config=strategy_config)
     return solve(
         model,
         strategy=strategy_config,
@@ -232,7 +228,6 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
         log_level="off",
         trace_output="full",
         trace_limit=int(getattr(budget, "trace_limit", 8)),
-        exact_repair=strategy_name == "alns" and case.family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"},
     )
 
 
@@ -283,7 +278,7 @@ def _result_row(
     objective = summary.get("objective")
     reference = summary.get("reference_objective", case.reference_objective())
     gap = objective_gap(objective, reference)
-    kind = "exact_baseline" if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"} else "strategy_run"
+    kind = "exact_baseline" if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp", "cpsat"} else "strategy_run"
     metadata = summarize_solution_metadata(dict(summary.get("metadata") or {}))
     if case.family == "exact_linear_mip":
         metadata = dict(summary.get("metadata") or {})
@@ -325,7 +320,7 @@ def _error_row(
     exc: Exception,
     elapsed_seconds: float,
 ) -> dict[str, Any]:
-    kind = "exact_baseline" if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"} else "strategy_run"
+    kind = "exact_baseline" if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp", "cpsat"} else "strategy_run"
     return {
         "kind": kind,
         "benchmark_id": case.benchmark_id,
@@ -441,3 +436,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
