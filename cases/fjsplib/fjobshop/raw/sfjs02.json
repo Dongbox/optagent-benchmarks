@@ -1,0 +1,47 @@
+{
+  "machines": 2,
+  "jobs": [
+    [
+      [
+        {
+          "machine": 0,
+          "processing": 43
+        }
+      ],
+      [
+        {
+          "machine": 0,
+          "processing": 64
+        },
+        {
+          "machine": 1,
+          "processing": 71
+        }
+      ]
+    ],
+    [
+      [
+        {
+          "machine": 0,
+          "processing": 21
+        },
+        {
+          "machine": 1,
+          "processing": 35
+        }
+      ],
+      [
+        {
+          "machine": 1,
+          "processing": 43
+        }
+      ]
+    ]
+  ],
+  "reference": {
+    "kind": "optimum",
+    "objective": 107,
+    "lower_bound": 107,
+    "upper_bound": 107
+  }
+}
