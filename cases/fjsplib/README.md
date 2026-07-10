@@ -1,0 +1,439 @@
+# FJSPLIB 数据来源说明
+
+FJSPLIB 目录保存 flexible job-shop benchmark case。当前正式注册的是柔性作业车间调度问题（FJSP），用于测试 OptAgent 在 optional interval、机器选择、机器不重叠和作业内 precedence 组合建模上的表现。
+
+数据集来源：
+
+- SchedulingLab/fjsp-instances?https://github.com/SchedulingLab/fjsp-instances
+- 本地完整数据缓存：`benchmarks/cases/fjsplib/fjobshop/raw/fjsp-instances-main/`
+- 正式筛选 case：`benchmarks/cases/fjsplib/fjobshop/raw/` 根层的 `.txt` 和 `.json` 文件
+
+筛选后正式注册 case 的 `.json` 文件会保存在 `fjobshop/raw/` 根层，保证 `--no-download` 时可直接运行。`.txt` 文件保留原始实例格式，`.json` 文件是 benchmark loader 使用的结构化格式，并包含后续评估所需的 `reference` 信息。
+
+## 数据格式说明
+
+当前 benchmark loader 读取 `fjobshop/raw/*.json`。每个 JSON 文件包含：
+
+- `machines`：机器数量，机器编号使用 0-based index。
+- `jobs`：作业列表；每个作业包含若干工序；每个工序包含若干可选机器加工候选。
+- `machine`：候选机器编号。
+- `processing`：该工序在候选机器上的加工时间。
+- `reference`：参考解信息；`kind=optimum` 表示已闭合最优解，`kind=bounds` 表示上下界或 best-known upper bound。
+
+## 建模说明
+
+FJSPLIB 当前模型使用 `optional_interval_var` 表示“某道工序选择某台候选机器后的可选加工区间”，使用 presence bool 表示机器选择；每道工序通过 `exactly_one` 保证恰好选择一个候选机器，通过 `selected_start` / `selected_end` 投影被选中的开始和结束时间。每台机器使用 `sequence_var + no_overlap` 表示同机加工不重叠，作业内工序顺序使用 precedence 约束，目标是最小化 makespan。
+
+## 相关 case
+
+### smoke
+
+- `fjsplib_mfjs02`
+  - 问题描述：5 个作业、7 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=5`，`machines=7`，`ops=15`，`candidates=39`，`flex=2.60`
+  - 参考值：`upper_bound=446`，`lower_bound=396`
+  - 类型：`open/bounds`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs01`
+  - 问题描述：2 个作业、2 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=2`，`machines=2`，`ops=4`，`candidates=8`，`flex=2.00`
+  - 参考值：`objective=66`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs02`
+  - 问题描述：2 个作业、2 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=2`，`machines=2`，`ops=4`，`candidates=6`，`flex=1.50`
+  - 参考值：`objective=107`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs04`
+  - 问题描述：3 个作业、2 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=3`，`machines=2`，`ops=6`，`candidates=10`，`flex=1.67`
+  - 参考值：`objective=355`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs05`
+  - 问题描述：3 个作业、2 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=3`，`machines=2`，`ops=6`，`candidates=12`，`flex=2.00`
+  - 参考值：`upper_bound=119`，`lower_bound=107`
+  - 类型：`open/bounds`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs06`
+  - 问题描述：3 个作业、3 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=3`，`machines=3`，`ops=9`，`candidates=15`，`flex=1.67`
+  - 参考值：`upper_bound=320`，`lower_bound=310`
+  - 类型：`open/bounds`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs07`
+  - 问题描述：3 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=3`，`machines=5`，`ops=9`，`candidates=18`，`flex=2.00`
+  - 参考值：`objective=397`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs09`
+  - 问题描述：3 个作业、3 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=3`，`machines=3`，`ops=9`，`candidates=18`，`flex=2.00`
+  - 参考值：`objective=210`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`fattahi`
+- `fjsplib_sfjs10`
+  - 问题描述：4 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=4`，`machines=5`，`ops=12`，`candidates=20`，`flex=1.67`
+  - 参考值：`upper_bound=516`，`lower_bound=427`
+  - 类型：`open/bounds`
+  - 数据来源系列：`fattahi`
+- `fjsplib_k1`
+  - 问题描述：4 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=4`，`machines=5`，`ops=12`，`candidates=60`，`flex=5.00`
+  - 参考值：`objective=11`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`kacem`
+- `fjsplib_k2`
+  - 问题描述：10 个作业、7 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=7`，`ops=29`，`candidates=203`，`flex=7.00`
+  - 参考值：`objective=11`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`kacem`
+- `fjsplib_k3`
+  - 问题描述：10 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=10`，`ops=30`，`candidates=300`，`flex=10.00`
+  - 参考值：`objective=7`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`kacem`
+
+### calibration
+
+- `fjsplib_mt10c1`
+  - 问题描述：10 个作业、11 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=11`，`ops=100`，`candidates=110`，`flex=1.10`
+  - 参考值：`objective=927`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`barnes`
+- `fjsplib_mt10xxx`
+  - 问题描述：10 个作业、13 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=13`，`ops=100`，`candidates=130`，`flex=1.30`
+  - 参考值：`objective=918`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`barnes`
+- `fjsplib_med01_4`
+  - 问题描述：10 个作业、40 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=40`，`ops=50`，`candidates=564`，`flex=11.28`
+  - 参考值：`upper_bound=87`，`lower_bound=70`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_sm01_1`
+  - 问题描述：10 个作业、20 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=20`，`ops=50`，`candidates=304`，`flex=6.08`
+  - 参考值：`upper_bound=91`，`lower_bound=70`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_sm02_5`
+  - 问题描述：20 个作业、20 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=20`，`ops=100`，`candidates=612`，`flex=6.12`
+  - 参考值：`upper_bound=133`，`lower_bound=81`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_mk01`
+  - 问题描述：10 个作业、6 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=6`，`ops=55`，`candidates=115`，`flex=2.09`
+  - 参考值：`objective=40`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk02`
+  - 问题描述：10 个作业、6 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=6`，`ops=58`，`candidates=238`，`flex=4.10`
+  - 参考值：`upper_bound=26`，`lower_bound=24`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk04`
+  - 问题描述：15 个作业、8 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=8`，`ops=90`，`candidates=172`，`flex=1.91`
+  - 参考值：`objective=60`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk07`
+  - 问题描述：20 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=5`，`ops=100`，`candidates=283`，`flex=2.83`
+  - 参考值：`upper_bound=139`，`lower_bound=133`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mfjs07`
+  - 问题描述：8 个作业、7 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=8`，`machines=7`，`ops=32`，`candidates=78`，`flex=2.44`
+  - 参考值：`upper_bound=879`，`lower_bound=764`
+  - 类型：`open/bounds`
+  - 数据来源系列：`fattahi`
+- `fjsplib_e-abz5`
+  - 问题描述：10 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=10`，`ops=100`，`candidates=113`，`flex=1.13`
+  - 参考值：`upper_bound=1176`，`lower_bound=859`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_e-car2`
+  - 问题描述：13 个作业、4 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=13`，`machines=4`，`ops=52`，`candidates=63`，`flex=1.21`
+  - 参考值：`upper_bound=6455`，`lower_bound=5929`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_e-car7`
+  - 问题描述：7 个作业、7 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=7`，`machines=7`，`ops=49`，`candidates=58`，`flex=1.18`
+  - 参考值：`upper_bound=6123`，`lower_bound=4216`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_e-la03`
+  - 问题描述：10 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=5`，`ops=50`，`candidates=59`，`flex=1.18`
+  - 参考值：`objective=550`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_e-la11`
+  - 问题描述：20 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=5`，`ops=100`，`candidates=113`，`flex=1.13`
+  - 参考值：`objective=1103`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_e-mt06`
+  - 问题描述：6 个作业、6 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=6`，`machines=6`，`ops=36`，`candidates=42`，`flex=1.17`
+  - 参考值：`objective=55`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_r-car6`
+  - 问题描述：8 个作业、9 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=8`，`machines=9`，`ops=72`，`candidates=140`，`flex=1.94`
+  - 参考值：`upper_bound=6147`，`lower_bound=5486`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_r-la17`
+  - 问题描述：10 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=10`，`ops=100`，`candidates=193`，`flex=1.93`
+  - 参考值：`objective=646`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-abz5`
+  - 问题描述：10 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=10`，`ops=100`，`candidates=467`，`flex=4.67`
+  - 参考值：`upper_bound=860`，`lower_bound=859`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-car8`
+  - 问题描述：8 个作业、8 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=8`，`machines=8`，`ops=64`，`candidates=254`，`flex=3.97`
+  - 参考值：`objective=4613`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-la05`
+  - 问题描述：10 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=5`，`ops=50`，`candidates=119`，`flex=2.38`
+  - 参考值：`objective=457`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-mt06`
+  - 问题描述：6 个作业、6 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=6`，`machines=6`，`ops=36`，`candidates=103`，`flex=2.86`
+  - 参考值：`objective=47`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-orb7`
+  - 问题描述：10 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=10`，`ops=100`，`candidates=456`，`flex=4.56`
+  - 参考值：`objective=275`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_k4`
+  - 问题描述：15 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=10`，`ops=56`，`candidates=560`，`flex=10.00`
+  - 参考值：`objective=12`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`kacem`
+
+### full
+
+- `fjsplib_setb4c9`
+  - 问题描述：15 个作业、11 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=11`，`ops=150`，`candidates=165`，`flex=1.10`
+  - 参考值：`objective=914`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`barnes`
+- `fjsplib_seti5xxx`
+  - 问题描述：15 个作业、18 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=18`，`ops=225`，`candidates=270`，`flex=1.20`
+  - 参考值：`objective=1194`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`barnes`
+- `fjsplib_lar01_3`
+  - 问题描述：10 个作业、60 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=60`，`ops=50`，`candidates=964`，`flex=19.28`
+  - 参考值：`upper_bound=86`，`lower_bound=68`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_med02_2`
+  - 问题描述：20 个作业、40 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=40`，`ops=100`，`candidates=1192`，`flex=11.92`
+  - 参考值：`upper_bound=132`，`lower_bound=81`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_sm03_4`
+  - 问题描述：50 个作业、20 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=50`，`machines=20`，`ops=250`，`candidates=1524`，`flex=6.10`
+  - 参考值：`upper_bound=258`，`lower_bound=164`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_mk03`
+  - 问题描述：15 个作业、8 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=8`，`ops=150`，`candidates=451`，`flex=3.01`
+  - 参考值：`objective=204`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk05`
+  - 问题描述：15 个作业、4 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=4`，`ops=106`，`candidates=181`，`flex=1.71`
+  - 参考值：`upper_bound=172`，`lower_bound=168`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk06`
+  - 问题描述：10 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=10`，`ops=150`，`candidates=490`，`flex=3.27`
+  - 参考值：`upper_bound=58`，`lower_bound=33`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk08`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=225`，`candidates=322`，`flex=1.43`
+  - 参考值：`objective=523`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk09`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=240`，`candidates=606`，`flex=2.52`
+  - 参考值：`objective=307`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk10`
+  - 问题描述：20 个作业、15 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=15`，`ops=240`，`candidates=716`，`flex=2.98`
+  - 参考值：`upper_bound=197`，`lower_bound=175`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk11`
+  - 问题描述：30 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=30`，`machines=5`，`ops=179`，`candidates=270`，`flex=1.51`
+  - 参考值：`upper_bound=615`，`lower_bound=594`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk12`
+  - 问题描述：30 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=30`，`machines=10`，`ops=193`，`candidates=288`，`flex=1.49`
+  - 参考值：`objective=508`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk13`
+  - 问题描述：30 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=30`，`machines=10`，`ops=231`，`candidates=778`，`flex=3.37`
+  - 参考值：`upper_bound=430`，`lower_bound=353`
+  - 类型：`open/bounds`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_mk14`
+  - 问题描述：30 个作业、15 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=30`，`machines=15`，`ops=277`，`candidates=432`，`flex=1.56`
+  - 参考值：`objective=694`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`brandimarte`
+- `fjsplib_dpp01`
+  - 问题描述：10 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=5`，`ops=196`，`candidates=221`，`flex=1.13`
+  - 参考值：`upper_bound=2518`，`lower_bound=2505`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+- `fjsplib_dpp04`
+  - 问题描述：10 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=5`，`ops=196`，`candidates=221`，`flex=1.13`
+  - 参考值：`objective=2503`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`dauzere`
+- `fjsplib_dpp05`
+  - 问题描述：10 个作业、5 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=10`，`machines=5`，`ops=196`，`candidates=332`，`flex=1.69`
+  - 参考值：`upper_bound=2216`，`lower_bound=2189`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+- `fjsplib_dpp09`
+  - 问题描述：15 个作业、8 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=8`，`ops=293`，`candidates=1182`，`flex=4.03`
+  - 参考值：`upper_bound=2066`，`lower_bound=2061`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+- `fjsplib_e-abz7`
+  - 问题描述：20 个作业、15 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=15`，`ops=300`，`candidates=339`，`flex=1.13`
+  - 参考值：`upper_bound=638`，`lower_bound=492`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_e-la33`
+  - 问题描述：30 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=30`，`machines=10`，`ops=300`，`candidates=339`，`flex=1.13`
+  - 参考值：`objective=1547`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_r-la39`
+  - 问题描述：15 个作业、15 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=15`，`machines=15`，`ops=225`，`candidates=436`，`flex=1.94`
+  - 参考值：`objective=1011`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-abz7`
+  - 问题描述：20 个作业、15 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=15`，`ops=300`，`candidates=1951`，`flex=6.50`
+  - 参考值：`upper_bound=495`，`lower_bound=492`
+  - 类型：`open/bounds`
+  - 数据来源系列：`hurink`
+- `fjsplib_v-la27`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=200`，`candidates=915`，`flex=4.58`
+  - 参考值：`objective=1084`
+  - 类型：`closed/optimal`
+  - 数据来源系列：`hurink`
+
+### pressure
+
+- `fjsplib_med03_2`
+  - 问题描述：50 个作业、40 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=50`，`machines=40`，`ops=250`，`candidates=3052`，`flex=12.21`
+  - 参考值：`upper_bound=259`，`lower_bound=77`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_sm04_3`
+  - 问题描述：100 个作业、20 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=100`，`machines=20`，`ops=500`，`candidates=3164`，`flex=6.33`
+  - 参考值：`upper_bound=555`，`lower_bound=321`
+  - 类型：`open/bounds`
+  - 数据来源系列：`behnke`
+- `fjsplib_dpp13`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=387`，`candidates=518`，`flex=1.34`
+  - 参考值：`upper_bound=2257`，`lower_bound=2161`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+- `fjsplib_dpp15`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=387`，`candidates=1941`，`flex=5.02`
+  - 参考值：`upper_bound=2165`，`lower_bound=2161`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+- `fjsplib_dpp16`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=387`，`candidates=518`，`flex=1.34`
+  - 参考值：`upper_bound=2255`，`lower_bound=2148`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+- `fjsplib_dpp17`
+  - 问题描述：20 个作业、10 台机器的 flexible job-shop 调度问题，目标是最小化 makespan。
+  - 规模：`jobs=20`，`machines=10`，`ops=387`，`candidates=1156`，`flex=2.99`
+  - 参考值：`upper_bound=2140`，`lower_bound=2088`
+  - 类型：`open/bounds`
+  - 数据来源系列：`dauzere`
+
+## 问题定义
+
+每个 case 都是在给定作业工序链、候选机器集合和加工时间的前提下，为每道工序选择一台可行机器并安排开始时间，使同一机器上的被选加工区间不重叠、同一作业内工序满足先后顺序，最终最小化所有作业的最大完工时间。
