@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from importlib import import_module
 from types import ModuleType
@@ -11,6 +11,7 @@ from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row
 # 系列模块，例如 jsplib/scheduling/jobshop/abz.py。
 INSTANCE_COLLECTION_MODULES = (
     "benchmarks.cases.custom.steel_transition_sequence",
+    "benchmarks.cases.fjsplib.fjobshop",
     "benchmarks.cases.jsplib.jobshop",
     "benchmarks.cases.psplib.rcpsp",
     "benchmarks.cases.tsplib.tsp",
@@ -21,6 +22,7 @@ INSTANCE_COLLECTION_MODULES = (
 IMPLEMENTED_FAMILY_NAMES = {
     "cumulative_resource_scheduling",
     "exact_linear_mip",
+    "flexible_interval_job_shop",
     "interval_job_shop",
     "sequence_transition_penalty",
     "sequence_blackbox_tsp",
@@ -81,3 +83,4 @@ def default_model_styles_for_family(family: str) -> tuple[str, ...]:
 
 def implemented_families() -> set[str]:
     return set(IMPLEMENTED_FAMILY_NAMES)
+
