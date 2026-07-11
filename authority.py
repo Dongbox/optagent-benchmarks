@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Iterable, Literal
 
 
 HEURISTIC_SEEDS = (11, 23, 47)
-EMBEDDED_HIGHS_VERSION = "1.14.0"
+AuthorityStatus = Literal["authoritative", "non_authoritative"]
+CapabilityStatus = Literal["supported", "experimental", "failed"]
+LifecycleStatus = Literal["declared", "runnable", "verified", "release_gate", "experimental", "retired"]
 
 
 @dataclass(frozen=True)
@@ -142,7 +144,7 @@ class AuthorityInputs:
 
 @dataclass(frozen=True)
 class AuthorityAssessment:
-    status: str
+    status: AuthorityStatus
     reasons: tuple[str, ...]
     inputs: AuthorityInputs
 
@@ -197,6 +199,8 @@ def assess_authority(
     coordinates_by_key = {coordinate.run_key: coordinate for coordinate in iter_run_coordinates()}
     malformed_coordinates: list[str] = []
     missing_backend_identity: list[str] = []
+    missing_platform: list[str] = []
+    fallback_runs: list[str] = []
     for row in materialized:
         run_key = str(row.get("run_key"))
         coordinate = coordinates_by_key.get(run_key)
@@ -215,10 +219,18 @@ def assess_authority(
             malformed_coordinates.append(run_key)
         if not row.get("backend_name") or not row.get("backend_version"):
             missing_backend_identity.append(run_key)
+        if not row.get("platform"):
+            missing_platform.append(run_key)
+        if _explicit_strategy_fallback_count(row) > 0:
+            fallback_runs.append(run_key)
     if malformed_coordinates:
         reasons.append(f"row coordinates do not match run keys: {', '.join(sorted(malformed_coordinates))}")
     if missing_backend_identity:
         reasons.append("backend identity is missing from rows: " + ", ".join(sorted(missing_backend_identity)))
+    if missing_platform:
+        reasons.append("platform coordinate is missing from rows: " + ", ".join(sorted(missing_platform)))
+    if fallback_runs:
+        reasons.append("explicit strategy fallback occurred in rows: " + ", ".join(sorted(fallback_runs)))
 
     unverified_candidates = [
         str(row.get("run_key"))
@@ -241,29 +253,33 @@ def assess_authority(
 def assess_capabilities(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     materialized = list(rows)
     profiles: dict[str, dict[str, Any]] = {}
+    platforms = sorted({str(row.get("platform")) for row in materialized if row.get("platform")})
     for entry in RELEASE_GATE_PLAN:
         for model_style in entry.model_styles:
             for strategy in entry.strategies:
-                key = f"{entry.family}|{model_style}|{entry.solve_route}|{strategy}"
-                matched = [
-                    row
-                    for row in materialized
-                    if row.get("benchmark_id") == entry.benchmark_id
-                    and row.get("model_style") == model_style
-                    and row.get("solve_route") == entry.solve_route
-                    and row.get("strategy") == strategy
-                ]
-                passed = len(matched) == len(entry.seeds) and all(_row_passed(row) for row in matched)
-                profiles[key] = {
-                    "benchmark_id": entry.benchmark_id,
-                    "family": entry.family,
-                    "model_style": model_style,
-                    "solve_route": entry.solve_route,
-                    "strategy": strategy,
-                    "status": "supported" if passed else "failed",
-                    "passed_run_count": sum(1 for row in matched if _row_passed(row)),
-                    "expected_run_count": len(entry.seeds),
-                }
+                for platform_name in platforms:
+                    key = f"{entry.family}|{model_style}|{entry.solve_route}|{strategy}|{platform_name}"
+                    matched = [
+                        row
+                        for row in materialized
+                        if row.get("benchmark_id") == entry.benchmark_id
+                        and row.get("model_style") == model_style
+                        and row.get("solve_route") == entry.solve_route
+                        and row.get("strategy") == strategy
+                        and row.get("platform") == platform_name
+                    ]
+                    passed = len(matched) == len(entry.seeds) and all(_row_passed(row) for row in matched)
+                    profiles[key] = {
+                        "benchmark_id": entry.benchmark_id,
+                        "family": entry.family,
+                        "model_style": model_style,
+                        "solve_route": entry.solve_route,
+                        "strategy": strategy,
+                        "platform": platform_name,
+                        "status": "supported" if passed else "failed",
+                        "passed_run_count": sum(1 for row in matched if _row_passed(row)),
+                        "expected_run_count": len(entry.seeds),
+                    }
 
     families: dict[str, dict[str, Any]] = {}
     for entry in RELEASE_GATE_PLAN:
@@ -295,7 +311,12 @@ def assess_capabilities(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def case_lifecycle(benchmark_id: str) -> str:
+CASE_LIFECYCLE_OVERRIDES: dict[str, LifecycleStatus] = {}
+
+
+def case_lifecycle(benchmark_id: str) -> LifecycleStatus:
+    if benchmark_id in CASE_LIFECYCLE_OVERRIDES:
+        return CASE_LIFECYCLE_OVERRIDES[benchmark_id]
     if benchmark_id in {entry.benchmark_id for entry in RELEASE_GATE_PLAN}:
         return "release_gate"
 
@@ -304,11 +325,25 @@ def case_lifecycle(benchmark_id: str) -> str:
 
     case = next((item for item in benchmark_case_objects() if item.benchmark_id == benchmark_id), None)
     if case is None:
-        return "declared"
+        raise KeyError(f"benchmark case not found: {benchmark_id}")
     has_verifier = type(case).verify_solution is not BenchmarkCase.verify_solution
     if has_verifier and case.reference:
         return "verified"
     return "runnable"
+
+
+def case_lifecycle_inventory() -> dict[str, LifecycleStatus]:
+    from benchmarks.cases.registry import benchmark_case_objects
+
+    return {case.benchmark_id: case_lifecycle(case.benchmark_id) for case in benchmark_case_objects()}
+
+
+def _explicit_strategy_fallback_count(row: dict[str, Any]) -> float:
+    diagnostics = row.get("diagnostics")
+    sources = (row, diagnostics if isinstance(diagnostics, dict) else {})
+    return sum(
+        float(source.get(key) or 0.0) for source in sources for key in ("fallback_attempts", "fallback_successes")
+    )
 
 
 def _row_passed(row: dict[str, Any]) -> bool:

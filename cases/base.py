@@ -2,17 +2,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any, Literal, Mapping
 
 if TYPE_CHECKING:
     from optagent import ModelBuilder
+
+
+VerificationStatus = Literal["passed", "failed", "unsupported"]
 
 
 @dataclass(frozen=True)
 class SolutionVerification:
     """Independent benchmark-side verification of a returned solution."""
 
-    status: str
+    status: VerificationStatus
     passed: bool
     feasible: bool
     objective: float | None = None

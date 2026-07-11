@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from benchmarks.authority import (
     HEURISTIC_SEEDS,
     RELEASE_GATE_PLAN,
@@ -7,15 +9,19 @@ from benchmarks.authority import (
     assess_authority,
     assess_capabilities,
     case_lifecycle,
+    case_lifecycle_inventory,
     iter_run_coordinates,
 )
 from benchmarks.run import LocalRunBudget, build_strategy_config, case_object_by_id
 from benchmarks.authoritative_baseline import (
     PlannedRun,
+    _backend_identity,
     _data_checksums,
     _install_wheel_environment,
     _memory_limiter,
+    _platform_coordinate,
     build_run_command,
+    planned_runs,
 )
 
 
@@ -53,6 +59,7 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
             "strategy": coordinate.strategy,
             "seed": coordinate.seed,
             "thread_count": coordinate.thread_count,
+            "platform": _platform_coordinate(),
             "backend_name": "highs" if coordinate.solve_route == "embedded_highs" else "optagent_native_search",
             "backend_version": "1.14.0" if coordinate.solve_route == "embedded_highs" else "1.2.0rc1",
             "status": "feasible",
@@ -105,6 +112,9 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
         missing_backend_rows,
         evidence_checksums=evidence_checksums,
     )
+    fallback_rows = [dict(row) for row in rows]
+    fallback_rows[0]["fallback_attempts"] = 1
+    fallback = assess_authority(accepted.inputs, fallback_rows, evidence_checksums=evidence_checksums)
 
     assert accepted.status == "authoritative"
     assert accepted.reasons == ()
@@ -118,6 +128,8 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
     assert "missing evidence checksums: jsplib_ft06:reference" in missing_checksum.reasons
     assert missing_backend.status == "non_authoritative"
     assert any("backend identity" in reason for reason in missing_backend.reasons)
+    assert fallback.status == "non_authoritative"
+    assert any("fallback" in reason for reason in fallback.reasons)
 
 
 def test_capability_assessment_keeps_strategy_failures_separate_from_family_support() -> None:
@@ -131,6 +143,7 @@ def test_capability_assessment_keeps_strategy_failures_separate_from_family_supp
                 "model_style": coordinate.model_style,
                 "solve_route": coordinate.solve_route,
                 "strategy": coordinate.strategy,
+                "platform": _platform_coordinate(),
                 "status": "feasible",
                 "feasible": True,
                 "verification_status": "passed",
@@ -150,9 +163,9 @@ def test_capability_assessment_keeps_strategy_failures_separate_from_family_supp
     assert assessment["release_status"] == "passed"
     assert assessment["families"]["interval_job_shop"]["status"] == "supported"
     assert (
-        assessment["profiles"]["interval_job_shop|interval_var_sequence_no_overlap_precedence|native_search|alns"][
-            "status"
-        ]
+        assessment["profiles"][
+            "interval_job_shop|interval_var_sequence_no_overlap_precedence|native_search|alns|" + _platform_coordinate()
+        ]["status"]
         == "failed"
     )
 
@@ -165,7 +178,9 @@ def test_release_gate_coordinates_and_lifecycle_are_explicit() -> None:
     assert all("|route=" in coordinate.run_key for coordinate in coordinates)
     assert case_lifecycle("jsplib_ft06") == "release_gate"
     assert case_lifecycle("jsplib_ft10") == "verified"
-    assert case_lifecycle("unknown_case") == "declared"
+    assert len(case_lifecycle_inventory()) > len(RELEASE_GATE_PLAN)
+    with pytest.raises(KeyError, match="unknown_case"):
+        case_lifecycle("unknown_case")
 
 
 def test_release_gate_strategy_configs_match_current_public_api() -> None:
@@ -232,3 +247,14 @@ def test_release_gate_checksums_cover_instance_and_reference_evidence() -> None:
     for entry in RELEASE_GATE_PLAN:
         assert f"{entry.benchmark_id}:reference" in checksums
         assert any(key.startswith(f"{entry.benchmark_id}:instance:") for key in checksums)
+
+
+def test_backend_identity_uses_version_reported_by_installed_wheel() -> None:
+    optx_run = next(run for run in planned_runs() if run.solve_route == "embedded_highs")
+
+    identity = _backend_identity(
+        optx_run,
+        {"version": "1.2.0rc1", "embedded_highs_version": "9.9.9"},
+    )
+
+    assert identity == {"backend_name": "highs", "backend_version": "9.9.9"}

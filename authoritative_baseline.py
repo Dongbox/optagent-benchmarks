@@ -14,11 +14,10 @@ import tempfile
 from typing import Any, Callable
 
 from benchmarks.authority import (
-    EMBEDDED_HIGHS_VERSION,
     AuthorityInputs,
     assess_authority,
     assess_capabilities,
-    case_lifecycle,
+    case_lifecycle_inventory,
     iter_run_coordinates,
     make_run_key,
 )
@@ -173,6 +172,7 @@ def run_baseline(
             "bootstrap_python": str(Path(bootstrap_python).resolve()),
             "installed_runtime": installed_runtime,
             "platform": platform.platform(),
+            "platform_coordinate": _platform_coordinate(),
             "machine": platform.machine(),
             "processor": platform.processor(),
             "cpu_count": os.cpu_count(),
@@ -188,7 +188,7 @@ def run_baseline(
         },
         "planned_run_count": len(planned_runs()),
         "completed_row_count": len(rows),
-        "case_lifecycle": {run.benchmark_id: case_lifecycle(run.benchmark_id) for run in planned_runs()},
+        "case_lifecycle": case_lifecycle_inventory(),
         "data_checksums": data_checksums,
         "artifacts": {"rows.jsonl": f"sha256:{_sha256(rows_path)}"},
     }
@@ -215,12 +215,32 @@ def _install_wheel_environment(*, bootstrap_python: str, wheel_path: Path, envir
 
 
 def _installed_runtime_identity(python_executable: str) -> dict[str, Any]:
-    script = (
-        "import importlib.metadata, importlib, json, optagent; "
-        "native = importlib.import_module('_optagent_native'); "
-        "print(json.dumps({'version': importlib.metadata.version('optagent'), "
-        "'package_file': optagent.__file__, 'native_file': native.__file__}, sort_keys=True))"
-    )
+    script = """
+import importlib
+import importlib.metadata
+import json
+from pathlib import Path
+import re
+
+import optagent
+
+native = importlib.import_module("_optagent_native")
+config_text = (Path(native.__file__).parent / "include" / "highs" / "HConfig.h").read_text(encoding="utf-8")
+
+def macro(name):
+    match = re.search(rf"^#define {name} (\\d+)$", config_text, re.MULTILINE)
+    return match.group(1) if match else ""
+
+highs_version = ".".join(
+    macro(name) for name in ("HIGHS_VERSION_MAJOR", "HIGHS_VERSION_MINOR", "HIGHS_VERSION_PATCH")
+)
+print(json.dumps({
+    "version": importlib.metadata.version("optagent"),
+    "package_file": optagent.__file__,
+    "native_file": native.__file__,
+    "embedded_highs_version": highs_version,
+}, sort_keys=True))
+"""
     completed = subprocess.run(
         [python_executable, "-c", script],
         cwd=REPO_ROOT,
@@ -285,6 +305,7 @@ def _run_child(
         )
     row["run_key"] = run.run_key
     row["solve_route"] = run.solve_route
+    row["platform"] = _platform_coordinate()
     row.update(_backend_identity(run, installed_runtime))
     row["seed"] = run.seed
     row["thread_count"] = run.thread_count
@@ -312,6 +333,7 @@ def _failed_row(
         "tier": run.tier,
         "model_style": run.model_style,
         "solve_route": run.solve_route,
+        "platform": _platform_coordinate(),
         "strategy": run.strategy,
         **_backend_identity(run, installed_runtime),
         "seed": run.seed,
@@ -365,11 +387,24 @@ def _sha256_json(value: Any) -> str:
 
 def _backend_identity(run: PlannedRun, installed_runtime: dict[str, Any]) -> dict[str, str]:
     if run.solve_route == "embedded_highs":
-        return {"backend_name": "highs", "backend_version": EMBEDDED_HIGHS_VERSION}
+        return {
+            "backend_name": "highs",
+            "backend_version": str(installed_runtime.get("embedded_highs_version") or ""),
+        }
     return {
         "backend_name": "optagent_native_search",
         "backend_version": str(installed_runtime.get("version") or "unknown"),
     }
+
+
+def _platform_coordinate() -> str:
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if system == "darwin":
+        system = "macos"
+    if machine in {"amd64", "x64"}:
+        machine = "x86_64"
+    return f"{system}_{machine}"
 
 
 def _git_output(cwd: Path, *args: str) -> str:
