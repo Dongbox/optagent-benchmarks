@@ -6,10 +6,17 @@ from benchmarks.authority import (
     AuthorityInputs,
     assess_authority,
     assess_capabilities,
-    expected_run_keys,
+    case_lifecycle,
+    iter_run_coordinates,
 )
 from benchmarks.run import LocalRunBudget, build_strategy_config, case_object_by_id
-from benchmarks.authoritative_baseline import PlannedRun, _memory_limiter, build_run_command
+from benchmarks.authoritative_baseline import (
+    PlannedRun,
+    _data_checksums,
+    _install_wheel_environment,
+    _memory_limiter,
+    build_run_command,
+)
 
 
 def test_release_gate_plan_covers_supported_families_routes_and_tsp_styles() -> None:
@@ -38,14 +45,27 @@ def test_release_gate_plan_covers_supported_families_routes_and_tsp_styles() -> 
 def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows() -> None:
     rows = [
         {
-            "run_key": run_key,
+            "run_key": coordinate.run_key,
+            "benchmark_id": coordinate.benchmark_id,
+            "family": coordinate.family,
+            "model_style": coordinate.model_style,
+            "solve_route": coordinate.solve_route,
+            "strategy": coordinate.strategy,
+            "seed": coordinate.seed,
+            "thread_count": coordinate.thread_count,
+            "backend_name": "highs" if coordinate.solve_route == "embedded_highs" else "optagent_native_search",
+            "backend_version": "1.14.0" if coordinate.solve_route == "embedded_highs" else "1.2.0rc1",
             "status": "feasible",
             "feasible": True,
             "verification_status": "passed",
             "verification_passed": True,
         }
-        for run_key in sorted(expected_run_keys())
+        for coordinate in iter_run_coordinates()
     ]
+    evidence_checksums = {
+        **{f"{entry.benchmark_id}:reference": "sha256:" + "d" * 64 for entry in RELEASE_GATE_PLAN},
+        **{f"{entry.benchmark_id}:instance:raw_path": "sha256:" + "e" * 64 for entry in RELEASE_GATE_PLAN},
+    }
     accepted = assess_authority(
         AuthorityInputs(
             optagent_commit="a" * 40,
@@ -55,6 +75,7 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
             benchmarks_dirty=False,
         ),
         rows,
+        evidence_checksums=evidence_checksums,
     )
     dirty = assess_authority(
         AuthorityInputs(
@@ -65,12 +86,25 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
             benchmarks_dirty=False,
         ),
         rows,
+        evidence_checksums=evidence_checksums,
     )
-    incomplete = assess_authority(accepted.inputs, rows[:-1])
+    incomplete = assess_authority(accepted.inputs, rows[:-1], evidence_checksums=evidence_checksums)
     unverified_rows = [dict(row) for row in rows]
     unverified_rows[0]["verification_passed"] = False
     unverified_rows[0]["verification_status"] = "not_run"
-    unverified = assess_authority(accepted.inputs, unverified_rows)
+    unverified = assess_authority(accepted.inputs, unverified_rows, evidence_checksums=evidence_checksums)
+    missing_checksum = assess_authority(
+        accepted.inputs,
+        rows,
+        evidence_checksums={key: value for key, value in evidence_checksums.items() if key != "jsplib_ft06:reference"},
+    )
+    missing_backend_rows = [dict(row) for row in rows]
+    del missing_backend_rows[0]["backend_version"]
+    missing_backend = assess_authority(
+        accepted.inputs,
+        missing_backend_rows,
+        evidence_checksums=evidence_checksums,
+    )
 
     assert accepted.status == "authoritative"
     assert accepted.reasons == ()
@@ -80,27 +114,29 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
     assert any(reason.startswith("missing planned runs:") for reason in incomplete.reasons)
     assert unverified.status == "non_authoritative"
     assert any("independent verification" in reason for reason in unverified.reasons)
+    assert missing_checksum.status == "non_authoritative"
+    assert "missing evidence checksums: jsplib_ft06:reference" in missing_checksum.reasons
+    assert missing_backend.status == "non_authoritative"
+    assert any("backend identity" in reason for reason in missing_backend.reasons)
 
 
 def test_capability_assessment_keeps_strategy_failures_separate_from_family_support() -> None:
     rows = []
-    for entry in RELEASE_GATE_PLAN:
-        for model_style in entry.model_styles:
-            for strategy in entry.strategies:
-                for seed in entry.seeds:
-                    rows.append(
-                        {
-                            "run_key": f"{entry.benchmark_id}|{model_style}|{strategy}|seed={seed}|threads=1",
-                            "benchmark_id": entry.benchmark_id,
-                            "family": entry.family,
-                            "model_style": model_style,
-                            "strategy": strategy,
-                            "status": "feasible",
-                            "feasible": True,
-                            "verification_status": "passed",
-                            "verification_passed": True,
-                        }
-                    )
+    for coordinate in iter_run_coordinates():
+        rows.append(
+            {
+                "run_key": coordinate.run_key,
+                "benchmark_id": coordinate.benchmark_id,
+                "family": coordinate.family,
+                "model_style": coordinate.model_style,
+                "solve_route": coordinate.solve_route,
+                "strategy": coordinate.strategy,
+                "status": "feasible",
+                "feasible": True,
+                "verification_status": "passed",
+                "verification_passed": True,
+            }
+        )
     failed_alns = [dict(row) for row in rows]
     for row in failed_alns:
         if row["family"] == "interval_job_shop" and row["strategy"] == "alns":
@@ -114,9 +150,22 @@ def test_capability_assessment_keeps_strategy_failures_separate_from_family_supp
     assert assessment["release_status"] == "passed"
     assert assessment["families"]["interval_job_shop"]["status"] == "supported"
     assert (
-        assessment["profiles"]["interval_job_shop|interval_var_sequence_no_overlap_precedence|alns"]["status"]
+        assessment["profiles"]["interval_job_shop|interval_var_sequence_no_overlap_precedence|native_search|alns"][
+            "status"
+        ]
         == "failed"
     )
+
+
+def test_release_gate_coordinates_and_lifecycle_are_explicit() -> None:
+    coordinates = iter_run_coordinates()
+
+    assert len(coordinates) == 43
+    assert {coordinate.solve_route for coordinate in coordinates} == {"embedded_highs", "native_search"}
+    assert all("|route=" in coordinate.run_key for coordinate in coordinates)
+    assert case_lifecycle("jsplib_ft06") == "release_gate"
+    assert case_lifecycle("jsplib_ft10") == "verified"
+    assert case_lifecycle("unknown_case") == "declared"
 
 
 def test_release_gate_strategy_configs_match_current_public_api() -> None:
@@ -135,6 +184,7 @@ def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> N
         family="sequence_blackbox_tsp",
         tier="smoke",
         model_style="sequence_var_sequence_transition_sum",
+        solve_route="native_search",
         strategy="ga",
         seed=11,
         max_iterations=5,
@@ -158,3 +208,27 @@ def test_memory_hard_limit_is_only_enabled_on_linux() -> None:
     limiter = _memory_limiter(4096)
 
     assert (limiter is not None) is sys.platform.startswith("linux")
+
+
+def test_wheel_environment_does_not_inherit_system_packages(monkeypatch, tmp_path) -> None:
+    commands = []
+    monkeypatch.setattr(
+        "benchmarks.authoritative_baseline.subprocess.run", lambda command, **_kwargs: commands.append(command)
+    )
+
+    _install_wheel_environment(
+        bootstrap_python="/tmp/bootstrap-python",
+        wheel_path=tmp_path / "optagent.whl",
+        environment_dir=tmp_path / "venv",
+    )
+
+    assert commands[0] == ["/tmp/bootstrap-python", "-m", "venv", str(tmp_path / "venv")]
+    assert "--system-site-packages" not in commands[0]
+
+
+def test_release_gate_checksums_cover_instance_and_reference_evidence() -> None:
+    checksums = _data_checksums()
+
+    for entry in RELEASE_GATE_PLAN:
+        assert f"{entry.benchmark_id}:reference" in checksums
+        assert any(key.startswith(f"{entry.benchmark_id}:instance:") for key in checksums)

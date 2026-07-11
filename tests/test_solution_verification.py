@@ -78,6 +78,25 @@ def test_runner_rejects_solver_claim_when_independent_verification_fails(monkeyp
     assert row["verification_violations"] == ["independent verifier rejected the candidate"]
 
 
+def test_public_elapsed_time_excludes_case_setup(monkeypatch: Any) -> None:
+    import benchmarks.run as run_module
+
+    clock = iter((10.0, 13.0, 13.0, 18.0))
+    monkeypatch.setattr(run_module, "perf_counter", lambda: next(clock))
+    monkeypatch.setattr(run_module, "build_strategy_config", lambda **_kwargs: object())
+    monkeypatch.setattr(run_module, "_solve_model", lambda *_args, **_kwargs: _FakeSolution())
+
+    [row] = run_benchmark_case(
+        _case(),
+        strategies=("ga",),
+        allow_download=False,
+        budget=LocalRunBudget(max_iterations=1, time_limit_s=0.1, population_size=4),
+    )
+
+    assert row["case_setup_seconds"] == 3.0
+    assert row["elapsed_seconds"] == 5.0
+
+
 def test_base_case_verifier_is_explicitly_unsupported() -> None:
     verification = BenchmarkCase.verify_solution(_case(), _FakeSolution())
 

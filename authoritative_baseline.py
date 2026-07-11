@@ -14,10 +14,12 @@ import tempfile
 from typing import Any, Callable
 
 from benchmarks.authority import (
-    RELEASE_GATE_PLAN,
+    EMBEDDED_HIGHS_VERSION,
     AuthorityInputs,
     assess_authority,
     assess_capabilities,
+    case_lifecycle,
+    iter_run_coordinates,
     make_run_key,
 )
 from benchmarks.cases.registry import benchmark_case_objects
@@ -35,6 +37,7 @@ class PlannedRun:
     family: str
     tier: str
     model_style: str
+    solve_route: str
     strategy: str
     seed: int
     max_iterations: int
@@ -48,6 +51,7 @@ class PlannedRun:
         return make_run_key(
             benchmark_id=self.benchmark_id,
             model_style=self.model_style,
+            solve_route=self.solve_route,
             strategy=self.strategy,
             seed=self.seed,
             thread_count=self.thread_count,
@@ -56,30 +60,28 @@ class PlannedRun:
 
 def planned_runs() -> tuple[PlannedRun, ...]:
     runs: list[PlannedRun] = []
-    for entry in RELEASE_GATE_PLAN:
-        for seed in entry.seeds:
-            budget = resolve_family_tier_budget(
-                family=entry.family,
-                tier=entry.tier,
-                request=StrategyBudgetRequest(seed=seed, thread_count=1),
+    for coordinate in iter_run_coordinates():
+        budget = resolve_family_tier_budget(
+            family=coordinate.family,
+            tier=coordinate.tier,
+            request=StrategyBudgetRequest(seed=coordinate.seed, thread_count=coordinate.thread_count),
+        )
+        runs.append(
+            PlannedRun(
+                benchmark_id=coordinate.benchmark_id,
+                family=coordinate.family,
+                tier=coordinate.tier,
+                model_style=coordinate.model_style,
+                solve_route=coordinate.solve_route,
+                strategy=coordinate.strategy,
+                seed=coordinate.seed,
+                max_iterations=budget.max_iterations,
+                time_limit_s=budget.exact_time_limit_s or budget.time_limit_s,
+                population_size=budget.population_size,
+                trace_limit=budget.trace_limit,
+                thread_count=budget.thread_count,
             )
-            for model_style in entry.model_styles:
-                for strategy in entry.strategies:
-                    runs.append(
-                        PlannedRun(
-                            benchmark_id=entry.benchmark_id,
-                            family=entry.family,
-                            tier=entry.tier,
-                            model_style=model_style,
-                            strategy=strategy,
-                            seed=seed,
-                            max_iterations=budget.max_iterations,
-                            time_limit_s=budget.exact_time_limit_s or budget.time_limit_s,
-                            population_size=budget.population_size,
-                            trace_limit=budget.trace_limit,
-                            thread_count=budget.thread_count,
-                        )
-                    )
+        )
     return tuple(runs)
 
 
@@ -130,6 +132,7 @@ def run_baseline(
         optagent_dirty=bool(_git_output(REPO_ROOT, "status", "--porcelain")),
         benchmarks_dirty=bool(_git_output(BENCHMARKS_ROOT, "status", "--porcelain")),
     )
+    data_checksums = _data_checksums()
     output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="optagent-authority-") as temp_dir:
         python_executable = _install_wheel_environment(
@@ -146,10 +149,11 @@ def run_baseline(
                     python_executable=python_executable,
                     allow_download=allow_download,
                     memory_limit_mb=memory_limit_mb,
+                    installed_runtime=installed_runtime,
                 )
             )
 
-        assessment = assess_authority(inputs, rows)
+        assessment = assess_authority(inputs, rows, evidence_checksums=data_checksums)
         capability_assessment = assess_capabilities(rows)
         rows_path = output_dir / "rows.jsonl"
         rows_path.write_text(
@@ -184,7 +188,8 @@ def run_baseline(
         },
         "planned_run_count": len(planned_runs()),
         "completed_row_count": len(rows),
-        "data_checksums": _data_checksums(),
+        "case_lifecycle": {run.benchmark_id: case_lifecycle(run.benchmark_id) for run in planned_runs()},
+        "data_checksums": data_checksums,
         "artifacts": {"rows.jsonl": f"sha256:{_sha256(rows_path)}"},
     }
     (output_dir / "manifest.json").write_text(
@@ -196,7 +201,7 @@ def run_baseline(
 
 def _install_wheel_environment(*, bootstrap_python: str, wheel_path: Path, environment_dir: Path) -> str:
     subprocess.run(
-        [bootstrap_python, "-m", "venv", "--system-site-packages", str(environment_dir)],
+        [bootstrap_python, "-m", "venv", str(environment_dir)],
         check=True,
         cwd=REPO_ROOT,
     )
@@ -233,6 +238,7 @@ def _run_child(
     python_executable: str,
     allow_download: bool,
     memory_limit_mb: int,
+    installed_runtime: dict[str, Any],
 ) -> dict[str, Any]:
     command = build_run_command(python_executable, run, allow_download=allow_download)
     env = dict(os.environ)
@@ -251,20 +257,35 @@ def _run_child(
             preexec_fn=_memory_limiter(memory_limit_mb),
         )
     except subprocess.TimeoutExpired as exc:
-        return _failed_row(run, "hard_timeout", f"child exceeded {timeout_s:.1f}s", stderr=exc.stderr)
+        return _failed_row(
+            run,
+            "hard_timeout",
+            f"child exceeded {timeout_s:.1f}s",
+            installed_runtime=installed_runtime,
+            stderr=exc.stderr,
+        )
     if completed.returncode != 0:
         return _failed_row(
             run,
             "process_exit",
             f"child exited with code {completed.returncode}",
+            installed_runtime=installed_runtime,
             stderr=completed.stderr,
         )
     try:
         payload = json.loads(completed.stdout)
         row = dict(payload[0])
     except (json.JSONDecodeError, IndexError, TypeError, ValueError) as exc:
-        return _failed_row(run, "invalid_child_output", str(exc), stderr=completed.stderr)
+        return _failed_row(
+            run,
+            "invalid_child_output",
+            str(exc),
+            installed_runtime=installed_runtime,
+            stderr=completed.stderr,
+        )
     row["run_key"] = run.run_key
+    row["solve_route"] = run.solve_route
+    row.update(_backend_identity(run, installed_runtime))
     row["seed"] = run.seed
     row["thread_count"] = run.thread_count
     row["effective_budget"] = {
@@ -276,14 +297,23 @@ def _run_child(
     return row
 
 
-def _failed_row(run: PlannedRun, failure_type: str, message: str, *, stderr: Any = None) -> dict[str, Any]:
+def _failed_row(
+    run: PlannedRun,
+    failure_type: str,
+    message: str,
+    *,
+    installed_runtime: dict[str, Any],
+    stderr: Any = None,
+) -> dict[str, Any]:
     return {
         "run_key": run.run_key,
         "benchmark_id": run.benchmark_id,
         "family": run.family,
         "tier": run.tier,
         "model_style": run.model_style,
+        "solve_route": run.solve_route,
         "strategy": run.strategy,
+        **_backend_identity(run, installed_runtime),
         "seed": run.seed,
         "thread_count": run.thread_count,
         "status": "error",
@@ -313,18 +343,33 @@ def _memory_limiter(memory_limit_mb: int) -> Callable[[], None] | None:
 
 def _data_checksums() -> dict[str, str]:
     checksums: dict[str, str] = {}
-    release_ids = {entry.benchmark_id for entry in RELEASE_GATE_PLAN}
+    release_ids = {coordinate.benchmark_id for coordinate in iter_run_coordinates()}
     for case in benchmark_case_objects():
         if case.benchmark_id not in release_ids:
             continue
-        for key in ("raw_path", "solution_raw_path"):
+        checksums[f"{case.benchmark_id}:reference"] = f"sha256:{_sha256_json(dict(case.reference))}"
+        for key in ("data_path", "raw_path", "solution_raw_path"):
             raw_path = case.data.get(key)
             if not raw_path:
                 continue
             path = Path(str(raw_path))
             if path.exists():
-                checksums[str(path.relative_to(BENCHMARKS_ROOT))] = f"sha256:{_sha256(path)}"
+                checksums[f"{case.benchmark_id}:instance:{key}"] = f"sha256:{_sha256(path)}"
     return dict(sorted(checksums.items()))
+
+
+def _sha256_json(value: Any) -> str:
+    encoded = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _backend_identity(run: PlannedRun, installed_runtime: dict[str, Any]) -> dict[str, str]:
+    if run.solve_route == "embedded_highs":
+        return {"backend_name": "highs", "backend_version": EMBEDDED_HIGHS_VERSION}
+    return {
+        "backend_name": "optagent_native_search",
+        "backend_version": str(installed_runtime.get("version") or "unknown"),
+    }
 
 
 def _git_output(cwd: Path, *args: str) -> str:

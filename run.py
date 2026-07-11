@@ -219,15 +219,19 @@ def _run_single_strategy(
     budget: Any,
     build_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
-    started = perf_counter()
+    setup_started = perf_counter()
+    case_setup_seconds: float | None = None
+    solve_started: float | None = None
     strategy_config: Any | None = None
     try:
         model = case.build_model(**build_kwargs)
         strategy_config = build_strategy_config(case=case, strategy_name=strategy_name, budget=budget)
+        case_setup_seconds = perf_counter() - setup_started
+        solve_started = perf_counter()
         solution = _solve_model(
             case, model, strategy_name=strategy_name, strategy_config=strategy_config, budget=budget
         )
-        elapsed_seconds = perf_counter() - started
+        elapsed_seconds = perf_counter() - solve_started
         solver_summary = _solver_solution_summary(solution)
         verification = case.verify_solution(solution, **build_kwargs)
         summary = _merge_solution_metrics(
@@ -241,11 +245,20 @@ def _run_single_strategy(
             strategy_config=strategy_config,
             summary=summary,
             elapsed_seconds=elapsed_seconds,
+            case_setup_seconds=case_setup_seconds,
         )
     except Exception as exc:
-        elapsed_seconds = perf_counter() - started
+        failure_time = perf_counter()
+        elapsed_seconds = failure_time - (solve_started if solve_started is not None else setup_started)
+        if case_setup_seconds is None:
+            case_setup_seconds = failure_time - setup_started
         return _error_row(
-            case, strategy_name=strategy_name, strategy_config=strategy_config, exc=exc, elapsed_seconds=elapsed_seconds
+            case,
+            strategy_name=strategy_name,
+            strategy_config=strategy_config,
+            exc=exc,
+            elapsed_seconds=elapsed_seconds,
+            case_setup_seconds=case_setup_seconds,
         )
 
 
@@ -330,6 +343,7 @@ def _result_row(
     strategy_config: Any,
     summary: dict[str, Any],
     elapsed_seconds: float,
+    case_setup_seconds: float,
 ) -> dict[str, Any]:
     objective = summary.get("objective")
     reference = summary.get("reference_objective", case.reference_objective())
@@ -364,6 +378,7 @@ def _result_row(
         "gap_abs": gap["gap_abs"],
         "gap_rel": gap["gap_rel"],
         "elapsed_seconds": elapsed_seconds,
+        "case_setup_seconds": case_setup_seconds,
         "time_to_best_seconds": _time_to_best(dict(summary.get("metadata") or {}), elapsed_seconds),
         "metadata": metadata,
         "case_size": dict(case.size),
@@ -388,6 +403,7 @@ def _error_row(
     strategy_config: Any | None,
     exc: Exception,
     elapsed_seconds: float,
+    case_setup_seconds: float,
 ) -> dict[str, Any]:
     kind = (
         "exact_baseline"
@@ -412,6 +428,7 @@ def _error_row(
         "gap_abs": None,
         "gap_rel": None,
         "elapsed_seconds": elapsed_seconds,
+        "case_setup_seconds": case_setup_seconds,
         "time_to_best_seconds": None,
         "error": {"type": type(exc).__name__, "message": str(exc)},
     }

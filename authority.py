@@ -5,6 +5,7 @@ from typing import Any, Iterable
 
 
 HEURISTIC_SEEDS = (11, 23, 47)
+EMBEDDED_HIGHS_VERSION = "1.14.0"
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,7 @@ class ReleaseGateEntry:
     benchmark_id: str
     family: str
     model_styles: tuple[str, ...]
+    solve_route: str
     strategies: tuple[str, ...]
     seeds: tuple[int, ...] = HEURISTIC_SEEDS
     tier: str = "smoke"
@@ -22,24 +24,28 @@ RELEASE_GATE_PLAN = (
         benchmark_id="custom_steel_sequence_toy",
         family="sequence_transition_penalty",
         model_styles=("sequence_var_external_transition_penalty",),
+        solve_route="native_search",
         strategies=("ga", "alns"),
     ),
     ReleaseGateEntry(
         benchmark_id="fjsplib_sfjs01",
         family="flexible_interval_job_shop",
         model_styles=("optional_interval_machine_choice_no_overlap_precedence",),
+        solve_route="native_search",
         strategies=("ga", "alns"),
     ),
     ReleaseGateEntry(
         benchmark_id="jsplib_ft06",
         family="interval_job_shop",
         model_styles=("interval_var_sequence_no_overlap_precedence",),
+        solve_route="native_search",
         strategies=("ga", "alns"),
     ),
     ReleaseGateEntry(
         benchmark_id="psplib_j90_1_1",
         family="cumulative_resource_scheduling",
         model_styles=("interval_var_cumulative_precedence",),
+        solve_route="native_search",
         strategies=("ga", "alns"),
         tier="calibration",
     ),
@@ -47,41 +53,82 @@ RELEASE_GATE_PLAN = (
         benchmark_id="tsplib_berlin52",
         family="sequence_blackbox_tsp",
         model_styles=("sequence_var_external_call", "sequence_var_sequence_transition_sum"),
+        solve_route="native_search",
         strategies=("ga", "alns"),
     ),
     ReleaseGateEntry(
         benchmark_id="qaplib_nug12",
         family="sequence_quadratic_assignment",
         model_styles=("sequence_var_external_call",),
+        solve_route="native_search",
         strategies=("ga", "alns"),
     ),
     ReleaseGateEntry(
         benchmark_id="miplib2017_50v-10",
         family="exact_linear_mip",
         model_styles=("mps_linear_mp",),
+        solve_route="embedded_highs",
         strategies=("optx",),
         seeds=(0,),
     ),
 )
 
 
-def make_run_key(*, benchmark_id: str, model_style: str, strategy: str, seed: int, thread_count: int = 1) -> str:
-    return f"{benchmark_id}|{model_style}|{strategy}|seed={seed}|threads={thread_count}"
+@dataclass(frozen=True)
+class RunCoordinate:
+    benchmark_id: str
+    family: str
+    tier: str
+    model_style: str
+    solve_route: str
+    strategy: str
+    seed: int
+    thread_count: int = 1
+
+    @property
+    def run_key(self) -> str:
+        return make_run_key(
+            benchmark_id=self.benchmark_id,
+            model_style=self.model_style,
+            solve_route=self.solve_route,
+            strategy=self.strategy,
+            seed=self.seed,
+            thread_count=self.thread_count,
+        )
 
 
-def expected_run_keys(plan: Iterable[ReleaseGateEntry] = RELEASE_GATE_PLAN) -> set[str]:
-    return {
-        make_run_key(
+def iter_run_coordinates(plan: Iterable[ReleaseGateEntry] = RELEASE_GATE_PLAN) -> tuple[RunCoordinate, ...]:
+    return tuple(
+        RunCoordinate(
             benchmark_id=entry.benchmark_id,
+            family=entry.family,
+            tier=entry.tier,
             model_style=model_style,
+            solve_route=entry.solve_route,
             strategy=strategy,
             seed=seed,
         )
         for entry in plan
+        for seed in entry.seeds
         for model_style in entry.model_styles
         for strategy in entry.strategies
-        for seed in entry.seeds
-    }
+    )
+
+
+def make_run_key(
+    *,
+    benchmark_id: str,
+    model_style: str,
+    solve_route: str,
+    strategy: str,
+    seed: int,
+    thread_count: int = 1,
+) -> str:
+    return f"{benchmark_id}|{model_style}|route={solve_route}|{strategy}|seed={seed}|threads={thread_count}"
+
+
+def expected_run_keys(plan: Iterable[ReleaseGateEntry] = RELEASE_GATE_PLAN) -> set[str]:
+    return {coordinate.run_key for coordinate in iter_run_coordinates(plan)}
 
 
 @dataclass(frozen=True)
@@ -100,7 +147,12 @@ class AuthorityAssessment:
     inputs: AuthorityInputs
 
 
-def assess_authority(inputs: AuthorityInputs, rows: Iterable[dict[str, Any]]) -> AuthorityAssessment:
+def assess_authority(
+    inputs: AuthorityInputs,
+    rows: Iterable[dict[str, Any]],
+    *,
+    evidence_checksums: dict[str, str] | None = None,
+) -> AuthorityAssessment:
     materialized = list(rows)
     reasons: list[str] = []
     if len(inputs.optagent_commit) != 40:
@@ -114,6 +166,23 @@ def assess_authority(inputs: AuthorityInputs, rows: Iterable[dict[str, Any]]) ->
     if inputs.benchmarks_dirty:
         reasons.append("benchmarks checkout is dirty")
 
+    checksums = dict(evidence_checksums or {})
+    required_case_ids = {entry.benchmark_id for entry in RELEASE_GATE_PLAN}
+    missing_evidence: list[str] = []
+    for benchmark_id in sorted(required_case_ids):
+        reference_key = f"{benchmark_id}:reference"
+        if reference_key not in checksums:
+            missing_evidence.append(reference_key)
+        if not any(key.startswith(f"{benchmark_id}:instance:") for key in checksums):
+            missing_evidence.append(f"{benchmark_id}:instance")
+    if missing_evidence:
+        reasons.append(f"missing evidence checksums: {', '.join(missing_evidence)}")
+    malformed_checksums = sorted(
+        key for key, value in checksums.items() if not value.startswith("sha256:") or len(value) != 71
+    )
+    if malformed_checksums:
+        reasons.append(f"malformed evidence checksums: {', '.join(malformed_checksums)}")
+
     expected = expected_run_keys()
     actual = {str(row.get("run_key")) for row in materialized}
     missing = sorted(expected - actual)
@@ -124,6 +193,32 @@ def assess_authority(inputs: AuthorityInputs, rows: Iterable[dict[str, Any]]) ->
         reasons.append(f"unexpected runs: {', '.join(unexpected)}")
     if len(actual) != len(materialized):
         reasons.append("duplicate run keys are present")
+
+    coordinates_by_key = {coordinate.run_key: coordinate for coordinate in iter_run_coordinates()}
+    malformed_coordinates: list[str] = []
+    missing_backend_identity: list[str] = []
+    for row in materialized:
+        run_key = str(row.get("run_key"))
+        coordinate = coordinates_by_key.get(run_key)
+        if coordinate is not None and any(
+            row.get(field) != expected_value
+            for field, expected_value in (
+                ("benchmark_id", coordinate.benchmark_id),
+                ("family", coordinate.family),
+                ("model_style", coordinate.model_style),
+                ("solve_route", coordinate.solve_route),
+                ("strategy", coordinate.strategy),
+                ("seed", coordinate.seed),
+                ("thread_count", coordinate.thread_count),
+            )
+        ):
+            malformed_coordinates.append(run_key)
+        if not row.get("backend_name") or not row.get("backend_version"):
+            missing_backend_identity.append(run_key)
+    if malformed_coordinates:
+        reasons.append(f"row coordinates do not match run keys: {', '.join(sorted(malformed_coordinates))}")
+    if missing_backend_identity:
+        reasons.append("backend identity is missing from rows: " + ", ".join(sorted(missing_backend_identity)))
 
     unverified_candidates = [
         str(row.get("run_key"))
@@ -149,12 +244,13 @@ def assess_capabilities(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     for entry in RELEASE_GATE_PLAN:
         for model_style in entry.model_styles:
             for strategy in entry.strategies:
-                key = f"{entry.family}|{model_style}|{strategy}"
+                key = f"{entry.family}|{model_style}|{entry.solve_route}|{strategy}"
                 matched = [
                     row
                     for row in materialized
                     if row.get("benchmark_id") == entry.benchmark_id
                     and row.get("model_style") == model_style
+                    and row.get("solve_route") == entry.solve_route
                     and row.get("strategy") == strategy
                 ]
                 passed = len(matched) == len(entry.seeds) and all(_row_passed(row) for row in matched)
@@ -162,6 +258,7 @@ def assess_capabilities(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
                     "benchmark_id": entry.benchmark_id,
                     "family": entry.family,
                     "model_style": model_style,
+                    "solve_route": entry.solve_route,
                     "strategy": strategy,
                     "status": "supported" if passed else "failed",
                     "passed_run_count": sum(1 for row in matched if _row_passed(row)),
@@ -196,6 +293,22 @@ def assess_capabilities(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         "families": dict(sorted(families.items())),
         "profiles": dict(sorted(profiles.items())),
     }
+
+
+def case_lifecycle(benchmark_id: str) -> str:
+    if benchmark_id in {entry.benchmark_id for entry in RELEASE_GATE_PLAN}:
+        return "release_gate"
+
+    from benchmarks.cases.base import BenchmarkCase
+    from benchmarks.cases.registry import benchmark_case_objects
+
+    case = next((item for item in benchmark_case_objects() if item.benchmark_id == benchmark_id), None)
+    if case is None:
+        return "declared"
+    has_verifier = type(case).verify_solution is not BenchmarkCase.verify_solution
+    if has_verifier and case.reference:
+        return "verified"
+    return "runnable"
 
 
 def _row_passed(row: dict[str, Any]) -> bool:

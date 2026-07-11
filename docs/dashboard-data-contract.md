@@ -3,6 +3,9 @@
 The supported dashboard input is an immutable artifact directory produced by
 `benchmarks.telemetry_artifacts`.
 
+Release evidence produced by `benchmarks.authoritative_baseline` is a separate
+artifact type and is never a supported dashboard input.
+
 Dashboard code must not scan runner workspaces, solve logs, raw telemetry
 payloads, or Git-managed historical result trees. It reads published artifacts
 and renders them as-is.

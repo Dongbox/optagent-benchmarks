@@ -24,6 +24,10 @@ The authority rules for capability claims, independent solution verification,
 case lifecycle, and baseline provenance are documented in
 `../docs/benchmark-authority-spec.md`.
 
+Authoritative baseline directories are release evidence, not canonical
+dashboard telemetry artifacts. Dashboard publishers and renderers must never
+consume `benchmarks.authoritative_baseline` manifests or row streams.
+
 ## Case Runner
 
 List cases:
