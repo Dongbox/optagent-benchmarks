@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 
 from optagent import ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_interval
 
 SOURCE = "PSPLIB j90 via ScheduleOpt"
 SOURCE_KEY = "psplib"
@@ -88,7 +88,10 @@ class RcpspCase(BenchmarkCase):
                     continue
                 intervals.append(activity_vars[activity.activity_id])
                 demands.append(builder.const(demand))
-            builder.constraint(builder.cumulative(intervals, demands, builder.const(capacity)), name=f"resource_{resource_id + 1}_capacity")
+            builder.constraint(
+                builder.cumulative(intervals, demands, builder.const(capacity)),
+                name=f"resource_{resource_id + 1}_capacity",
+            )
         objective = builder.minimize(builder.interval_end(activity_vars[instance.sink_activity_id]), name="makespan")
         self._set_build_context(
             {
@@ -119,6 +122,49 @@ class RcpspCase(BenchmarkCase):
                 "horizon": context["horizon"],
             },
         }
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        intervals: dict[int, tuple[int, int]] = {}
+        violations: list[str] = []
+        for activity in instance.activities:
+            interval, errors = verify_interval(
+                solution.variable_values.get(context["activity_node_ids"][activity.activity_id]),
+                duration=activity.duration,
+                label=f"activity {activity.activity_id + 1}",
+            )
+            violations.extend(errors)
+            if interval is not None:
+                intervals[activity.activity_id] = interval
+        for activity in instance.activities:
+            before = intervals.get(activity.activity_id)
+            for successor_id in activity.successors:
+                after = intervals.get(successor_id)
+                if before and after and before[1] > after[0]:
+                    violations.append(f"activity {activity.activity_id + 1} precedence is violated")
+        event_times = sorted({value for interval in intervals.values() for value in interval})
+        for left, right in zip(event_times, event_times[1:]):
+            if left == right:
+                continue
+            for resource_id, capacity in enumerate(instance.capacities):
+                demand = sum(
+                    activity.demands[resource_id]
+                    for activity in instance.activities
+                    if activity.activity_id in intervals
+                    and intervals[activity.activity_id][0] <= left
+                    and intervals[activity.activity_id][1] > left
+                )
+                if demand > capacity:
+                    violations.append(
+                        f"resource {resource_id + 1} capacity exceeded on [{left}, {right}): {demand} > {capacity}"
+                    )
+        if violations:
+            return SolutionVerification.failed(*violations)
+        sink = intervals.get(instance.sink_activity_id)
+        if sink is None:
+            return SolutionVerification.failed("sink activity interval is missing")
+        return SolutionVerification.accepted(objective=float(sink[1]))
 
 
 def make_rcpsp_case(
@@ -269,8 +315,7 @@ def load_rcpsp_case(
         path.write_text(text, encoding="utf-8")
         return parse_psplib_rcp_text(text, name=instance_name)
     raise RuntimeError(
-        f"failed to download PSPLIB case {case['benchmark_id']} from {len(urls)} source(s): "
-        + " | ".join(errors)
+        f"failed to download PSPLIB case {case['benchmark_id']} from {len(urls)} source(s): " + " | ".join(errors)
     )
 
 
@@ -278,6 +323,7 @@ def _download_text(url: str) -> str:
     request = Request(url, headers={"User-Agent": "optagent-benchmark/1.0"})
     with urlopen(request, timeout=60) as response:
         return response.read().decode("utf-8", errors="replace")
+
 
 def makespan_from_solution(context: dict[str, Any], variable_values: dict[int, Any]) -> int | None:
     instance = context["instance"]

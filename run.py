@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -101,7 +101,11 @@ def run_benchmark_case(
     **kwargs: Any,
 ) -> list[dict[str, Any]]:
     effective_budget = budget if budget is not None else LocalRunBudget()
-    strategy_names = tuple(str(item) for item in strategies) if strategies is not None else default_strategy_names_for_family(case.family)
+    strategy_names = (
+        tuple(str(item) for item in strategies)
+        if strategies is not None
+        else default_strategy_names_for_family(case.family)
+    )
     if case.family == "exact_linear_mip":
         strategy_names = strategy_names or ("optx",)
     model_style_values = tuple(model_styles or ())
@@ -117,7 +121,11 @@ def run_benchmark_case(
         if model_style is not None:
             build_kwargs["model_style"] = model_style
         for strategy_name in strategy_names:
-            rows.append(_run_single_strategy(case, strategy_name=strategy_name, budget=effective_budget, build_kwargs=build_kwargs))
+            rows.append(
+                _run_single_strategy(
+                    case, strategy_name=strategy_name, budget=effective_budget, build_kwargs=build_kwargs
+                )
+            )
     return rows
 
 
@@ -140,13 +148,22 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
     size = dict(case.size)
     family = case.family
-    dimension = int(size.get("nodes") or size.get("facilities") or size.get("activities") or size.get("operations") or size.get("variables") or 10)
+    dimension = int(
+        size.get("nodes")
+        or size.get("facilities")
+        or size.get("activities")
+        or size.get("operations")
+        or size.get("variables")
+        or 10
+    )
 
     if family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
         backend = "mathopt_mp" if strategy_name == "mathopt_mp" else "optx"
         return MilpConfig(backend=backend, time_limit_s=time_limit_s, threads=thread_count)
     if strategy_name == "cpsat":
-        return CpSatConfig(time_limit_s=time_limit_s, workers=thread_count, random_seed=int(getattr(budget, "seed", 11)))
+        return CpSatConfig(
+            time_limit_s=time_limit_s, workers=thread_count, random_seed=int(getattr(budget, "seed", 11))
+        )
     if strategy_name == "ga":
         if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
             return GaConfig(
@@ -154,7 +171,6 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
                 population_size=population_size,
                 mutation_count=max(2, population_size // 3),
                 search_width=population_size,
-                parallel_workers=thread_count,
                 duplicate_filter=True,
                 mutation_portfolio=("scheduling_lns", "ruin_and_repair", "random_swap"),
                 local_improvement_strategy="lns",
@@ -165,14 +181,24 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             population_size=population_size,
             mutation_count=max(2, population_size // 3),
             search_width=population_size,
-            parallel_workers=thread_count,
             duplicate_filter=True,
             mutation_portfolio=("sequence_two_opt", "sequence_block_move", "ruin_and_repair", "random_swap"),
             local_improvement_strategy="lns",
             local_improvement_top_k=2,
         )
     if strategy_name == "alns":
-        destroy_count = max(2, min(16, dimension // (8 if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"} else 12)))
+        destroy_count = max(
+            2,
+            min(
+                16,
+                dimension
+                // (
+                    8
+                    if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}
+                    else 12
+                ),
+            ),
+        )
         kwargs: dict[str, Any] = {
             "max_iterations": max_iterations,
             "destroy_count": destroy_count,
@@ -198,16 +224,29 @@ def _run_single_strategy(
     try:
         model = case.build_model(**build_kwargs)
         strategy_config = build_strategy_config(case=case, strategy_name=strategy_name, budget=budget)
-        solution = _solve_model(case, model, strategy_name=strategy_name, strategy_config=strategy_config, budget=budget)
+        solution = _solve_model(
+            case, model, strategy_name=strategy_name, strategy_config=strategy_config, budget=budget
+        )
         elapsed_seconds = perf_counter() - started
+        solver_summary = _solver_solution_summary(solution)
+        verification = case.verify_solution(solution, **build_kwargs)
         summary = _merge_solution_metrics(
-            _solver_solution_summary(solution),
+            solver_summary,
             _case_solution_metrics(case, solution, build_kwargs),
         )
-        return _result_row(case, strategy_name=strategy_name, strategy_config=strategy_config, summary=summary, elapsed_seconds=elapsed_seconds)
+        summary = _apply_solution_verification(summary, verification)
+        return _result_row(
+            case,
+            strategy_name=strategy_name,
+            strategy_config=strategy_config,
+            summary=summary,
+            elapsed_seconds=elapsed_seconds,
+        )
     except Exception as exc:
         elapsed_seconds = perf_counter() - started
-        return _error_row(case, strategy_name=strategy_name, strategy_config=strategy_config, exc=exc, elapsed_seconds=elapsed_seconds)
+        return _error_row(
+            case, strategy_name=strategy_name, strategy_config=strategy_config, exc=exc, elapsed_seconds=elapsed_seconds
+        )
 
 
 def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strategy_config: Any, budget: Any) -> Any:
@@ -267,6 +306,23 @@ def _merge_solution_metrics(solver_summary: dict[str, Any], case_metrics: dict[s
     return summary
 
 
+def _apply_solution_verification(summary: dict[str, Any], verification: Any) -> dict[str, Any]:
+    verified = dict(summary)
+    verified["solver_reported_feasible"] = bool(summary.get("feasible"))
+    verified["solver_reported_objective"] = summary.get("objective")
+    verified["verification_status"] = verification.status
+    verified["verification_passed"] = bool(verification.passed)
+    verified["verification_violations"] = list(verification.violations)
+    if verification.passed:
+        verified["feasible"] = bool(verification.feasible)
+        verified["objective"] = verification.objective
+        return verified
+    verified["status"] = "verification_failed"
+    verified["feasible"] = False
+    verified["objective"] = None
+    return verified
+
+
 def _result_row(
     case: BenchmarkCase,
     *,
@@ -278,7 +334,11 @@ def _result_row(
     objective = summary.get("objective")
     reference = summary.get("reference_objective", case.reference_objective())
     gap = objective_gap(objective, reference)
-    kind = "exact_baseline" if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp", "cpsat"} else "strategy_run"
+    kind = (
+        "exact_baseline"
+        if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp", "cpsat"}
+        else "strategy_run"
+    )
     metadata = summarize_solution_metadata(dict(summary.get("metadata") or {}))
     if case.family == "exact_linear_mip":
         metadata = dict(summary.get("metadata") or {})
@@ -290,7 +350,9 @@ def _result_row(
         "tier": case.tier,
         "instance": case.instance,
         "strategy": strategy_name,
-        "strategy_profile": strategy_profile_name(family=case.family, strategy=strategy_name, model_style=model_style, kind=kind),
+        "strategy_profile": strategy_profile_name(
+            family=case.family, strategy=strategy_name, model_style=model_style, kind=kind
+        ),
         "model_style": model_style,
         "strategy_config": _strategy_config_dict(strategy_config),
         "solver_name": summary.get("solver_name"),
@@ -307,7 +369,14 @@ def _result_row(
         "case_size": dict(case.size),
     }
     for key, value in summary.items():
-        if key not in row and key not in {"metadata", "solver_name", "status", "feasible", "objective", "reference_objective"}:
+        if key not in row and key not in {
+            "metadata",
+            "solver_name",
+            "status",
+            "feasible",
+            "objective",
+            "reference_objective",
+        }:
             row[key] = value
     return row
 
@@ -320,7 +389,11 @@ def _error_row(
     exc: Exception,
     elapsed_seconds: float,
 ) -> dict[str, Any]:
-    kind = "exact_baseline" if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp", "cpsat"} else "strategy_run"
+    kind = (
+        "exact_baseline"
+        if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp", "cpsat"}
+        else "strategy_run"
+    )
     return {
         "kind": kind,
         "benchmark_id": case.benchmark_id,
@@ -382,14 +455,22 @@ def main() -> int:
     parser.add_argument("--case", dest="benchmark_id", help="Benchmark id to run, such as jsplib_abz5.")
     parser.add_argument("--family", action="append", dest="families", help="Filter --list-cases by family.")
     parser.add_argument("--tier", action="append", dest="tiers", help="Filter --list-cases by benchmark tier.")
-    parser.add_argument("--strategy", action="append", dest="strategies", help="Strategy name to run. Repeat to run multiple strategies.")
+    parser.add_argument(
+        "--strategy",
+        action="append",
+        dest="strategies",
+        help="Strategy name to run. Repeat to run multiple strategies.",
+    )
+    parser.add_argument("--model-style", action="append", dest="model_styles", help="Explicit benchmark model style.")
     parser.add_argument("--seed", type=int, default=11)
     parser.add_argument("--max-iterations", type=int, default=40)
     parser.add_argument("--time-limit-s", type=float, default=5.0)
     parser.add_argument("--population-size", type=int, default=10)
     parser.add_argument("--trace-limit", type=int, default=8)
     parser.add_argument("--thread-count", type=int, default=1)
-    parser.add_argument("--no-download", action="store_true", help="Fail when a required public instance is not already cached.")
+    parser.add_argument(
+        "--no-download", action="store_true", help="Fail when a required public instance is not already cached."
+    )
     args = parser.parse_args()
 
     if args.list_cases:
@@ -429,6 +510,7 @@ def main() -> int:
         strategies=tuple(args.strategies) if args.strategies else None,
         allow_download=not args.no_download,
         budget=budget,
+        model_styles=tuple(args.model_styles or ()),
     )
     print(json.dumps(rows, indent=2, ensure_ascii=True, sort_keys=True))
     return 0
@@ -436,6 +518,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-

@@ -7,7 +7,7 @@ from typing import Any
 
 from optagent import ExternalCallbackContext, ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_permutation
 
 SOURCE = "OptAgent custom"
 SOURCE_KEY = "custom"
@@ -88,6 +88,19 @@ class SteelSequenceCase(BenchmarkCase):
                 "first_break_positions": diagnostics["first_break_positions"],
             },
         }
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        sequence, violations = verify_permutation(
+            solution.variable_values.get(context["sequence_node_id"]),
+            size=instance.coil_count,
+            label="coil sequence",
+        )
+        if violations or sequence is None:
+            return SolutionVerification.failed(*violations)
+        objective = transition_count(sequence, context["penalty_matrix"])
+        return SolutionVerification.accepted(objective=float(objective))
 
 
 def make_steel_case(

@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 
 from optagent import ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_interval, verify_permutation
 
 SOURCE = "JSPLIB via ScheduleOpt"
 SOURCE_KEY = "jsplib"
@@ -50,10 +50,7 @@ class JobShopInstance:
         grouped: dict[int, list[JobShopOperation]] = {job: [] for job in range(self.jobs)}
         for operation in self.operations:
             grouped.setdefault(operation.job, []).append(operation)
-        return {
-            job: tuple(sorted(items, key=lambda item: item.operation))
-            for job, items in sorted(grouped.items())
-        }
+        return {job: tuple(sorted(items, key=lambda item: item.operation)) for job, items in sorted(grouped.items())}
 
     def operations_by_machine(self) -> dict[int, tuple[JobShopOperation, ...]]:
         grouped: dict[int, list[JobShopOperation]] = {machine: [] for machine in range(self.machines)}
@@ -92,10 +89,14 @@ class JobShopCase(BenchmarkCase):
         machine_operation_keys: dict[int, tuple[tuple[int, int], ...]] = {}
         for machine, operations in instance.operations_by_machine().items():
             keys = tuple(_operation_key(operation) for operation in operations)
-            sequence = builder.sequence_var(size=len(keys), default=list(range(len(keys))), name=f"machine_{machine}_order")
+            sequence = builder.sequence_var(
+                size=len(keys), default=list(range(len(keys))), name=f"machine_{machine}_order"
+            )
             machine_sequence_node_ids[machine] = sequence.node_id
             machine_operation_keys[machine] = keys
-            builder.constraint(builder.no_overlap(sequence, *(operation_vars[key] for key in keys)), name=f"machine_{machine}_capacity")
+            builder.constraint(
+                builder.no_overlap(sequence, *(operation_vars[key] for key in keys)), name=f"machine_{machine}_capacity"
+            )
 
         last_operation_ends = []
         for job, operations in instance.operations_by_job().items():
@@ -103,7 +104,9 @@ class JobShopCase(BenchmarkCase):
                 raise ValueError(f"job {job} has {len(operations)} operations, expected {instance.machines}")
             for before, after in zip(operations, operations[1:]):
                 builder.constraint(
-                    builder.precedence(operation_vars[_operation_key(before)], operation_vars[_operation_key(after)], lag=0),
+                    builder.precedence(
+                        operation_vars[_operation_key(before)], operation_vars[_operation_key(after)], lag=0
+                    ),
                     name=f"job_{job}_op_{before.operation}_before_{after.operation}",
                 )
             last_operation_ends.append(builder.interval_end(operation_vars[_operation_key(operations[-1])]))
@@ -140,6 +143,45 @@ class JobShopCase(BenchmarkCase):
                 "horizon": context["horizon"],
             },
         }
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        intervals: dict[tuple[int, int], tuple[int, int]] = {}
+        violations: list[str] = []
+        for operation in instance.operations:
+            key = _operation_key(operation)
+            interval, errors = verify_interval(
+                solution.variable_values.get(context["operation_node_ids"][key]),
+                duration=operation.duration,
+                label=f"job {operation.job} operation {operation.operation}",
+            )
+            violations.extend(errors)
+            if interval is not None:
+                intervals[key] = interval
+        for job, operations in instance.operations_by_job().items():
+            for before, after in zip(operations, operations[1:]):
+                before_interval = intervals.get(_operation_key(before))
+                after_interval = intervals.get(_operation_key(after))
+                if before_interval and after_interval and before_interval[1] > after_interval[0]:
+                    violations.append(f"job {job} precedence is violated")
+        for machine, keys in context["machine_operation_keys"].items():
+            order, errors = verify_permutation(
+                solution.variable_values.get(context["machine_sequence_node_ids"][machine]),
+                size=len(keys),
+                label=f"machine {machine} order",
+            )
+            violations.extend(errors)
+            if order is None:
+                continue
+            ordered_intervals = [intervals.get(keys[index]) for index in order]
+            for left, right in zip(ordered_intervals, ordered_intervals[1:]):
+                if left and right and left[1] > right[0]:
+                    violations.append(f"machine {machine} intervals overlap or contradict its sequence")
+        if violations:
+            return SolutionVerification.failed(*violations)
+        objective = max((end for _, end in intervals.values()), default=0)
+        return SolutionVerification.accepted(objective=float(objective))
 
 
 def make_job_shop_case(
@@ -301,8 +343,7 @@ def load_job_shop_case(
         path.write_text(text, encoding="utf-8")
         return parse_scheduleopt_jsplib_json(text)
     raise RuntimeError(
-        f"failed to download JSPLIB case {case['benchmark_id']} from {len(urls)} source(s): "
-        + " | ".join(errors)
+        f"failed to download JSPLIB case {case['benchmark_id']} from {len(urls)} source(s): " + " | ".join(errors)
     )
 
 
@@ -311,7 +352,10 @@ def _download_text(url: str) -> str:
     with urlopen(request, timeout=60) as response:
         return response.read().decode("utf-8", errors="replace")
 
-def machine_order_from_solution(context: dict[str, Any], variable_values: dict[int, Any]) -> dict[int, list[tuple[int, int]]]:
+
+def machine_order_from_solution(
+    context: dict[str, Any], variable_values: dict[int, Any]
+) -> dict[int, list[tuple[int, int]]]:
     machine_orders: dict[int, list[tuple[int, int]]] = {}
     for machine, sequence_node_id in context["machine_sequence_node_ids"].items():
         local_order = [int(item) for item in variable_values.get(sequence_node_id, [])]
@@ -347,7 +391,4 @@ def _solution_objective(
 
 def _decoded_machine_orders(context: dict[str, Any], variable_values: dict[int, Any]) -> dict[str, list[list[int]]]:
     orders = machine_order_from_solution(context, variable_values)
-    return {
-        str(machine): [[job, operation] for job, operation in order]
-        for machine, order in sorted(orders.items())
-    }
+    return {str(machine): [[job, operation] for job, operation in order] for machine, order in sorted(orders.items())}

@@ -9,6 +9,64 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
+class SolutionVerification:
+    """Independent benchmark-side verification of a returned solution."""
+
+    status: str
+    passed: bool
+    feasible: bool
+    objective: float | None = None
+    violations: tuple[str, ...] = ()
+
+    @classmethod
+    def accepted(cls, *, objective: float, feasible: bool = True) -> "SolutionVerification":
+        return cls(status="passed", passed=True, feasible=feasible, objective=float(objective))
+
+    @classmethod
+    def failed(cls, *violations: str) -> "SolutionVerification":
+        return cls(status="failed", passed=False, feasible=False, violations=tuple(violations))
+
+    @classmethod
+    def unsupported(cls) -> "SolutionVerification":
+        return cls(status="unsupported", passed=False, feasible=False)
+
+
+def verify_permutation(raw: Any, *, size: int, label: str) -> tuple[list[int] | None, tuple[str, ...]]:
+    if not isinstance(raw, (list, tuple)):
+        return None, (f"{label} must be a permutation sequence",)
+    values = [_exact_int(item) for item in raw]
+    if any(item is None for item in values):
+        return None, (f"{label} must contain integer permutation members",)
+    normalized = [int(item) for item in values if item is not None]
+    if len(normalized) != size or set(normalized) != set(range(size)):
+        return None, (f"{label} must be a permutation of 0..{size - 1}",)
+    return normalized, ()
+
+
+def verify_interval(raw: Any, *, duration: int, label: str) -> tuple[tuple[int, int] | None, tuple[str, ...]]:
+    if not isinstance(raw, dict):
+        return None, (f"{label} interval is missing",)
+    start = _exact_int(raw.get("start"))
+    end = _exact_int(raw.get("end"))
+    length = _exact_int(raw.get("length"))
+    if start is None or end is None or length is None:
+        return None, (f"{label} interval must contain integer start/end/length",)
+    if start < 0 or length != duration or end != start + duration:
+        return None, (f"{label} interval is inconsistent with duration {duration}",)
+    return (start, end), ()
+
+
+def _exact_int(raw: Any) -> int | None:
+    if isinstance(raw, bool):
+        return int(raw)
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, float) and raw.is_integer():
+        return int(raw)
+    return None
+
+
+@dataclass(frozen=True)
 class BenchmarkCase:
     """不可变的基准测试用例：一个已知最优值的具体问题实例。
 
@@ -72,6 +130,11 @@ class BenchmarkCase:
 
     extra: Mapping[str, Any] = field(default_factory=dict, repr=False, compare=False)
     """额外结构化元数据（预算、策略建议等）。"""
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        """Verify a returned candidate without trusting solver feasibility or objective facts."""
+
+        return SolutionVerification.unsupported()
 
     @classmethod
     def from_mapping(cls, row: Mapping[str, Any]) -> "BenchmarkCase":

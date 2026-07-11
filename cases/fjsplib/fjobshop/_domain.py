@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 import json
@@ -7,7 +7,7 @@ from typing import Any
 
 from optagent import ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_interval, verify_permutation
 
 SOURCE = "FJSPLIB flexible job-shop"
 SOURCE_KEY = "fjsplib"
@@ -65,10 +65,7 @@ class FlexibleJobShopInstance:
         grouped: dict[int, list[FlexibleJobShopOperation]] = {job: [] for job in range(self.jobs)}
         for operation in self.operations:
             grouped.setdefault(operation.job, []).append(operation)
-        return {
-            job: tuple(sorted(items, key=lambda item: item.operation))
-            for job, items in sorted(grouped.items())
-        }
+        return {job: tuple(sorted(items, key=lambda item: item.operation)) for job, items in sorted(grouped.items())}
 
 
 class FlexibleJobShopCase(BenchmarkCase):
@@ -115,12 +112,10 @@ class FlexibleJobShopCase(BenchmarkCase):
 
         for operation in instance.operations:
             choice_terms = [
-                choose_vars[(operation.operation_id, candidate.machine)]
-                for candidate in operation.candidates
+                choose_vars[(operation.operation_id, candidate.machine)] for candidate in operation.candidates
             ]
             interval_terms = [
-                optional_intervals[(operation.operation_id, candidate.machine)]
-                for candidate in operation.candidates
+                optional_intervals[(operation.operation_id, candidate.machine)] for candidate in operation.candidates
             ]
             builder.constraint(
                 builder.exactly_one(*choice_terms),
@@ -133,7 +128,9 @@ class FlexibleJobShopCase(BenchmarkCase):
         for machine, intervals in sorted(machine_to_intervals.items()):
             if not intervals:
                 continue
-            sequence = builder.sequence_var(size=len(intervals), default=list(range(len(intervals))), name=f"machine_{machine}_order")
+            sequence = builder.sequence_var(
+                size=len(intervals), default=list(range(len(intervals))), name=f"machine_{machine}_order"
+            )
             machine_sequence_node_ids[machine] = sequence.node_id
             builder.constraint(builder.no_overlap(sequence, *intervals), name=f"machine_{machine}_capacity")
 
@@ -186,6 +183,63 @@ class FlexibleJobShopCase(BenchmarkCase):
                 "horizon": context["horizon"],
             },
         }
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        selected: dict[int, tuple[int, int, int]] = {}
+        selected_by_machine: dict[int, dict[tuple[int, int], tuple[int, int]]] = {}
+        violations: list[str] = []
+        for operation in instance.operations:
+            choices = []
+            for candidate in operation.candidates:
+                raw_choice = solution.variable_values.get(
+                    context["choice_node_ids"][(operation.operation_id, candidate.machine)]
+                )
+                if raw_choice not in (False, True, 0, 1, 0.0, 1.0):
+                    violations.append(
+                        f"operation {operation.operation_id} machine {candidate.machine} choice must be boolean"
+                    )
+                elif bool(raw_choice):
+                    choices.append(candidate)
+            if len(choices) != 1:
+                violations.append(f"operation {operation.operation_id} must select exactly one machine")
+                continue
+            candidate = choices[0]
+            key = (operation.operation_id, candidate.machine)
+            interval, errors = verify_interval(
+                solution.variable_values.get(context["interval_node_ids"][key]),
+                duration=candidate.duration,
+                label=f"operation {operation.operation_id} selected machine {candidate.machine}",
+            )
+            violations.extend(errors)
+            if interval is not None:
+                selected[operation.operation_id] = (candidate.machine, interval[0], interval[1])
+                selected_by_machine.setdefault(candidate.machine, {})[key] = interval
+        for job, operations in instance.operations_by_job().items():
+            for before, after in zip(operations, operations[1:]):
+                before_interval = selected.get(before.operation_id)
+                after_interval = selected.get(after.operation_id)
+                if before_interval and after_interval and before_interval[2] > after_interval[1]:
+                    violations.append(f"job {job} precedence is violated")
+        for machine, keys in context["machine_candidate_keys"].items():
+            order, errors = verify_permutation(
+                solution.variable_values.get(context["machine_sequence_node_ids"][machine]),
+                size=len(keys),
+                label=f"machine {machine} order",
+            )
+            violations.extend(errors)
+            if order is None:
+                continue
+            present = selected_by_machine.get(machine, {})
+            ordered_intervals = [present[keys[index]] for index in order if keys[index] in present]
+            for left, right in zip(ordered_intervals, ordered_intervals[1:]):
+                if left[1] > right[0]:
+                    violations.append(f"machine {machine} selected intervals overlap or contradict its sequence")
+        if violations:
+            return SolutionVerification.failed(*violations)
+        objective = max((end for _machine, _start, end in selected.values()), default=0)
+        return SolutionVerification.accepted(objective=float(objective))
 
 
 def make_flexible_job_shop_case(
@@ -245,7 +299,6 @@ def make_flexible_job_shop_case(
             ],
         },
     )
-
 
 
 def parse_fjsplib_json(text: str, *, name: str) -> FlexibleJobShopInstance:
@@ -364,7 +417,6 @@ def _benchmark_reference(reference: dict[str, Any], *, objective: int | None) ->
     return result
 
 
-
 def _solution_objective(context: dict[str, Any], solution_objective: float | None) -> float | None:
     if solution_objective is not None:
         return float(solution_objective)
@@ -386,4 +438,3 @@ def _decoded_machine_orders(context: dict[str, Any], variable_values: dict[int, 
         keys = context["machine_candidate_keys"].get(machine, [])
         decoded[str(machine)] = [list(keys[index]) for index in local_order if 0 <= index < len(keys)]
     return decoded
-

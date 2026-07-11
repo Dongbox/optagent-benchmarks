@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 from optagent import ExternalCallbackContext, ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_permutation
 
 SOURCE = "TSPLIB95"
 SOURCE_KEY = "tsplib"
@@ -101,7 +101,9 @@ class TspCase(BenchmarkCase):
                 for left in range(instance.dimension)
             ]
             builder.minimize(
-                builder.sequence_transition_sum(tour, distance_matrix, include_return_edge=True, cost_semantics="distance"),
+                builder.sequence_transition_sum(
+                    tour, distance_matrix, include_return_edge=True, cost_semantics="distance"
+                ),
                 name="tour_length",
             )
         else:
@@ -125,6 +127,18 @@ class TspCase(BenchmarkCase):
             },
             "model_style": context["model_style"],
         }
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        sequence, violations = verify_permutation(
+            solution.variable_values.get(context["sequence_node_id"]),
+            size=instance.dimension,
+            label="tour",
+        )
+        if violations or sequence is None:
+            return SolutionVerification.failed(*violations)
+        return SolutionVerification.accepted(objective=float(instance.tour_length(sequence, include_return_edge=True)))
 
 
 def make_tsp_case(
@@ -284,8 +298,7 @@ def load_tsp_case(
         path.write_text(text, encoding="utf-8")
         return parse_tsplib_text(text)
     raise RuntimeError(
-        f"failed to download TSPLIB case {case['benchmark_id']} from {len(urls)} source(s): "
-        + " | ".join(errors)
+        f"failed to download TSPLIB case {case['benchmark_id']} from {len(urls)} source(s): " + " | ".join(errors)
     )
 
 
@@ -299,10 +312,7 @@ def _parse_explicit_matrix(
         expected = dimension * dimension
         if len(weights) != expected:
             raise ValueError(f"expected {expected} FULL_MATRIX weights, found {len(weights)}")
-        return tuple(
-            tuple(weights[row * dimension + col] for col in range(dimension))
-            for row in range(dimension)
-        )
+        return tuple(tuple(weights[row * dimension + col] for col in range(dimension)) for row in range(dimension))
     if edge_weight_format == "UPPER_ROW":
         expected = dimension * (dimension - 1) // 2
         if len(weights) != expected:

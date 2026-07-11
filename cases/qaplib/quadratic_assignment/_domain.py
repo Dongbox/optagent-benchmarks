@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 
 from optagent import ExternalCallbackContext, ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_permutation
 
 SOURCE = "QAPLIB"
 SOURCE_KEY = "qaplib"
@@ -86,6 +86,18 @@ class QapCase(BenchmarkCase):
             "model_style": MODEL_STYLE,
         }
 
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        assignment, violations = verify_permutation(
+            solution.variable_values.get(context["assignment_node_id"]),
+            size=instance.size,
+            label="assignment",
+        )
+        if violations or assignment is None:
+            return SolutionVerification.failed(*violations)
+        return SolutionVerification.accepted(objective=float(instance.assignment_cost(assignment)))
+
 
 def make_qap_case(
     *,
@@ -154,15 +166,9 @@ def parse_qaplib_dat(text: str, *, name: str) -> QapInstance:
     if len(values) != expected:
         raise ValueError(f"expected {expected} integer tokens for QAPLIB size {size}, found {len(values)}")
     matrix_values = values[1:]
-    flow = tuple(
-        tuple(matrix_values[row * size + col] for col in range(size))
-        for row in range(size)
-    )
+    flow = tuple(tuple(matrix_values[row * size + col] for col in range(size)) for row in range(size))
     offset = size * size
-    distance = tuple(
-        tuple(matrix_values[offset + row * size + col] for col in range(size))
-        for row in range(size)
-    )
+    distance = tuple(tuple(matrix_values[offset + row * size + col] for col in range(size)) for row in range(size))
     return QapInstance(name=name, size=size, flow=flow, distance=distance)
 
 
@@ -187,7 +193,9 @@ def load_qap_case(
     if local_path:
         instance = parse_qaplib_dat(Path(local_path).read_text(encoding="utf-8"), name=instance_name)
     else:
-        data_path = Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.dat"
+        data_path = (
+            Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.dat"
+        )
         data_text = _read_or_download(
             path=data_path,
             urls=_case_data_urls(case, instance_name),
@@ -283,8 +291,7 @@ def _read_or_download(
         path.write_text(text, encoding="utf-8")
         return text
     raise RuntimeError(
-        f"failed to download QAPLIB case {benchmark_id} from {len(urls)} source(s): "
-        + " | ".join(errors)
+        f"failed to download QAPLIB case {benchmark_id} from {len(urls)} source(s): " + " | ".join(errors)
     )
 
 

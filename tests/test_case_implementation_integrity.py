@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -10,8 +11,8 @@ PACKAGE_PARENT = Path(__file__).resolve().parents[2]
 if str(PACKAGE_PARENT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_PARENT))
 
-from benchmarks.cases.base import case_to_row
-from benchmarks.cases.registry import benchmark_cases, run_case
+from benchmarks.cases.base import case_to_row  # noqa: E402
+from benchmarks.cases.registry import benchmark_cases, run_case  # noqa: E402
 
 
 REQUIRED_SMOKE_CASES = {
@@ -76,7 +77,10 @@ def test_case_modules_do_not_reference_unrelated_public_instances() -> None:
         allowed_instances = {case["instance"] for case in cases}
 
         for unrelated_instance in sorted(all_instances - allowed_instances):
-            assert unrelated_instance not in source, f"{module_path} references unrelated instance {unrelated_instance}"
+            pattern = rf"(?<![A-Za-z0-9_-]){re.escape(unrelated_instance)}(?![A-Za-z0-9_-])"
+            assert re.search(pattern, source) is None, (
+                f"{module_path} references unrelated instance {unrelated_instance}"
+            )
 
 
 def test_registry_routes_each_case_to_unified_runner(monkeypatch: Any) -> None:

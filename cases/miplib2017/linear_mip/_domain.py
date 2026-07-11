@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 
 from optagent import ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification
 
 SOURCE = "MIPLIB 2017 benchmark-v2"
 SOURCE_KEY = "miplib2017"
@@ -80,6 +80,7 @@ class MipCase(BenchmarkCase):
         builder = ModelBuilder(metadata={"model_style": MODEL_STYLE})
         const_cache: dict[float, Any] = {}
         variable_exprs: dict[str, Any] = {}
+        variable_node_ids: dict[str, int] = {}
 
         def const_expr(value: float) -> Any:
             normalized = float(value)
@@ -101,6 +102,7 @@ class MipCase(BenchmarkCase):
                 ub = None if spec.ub is None else float(spec.ub)
                 expr = builder.float_var(default=_default_for_float(lb, ub), lb=lb, ub=ub, name=name)
             variable_exprs[name] = expr
+            variable_node_ids[name] = expr.node_id
 
         objective_expr = _weighted_sum(builder, const_expr, variable_exprs, instance.objective_terms)
         if instance.objective_sense == "max":
@@ -110,7 +112,7 @@ class MipCase(BenchmarkCase):
 
         for row in instance.constraints:
             _add_constraint(builder, const_expr, variable_exprs, row)
-        self._set_build_context({"instance": instance})
+        self._set_build_context({"instance": instance, "variable_node_ids": variable_node_ids})
         return builder
 
     def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
@@ -132,6 +134,53 @@ class MipCase(BenchmarkCase):
                 "nonzeros": instance.nonzero_count,
             },
         }
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance = context["instance"]
+        values: dict[str, float] = {}
+        violations: list[str] = []
+        tolerance = 1e-7
+        for name, spec in instance.variables.items():
+            node_id = context["variable_node_ids"][name]
+            raw = solution.variable_values.get(node_id)
+            if isinstance(raw, bool):
+                value = float(int(raw))
+            elif isinstance(raw, (int, float)):
+                value = float(raw)
+            else:
+                violations.append(f"variable {name} has no numeric value")
+                continue
+            if spec.lb is not None and value < float(spec.lb) - tolerance:
+                violations.append(f"variable {name} violates lower bound {spec.lb}")
+            if spec.ub is not None and value > float(spec.ub) + tolerance:
+                violations.append(f"variable {name} violates upper bound {spec.ub}")
+            if spec.is_integer and abs(value - round(value)) > tolerance:
+                violations.append(f"variable {name} must be integer")
+            if spec.is_binary and min(abs(value), abs(value - 1.0)) > tolerance:
+                violations.append(f"variable {name} must be binary")
+            values[name] = value
+        for row in instance.constraints:
+            if any(name not in values for name, _coefficient in row.terms):
+                violations.append(f"constraint {row.name} cannot be evaluated")
+                continue
+            lhs = sum(values[name] * coefficient for name, coefficient in row.terms)
+            if row.range_value is not None:
+                lower, upper = _range_bounds(row)
+                if lower is not None and lhs < lower - tolerance:
+                    violations.append(f"constraint {row.name} violates ranged lower bound")
+                if upper is not None and lhs > upper + tolerance:
+                    violations.append(f"constraint {row.name} violates ranged upper bound")
+            elif row.sense == "L" and lhs > row.rhs + tolerance:
+                violations.append(f"constraint {row.name} violates upper bound")
+            elif row.sense == "G" and lhs < row.rhs - tolerance:
+                violations.append(f"constraint {row.name} violates lower bound")
+            elif row.sense == "E" and abs(lhs - row.rhs) > tolerance:
+                violations.append(f"constraint {row.name} violates equality")
+        if violations:
+            return SolutionVerification.failed(*violations)
+        objective = sum(values[name] * coefficient for name, coefficient in instance.objective_terms)
+        return SolutionVerification.accepted(objective=float(objective))
 
 
 def make_mip_case(
@@ -331,7 +380,9 @@ def load_miplib_case(
         text = _read_mps_path(path)
         return parse_mps_text(text, name=instance_name)
 
-    path = Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.mps.gz"
+    path = (
+        Path(str(data.get("raw_path") or "")) if data.get("raw_path") else Path(cache_dir) / f"{instance_name}.mps.gz"
+    )
     if path.exists():
         return parse_mps_text(_read_mps_path(path), name=instance_name)
 
@@ -349,11 +400,13 @@ def load_miplib_case(
         path.write_bytes(raw)
         return parse_mps_text(_read_mps_path(path), name=instance_name)
     raise RuntimeError(
-        f"failed to download MIPLIB case {case['benchmark_id']} from {len(urls)} source(s): "
-        + " | ".join(errors)
+        f"failed to download MIPLIB case {case['benchmark_id']} from {len(urls)} source(s): " + " | ".join(errors)
     )
 
-def _add_constraint(builder: ModelBuilder, const_expr: Any, variable_exprs: dict[str, Any], row: MpsLinearConstraint) -> None:
+
+def _add_constraint(
+    builder: ModelBuilder, const_expr: Any, variable_exprs: dict[str, Any], row: MpsLinearConstraint
+) -> None:
     lhs = _weighted_sum(builder, const_expr, variable_exprs, row.terms)
     rhs = const_expr(row.rhs)
     if row.range_value is None:
@@ -469,7 +522,9 @@ def _range_bounds(row: MpsLinearConstraint) -> tuple[float | None, float | None]
     raise ValueError(f"unsupported row sense: {row.sense}")
 
 
-def _weighted_sum(builder: ModelBuilder, const_expr: Any, variables: dict[str, Any], terms: tuple[tuple[str, float], ...]) -> Any:
+def _weighted_sum(
+    builder: ModelBuilder, const_expr: Any, variables: dict[str, Any], terms: tuple[tuple[str, float], ...]
+) -> Any:
     if not terms:
         return const_expr(0.0)
     exprs: list[Any] = []

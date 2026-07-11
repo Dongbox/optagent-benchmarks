@@ -9,6 +9,7 @@ environment where `benchmarks` is importable.
 ## Supported Entrypoints
 
 - `benchmarks.run`: lightweight single-case runner.
+- `benchmarks.authoritative_baseline`: isolated, provenance-bound release-gate baseline runner.
 - `benchmarks.presentation.suite`: suite runner and run workspace producer.
 - `benchmarks.telemetry_metrics`: canonical telemetry-to-metrics library.
 - `benchmarks.telemetry_artifacts`: immutable artifact publisher for dashboard
@@ -18,6 +19,10 @@ environment where `benchmarks` is importable.
 
 Legacy flat scoring scripts and ad-hoc diagnostics readers are intentionally
 removed. New statistics must start from OptAgent canonical runtime telemetry.
+
+The authority rules for capability claims, independent solution verification,
+case lifecycle, and baseline provenance are documented in
+`../docs/benchmark-authority-spec.md`.
 
 ## Case Runner
 
