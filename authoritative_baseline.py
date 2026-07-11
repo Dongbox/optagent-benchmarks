@@ -132,7 +132,6 @@ def run_baseline(
         optagent_dirty=bool(_git_output(REPO_ROOT, "status", "--porcelain")),
         benchmarks_dirty=bool(_git_output(BENCHMARKS_ROOT, "status", "--porcelain")),
     )
-    data_checksums = _data_checksums()
     output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="optagent-authority-") as temp_dir:
         python_executable = _install_wheel_environment(
@@ -153,6 +152,7 @@ def run_baseline(
                 )
             )
 
+        data_checksums = _data_checksums()
         assessment = assess_authority(inputs, rows, evidence_checksums=data_checksums)
         capability_assessment = assess_capabilities(rows)
         rows_path = output_dir / "rows.jsonl"
