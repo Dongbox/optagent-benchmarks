@@ -201,7 +201,7 @@ def _install_wheel_environment(*, bootstrap_python: str, wheel_path: Path, envir
     )
     python_executable = environment_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     subprocess.run(
-        [str(python_executable), "-m", "pip", "install", "--no-deps", str(wheel_path.resolve())],
+        [str(python_executable), "-m", "pip", "install", str(wheel_path.resolve())],
         check=True,
         cwd=REPO_ROOT,
     )
