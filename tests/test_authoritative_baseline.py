@@ -9,7 +9,7 @@ from benchmarks.authority import (
     expected_run_keys,
 )
 from benchmarks.run import LocalRunBudget, build_strategy_config, case_object_by_id
-from benchmarks.authoritative_baseline import PlannedRun, build_run_command
+from benchmarks.authoritative_baseline import PlannedRun, _memory_limiter, build_run_command
 
 
 def test_release_gate_plan_covers_supported_families_routes_and_tsp_styles() -> None:
@@ -150,3 +150,11 @@ def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> N
     assert command[command.index("--model-style") + 1] == "sequence_var_sequence_transition_sum"
     assert command[command.index("--strategy") + 1] == "ga"
     assert command[-1] == "--no-download"
+
+
+def test_memory_hard_limit_is_only_enabled_on_linux() -> None:
+    import sys
+
+    limiter = _memory_limiter(4096)
+
+    assert (limiter is not None) is sys.platform.startswith("linux")

@@ -176,7 +176,8 @@ def run_baseline(
         "protocol": {
             "process_isolation": True,
             "hard_timeout_grace_s": 15.0,
-            "memory_limit_mb": memory_limit_mb,
+            "memory_limit_requested_mb": memory_limit_mb,
+            "memory_limit_enforced": _memory_limiter(memory_limit_mb) is not None,
             "heuristic_seed_count": 3,
             "thread_count": 1,
             "independent_solution_verification_required": True,
@@ -298,7 +299,7 @@ def _failed_row(run: PlannedRun, failure_type: str, message: str, *, stderr: Any
 
 
 def _memory_limiter(memory_limit_mb: int) -> Callable[[], None] | None:
-    if os.name != "posix" or memory_limit_mb <= 0:
+    if not sys.platform.startswith("linux") or memory_limit_mb <= 0:
         return None
 
     def limit() -> None:
