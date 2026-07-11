@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from benchmarks.presentation.common import StrategyBudgetRequest, resolve_family_tier_budget
+from benchmarks.presentation.suite import build_summary
 
 
 def test_tier_defaults_apply_without_an_explicit_ceiling() -> None:
@@ -47,3 +48,32 @@ def test_exact_full_uses_its_family_time_limit() -> None:
     )
 
     assert budget.exact_time_limit_s == 30.0
+
+
+def test_summary_distinguishes_requested_and_executed_families(tmp_path) -> None:
+    summary = build_summary(
+        run_dir=tmp_path,
+        config={
+            "families": ["interval_job_shop", "exact_linear_mip"],
+            "tiers": ["pressure"],
+            "strategies": ["ga"],
+            "budget": {},
+        },
+        selected_case_count=1,
+        skipped_cases=[],
+        rows=[
+            {
+                "benchmark_id": "jsplib_test",
+                "family": "interval_job_shop",
+                "status": "feasible",
+                "feasible": True,
+                "objective": 10.0,
+                "elapsed_seconds": 0.1,
+                "strategy": "ga",
+            }
+        ],
+    )
+
+    assert summary["requested_families"] == ["interval_job_shop", "exact_linear_mip"]
+    assert summary["executed_families"] == ["interval_job_shop"]
+    assert summary["zero_case_requested_families"] == ["exact_linear_mip"]

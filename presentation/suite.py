@@ -939,6 +939,12 @@ def build_summary(
         ):
             best_by_case[key] = row
 
+    requested_families = list(config["families"])
+    executed_families = sorted({str(row["family"]) for row in rows if row.get("family")})
+    zero_case_requested_families = [
+        family for family in requested_families if family not in executed_families
+    ]
+
     return {
         "run_dir": str(run_dir),
         "selected_case_count": selected_case_count,
@@ -950,7 +956,10 @@ def build_summary(
         "successful_run_count": len(successful_rows),
         "error_run_count": len(error_rows),
         "non_feasible_run_count": len(non_feasible_rows),
-        "families": list(config["families"]),
+        "families": requested_families,
+        "requested_families": requested_families,
+        "executed_families": executed_families,
+        "zero_case_requested_families": zero_case_requested_families,
         "tiers": list(config["tiers"]),
         "strategies": list(config["strategies"]),
         "family_strategy_plan": config.get("family_strategy_plan", {}),
@@ -1615,7 +1624,10 @@ def render_report(summary: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         "# Modeling-Native Benchmark Run",
         "",
         f"- Run dir: `{summary['run_dir']}`",
-        f"- Families: `{', '.join(summary['families'])}`",
+        f"- Families requested: `{', '.join(summary['requested_families'])}`",
+        f"- Families executed: `{', '.join(summary['executed_families'])}`",
+        "- Requested families with no selected cases: "
+        f"`{', '.join(summary['zero_case_requested_families']) or 'none'}`",
         f"- Tiers: `{', '.join(summary['tiers'])}`",
         f"- Strategies: `{', '.join(summary['strategies'])}`",
         f"- Parallel matrix: `{summary.get('parallel_matrix_enabled', False)}`",
@@ -1925,4 +1937,3 @@ def _fmt_pct(value: Any) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
