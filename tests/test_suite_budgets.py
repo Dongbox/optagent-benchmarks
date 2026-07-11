@@ -76,4 +76,4 @@ def test_summary_distinguishes_requested_and_executed_families(tmp_path) -> None
 
     assert summary["requested_families"] == ["interval_job_shop", "exact_linear_mip"]
     assert summary["executed_families"] == ["interval_job_shop"]
-    assert summary["zero_case_requested_families"] == ["exact_linear_mip"]
+    assert summary["requested_families_without_rows"] == ["exact_linear_mip"]
