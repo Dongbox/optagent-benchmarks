@@ -159,10 +159,10 @@ def main() -> int:
             "When set, --seed is ignored and the default tier remains calibration unless --tier is provided."
         ),
     )
-    parser.add_argument("--max-iterations", type=int, default=40)
-    parser.add_argument("--time-limit-s", type=float, default=5.0)
-    parser.add_argument("--population-size", type=int, default=10)
-    parser.add_argument("--trace-limit", type=int, default=8)
+    parser.add_argument("--max-iterations", type=int)
+    parser.add_argument("--time-limit-s", type=float)
+    parser.add_argument("--population-size", type=int)
+    parser.add_argument("--trace-limit", type=int)
     parser.add_argument("--no-download", action="store_true", help="Fail when a required public instance is not already cached.")
     parser.add_argument("--output-root", default=str(DEFAULT_RUN_ROOT), help="Directory where benchmark run artifacts are written.")
     parser.add_argument(
@@ -280,10 +280,10 @@ def run_benchmark_suite(
     benchmark_ids: tuple[str, ...] = (),
     strategies: tuple[str, ...] = DEFAULT_STRATEGIES,
     seed: int = 11,
-    max_iterations: int = 40,
-    time_limit_s: float = 5.0,
-    population_size: int = 10,
-    trace_limit: int = 8,
+    max_iterations: int | None = None,
+    time_limit_s: float | None = None,
+    population_size: int | None = None,
+    trace_limit: int | None = None,
     allow_download: bool = True,
     model_styles: tuple[str, ...] = (),
     default_candidate_matrix: bool = False,
@@ -437,10 +437,10 @@ def run_calibration_suite(
     tiers: tuple[str, ...] = ("calibration",),
     benchmark_ids: tuple[str, ...] = (),
     strategies: tuple[str, ...] = DEFAULT_STRATEGIES,
-    max_iterations: int = 40,
-    time_limit_s: float = 5.0,
-    population_size: int = 10,
-    trace_limit: int = 8,
+    max_iterations: int | None = None,
+    time_limit_s: float | None = None,
+    population_size: int | None = None,
+    trace_limit: int | None = None,
     allow_download: bool = True,
     model_styles: tuple[str, ...] = (),
     default_candidate_matrix: bool = False,
@@ -564,10 +564,10 @@ def build_benchmark_inventory(
     benchmark_ids: tuple[str, ...] = (),
     strategies: tuple[str, ...] = DEFAULT_STRATEGIES,
     seed: int = 11,
-    max_iterations: int = 40,
-    time_limit_s: float = 5.0,
-    population_size: int = 10,
-    trace_limit: int = 8,
+    max_iterations: int | None = None,
+    time_limit_s: float | None = None,
+    population_size: int | None = None,
+    trace_limit: int | None = None,
     thread_counts: tuple[int, ...] = (1,),
 ) -> dict[str, Any]:
     """Build a no-solve benchmark inventory from concrete instance modules."""
@@ -1925,5 +1925,4 @@ def _fmt_pct(value: Any) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
 

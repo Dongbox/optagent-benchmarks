@@ -123,7 +123,7 @@ class MipCase(BenchmarkCase):
             "raw_objective": float(raw_objective) if raw_objective is not None else None,
             "model_style": MODEL_STYLE,
             "metadata": {
-                **_exact_metadata(solution.metadata),
+                **_exact_metadata(solution.diagnostics),
                 "variables": instance.variable_count,
                 "binary_variables": instance.binary_count,
                 "integer_variables": instance.integer_count,

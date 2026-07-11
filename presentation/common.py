@@ -96,10 +96,10 @@ SEARCH_DIAGNOSTIC_KEYS = (
 @dataclass(frozen=True)
 class StrategyBudgetRequest:
     seed: int = 11
-    max_iterations: int = 40
-    time_limit_s: float = 5.0
-    population_size: int = 10
-    trace_limit: int = 8
+    max_iterations: int | None = None
+    time_limit_s: float | None = None
+    population_size: int | None = None
+    trace_limit: int | None = None
     thread_count: int = 1
 
 
@@ -244,14 +244,20 @@ def resolve_family_tier_budget(
         **TIER_BUDGET_DEFAULTS.get(tier, TIER_BUDGET_DEFAULTS["smoke"]),
         **FAMILY_TIER_BUDGET_OVERRIDES.get((family, tier), {}),
     }
-    requested_max_iterations = max(0, int(request.max_iterations))
     default_max_iterations = max(0, int(defaults["max_iterations"]))
-    requested_population = max(0, int(request.population_size))
+    requested_max_iterations = (
+        default_max_iterations if request.max_iterations is None else max(0, int(request.max_iterations))
+    )
     default_population = max(0, int(defaults["population_size"]))
-    requested_trace = max(0, int(request.trace_limit))
+    requested_population = (
+        default_population if request.population_size is None else max(0, int(request.population_size))
+    )
     default_trace = max(0, int(defaults["trace_limit"]))
-    requested_time = max(0.0, float(request.time_limit_s))
+    requested_trace = default_trace if request.trace_limit is None else max(0, int(request.trace_limit))
     default_time = max(0.0, float(defaults["time_limit_s"]))
+    requested_time = (
+        default_time if request.time_limit_s is None else max(0.0, float(request.time_limit_s))
+    )
     requested_thread_count = max(1, int(request.thread_count))
     exact_default = defaults.get("exact_time_limit_s")
     exact_time_limit_s = (
@@ -428,4 +434,3 @@ def metadata_highlights(metadata: dict[str, Any]) -> list[str]:
         if key in metadata:
             highlights.append(f"{key}={metadata[key]}")
     return highlights
-
