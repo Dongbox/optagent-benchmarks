@@ -231,9 +231,9 @@ def test_memory_hard_limit_is_only_enabled_on_linux() -> None:
 
 
 def test_wheel_environment_does_not_inherit_system_packages(monkeypatch, tmp_path) -> None:
-    commands = []
+    calls = []
     monkeypatch.setattr(
-        "benchmarks.authoritative_baseline.subprocess.run", lambda command, **_kwargs: commands.append(command)
+        "benchmarks.authoritative_baseline.subprocess.run", lambda command, **kwargs: calls.append((command, kwargs))
     )
 
     _install_wheel_environment(
@@ -242,8 +242,10 @@ def test_wheel_environment_does_not_inherit_system_packages(monkeypatch, tmp_pat
         environment_dir=tmp_path / "venv",
     )
 
-    assert commands[0] == ["/tmp/bootstrap-python", "-m", "venv", str(tmp_path / "venv")]
-    assert "--system-site-packages" not in commands[0]
+    assert calls[0][0] == ["/tmp/bootstrap-python", "-m", "venv", str(tmp_path / "venv")]
+    assert "--system-site-packages" not in calls[0][0]
+    assert calls[1][1]["capture_output"] is True
+    assert calls[1][1]["text"] is True
 
 
 def test_release_gate_checksums_cover_instance_and_reference_evidence() -> None:

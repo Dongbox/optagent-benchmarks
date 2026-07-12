@@ -316,6 +316,8 @@ def _install_wheel_environment(bootstrap_python: str, wheel: Path, environment_d
         [str(python_executable), "-m", "pip", "install", str(wheel)],
         check=True,
         cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
     )
     return str(python_executable)
 

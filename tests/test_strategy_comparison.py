@@ -17,7 +17,12 @@ from benchmarks.comparison_protocol import (
 )
 from benchmarks.strategy_comparison import compare_run_artifacts
 from benchmarks.strategy_baselines import promote_comparison_baseline
-from benchmarks.strategy_comparison_runner import build_child_command, interleaved_execution_plan, planned_protocol_runs
+from benchmarks.strategy_comparison_runner import (
+    _install_wheel_environment,
+    build_child_command,
+    interleaved_execution_plan,
+    planned_protocol_runs,
+)
 
 
 def test_ga_comparison_protocols_freeze_matrix_and_index_policy() -> None:
@@ -513,6 +518,19 @@ def test_protocol_runner_expands_matrix_and_interleaves_pair_order() -> None:
     assert command[command.index("--model-style") + 1] == "test_style"
     assert command[command.index("--max-iterations") + 1] == "1000"
     assert command[-1] == "--no-download"
+
+
+def test_protocol_environment_install_does_not_pollute_cli_stdout(monkeypatch, tmp_path) -> None:
+    calls = []
+    monkeypatch.setattr(
+        "benchmarks.strategy_comparison_runner.subprocess.run",
+        lambda command, **kwargs: calls.append((command, kwargs)),
+    )
+
+    _install_wheel_environment("/tmp/python", tmp_path / "optagent.whl", tmp_path / "venv")
+
+    assert calls[1][1]["capture_output"] is True
+    assert calls[1][1]["text"] is True
 
 
 def _test_protocol() -> ComparisonProtocol:
