@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import hashlib
-import json
 from typing import Any, Literal
+
+from benchmarks.artifact_io import checksum_json
 
 
 ProtocolKind = Literal["smoke", "calibration", "release_holdout"]
@@ -12,7 +12,7 @@ CALIBRATION_SEEDS = (11, 23, 47, 59, 71, 83, 97, 101, 113, 127)
 
 
 @dataclass(frozen=True)
-class EvaluationProfile:
+class ComparisonProfile:
     family: str
     model_style: str
     case_ids: tuple[str, ...]
@@ -20,14 +20,14 @@ class EvaluationProfile:
 
 
 @dataclass(frozen=True)
-class EvaluationProtocol:
+class ComparisonProtocol:
     protocol_id: str
     kind: ProtocolKind
-    scoring_profile_id: str
-    profiles: tuple[EvaluationProfile, ...]
+    index_profile_id: str
+    profiles: tuple[ComparisonProfile, ...]
     seeds: tuple[int, ...]
     wall_time_s: float
-    candidate_checkpoint: int
+    search_candidate_checkpoint: int
     max_iterations: int
     population_size: int
     trace_limit: int
@@ -42,7 +42,7 @@ class EvaluationProtocol:
 
     @property
     def checksum(self) -> str:
-        return _checksum(self.protocol_snapshot())
+        return checksum_json(self.protocol_snapshot())
 
 
 @dataclass(frozen=True)
@@ -53,7 +53,7 @@ class MetricThreshold:
 
 
 @dataclass(frozen=True)
-class ScoringProfile:
+class IndexProfile:
     profile_id: str
     dimension_weights: dict[str, float]
     component_weights: dict[str, dict[str, float]]
@@ -73,7 +73,7 @@ class ScoringProfile:
 
     @property
     def checksum(self) -> str:
-        return _checksum(self.protocol_snapshot())
+        return checksum_json(self.protocol_snapshot())
 
 
 _PROFILE_CATALOG = (
@@ -129,7 +129,7 @@ _PROFILE_CATALOG = (
 )
 
 
-def _profiles(partition: Literal["smoke", "calibration", "holdout"]) -> tuple[EvaluationProfile, ...]:
+def _profiles(partition: Literal["smoke", "calibration", "holdout"]) -> tuple[ComparisonProfile, ...]:
     profiles = []
     for family, model_style, calibration, holdout, status in _PROFILE_CATALOG:
         if partition == "smoke":
@@ -138,43 +138,43 @@ def _profiles(partition: Literal["smoke", "calibration", "holdout"]) -> tuple[Ev
             case_ids = calibration
         else:
             case_ids = holdout
-        profiles.append(EvaluationProfile(family, model_style, case_ids, status))
+        profiles.append(ComparisonProfile(family, model_style, case_ids, status))
     return tuple(profiles)
 
 
 _PROTOCOLS = {
-    "ga_release_smoke_v1": EvaluationProtocol(
+    "ga_release_smoke_v1": ComparisonProtocol(
         protocol_id="ga_release_smoke_v1",
         kind="smoke",
-        scoring_profile_id="ga_strategy_evaluation_v1",
+        index_profile_id="ga_strategy_comparison_index_v1",
         profiles=_profiles("smoke"),
         seeds=(11, 23, 47),
         wall_time_s=2.0,
-        candidate_checkpoint=200,
+        search_candidate_checkpoint=200,
         max_iterations=100_000,
         population_size=16,
         trace_limit=4096,
     ),
-    "ga_calibration_v1": EvaluationProtocol(
+    "ga_calibration_v1": ComparisonProtocol(
         protocol_id="ga_calibration_v1",
         kind="calibration",
-        scoring_profile_id="ga_strategy_evaluation_v1",
+        index_profile_id="ga_strategy_comparison_index_v1",
         profiles=_profiles("calibration"),
         seeds=CALIBRATION_SEEDS,
         wall_time_s=5.0,
-        candidate_checkpoint=1000,
+        search_candidate_checkpoint=1000,
         max_iterations=100_000,
         population_size=32,
         trace_limit=4096,
     ),
-    "ga_release_holdout_v1": EvaluationProtocol(
+    "ga_release_holdout_v1": ComparisonProtocol(
         protocol_id="ga_release_holdout_v1",
         kind="release_holdout",
-        scoring_profile_id="ga_strategy_evaluation_v1",
+        index_profile_id="ga_strategy_comparison_index_v1",
         profiles=_profiles("holdout"),
         seeds=CALIBRATION_SEEDS,
         wall_time_s=10.0,
-        candidate_checkpoint=2000,
+        search_candidate_checkpoint=2000,
         max_iterations=100_000,
         population_size=32,
         trace_limit=4096,
@@ -182,15 +182,15 @@ _PROTOCOLS = {
 }
 
 
-_SCORING_PROFILES = {
-    "ga_strategy_evaluation_v1": ScoringProfile(
-        profile_id="ga_strategy_evaluation_v1",
+_INDEX_PROFILES = {
+    "ga_strategy_comparison_index_v1": IndexProfile(
+        profile_id="ga_strategy_comparison_index_v1",
         dimension_weights={"quality": 0.4, "anytime": 0.3, "robustness": 0.2, "efficiency": 0.1},
         component_weights={
             "quality": {"median_final_gap": 0.7, "paired_quality_win_rate": 0.3},
             "anytime": {"normalized_primal_integral": 0.6, "target_hit_rate": 0.25, "time_to_target": 0.15},
             "robustness": {"p90_final_gap": 0.5, "gap_mad": 0.3, "case_direction_consistency": 0.2},
-            "efficiency": {"candidate_throughput": 0.5, "fixed_candidate_elapsed": 0.5},
+            "efficiency": {"search_candidate_throughput": 0.5, "fixed_search_candidate_elapsed": 0.5},
         },
         thresholds={
             "median_final_gap": MetricThreshold("absolute_or_relative", 0.1, 0.01),
@@ -201,8 +201,8 @@ _SCORING_PROFILES = {
             "p90_final_gap": MetricThreshold("absolute_or_relative", 0.1, 0.01),
             "gap_mad": MetricThreshold("relative", 0.1),
             "case_direction_consistency": MetricThreshold("absolute", 0.1),
-            "candidate_throughput": MetricThreshold("relative", 0.1),
-            "fixed_candidate_elapsed": MetricThreshold("relative", 0.1),
+            "search_candidate_throughput": MetricThreshold("relative", 0.1),
+            "fixed_search_candidate_elapsed": MetricThreshold("relative", 0.1),
         },
         target_gaps=(0.1, 0.05, 0.01),
         unresolved_gap_penalty=1.0,
@@ -215,20 +215,22 @@ _SCORING_PROFILES = {
 }
 
 
-def get_evaluation_protocol(protocol_id: str) -> EvaluationProtocol:
+def get_comparison_protocol(protocol_id: str) -> ComparisonProtocol:
     try:
         return _PROTOCOLS[protocol_id]
     except KeyError as exc:
-        raise KeyError(f"unknown evaluation protocol: {protocol_id}") from exc
+        raise KeyError(f"unknown comparison protocol: {protocol_id}") from exc
 
 
-def get_scoring_profile(profile_id: str) -> ScoringProfile:
+def get_index_profile(profile_id: str) -> IndexProfile:
     try:
-        return _SCORING_PROFILES[profile_id]
+        return _INDEX_PROFILES[profile_id]
     except KeyError as exc:
-        raise KeyError(f"unknown scoring profile: {profile_id}") from exc
+        raise KeyError(f"unknown index profile: {profile_id}") from exc
 
 
-def _checksum(value: Any) -> str:
-    encoded = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+def index_profile_from_snapshot(snapshot: dict[str, Any]) -> IndexProfile:
+    payload = dict(snapshot)
+    thresholds = {name: MetricThreshold(**dict(value)) for name, value in dict(payload.pop("thresholds")).items()}
+    payload["target_gaps"] = tuple(payload["target_gaps"])
+    return IndexProfile(thresholds=thresholds, **payload)

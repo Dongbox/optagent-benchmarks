@@ -10,13 +10,14 @@ import subprocess
 import tempfile
 from typing import Any, Literal
 
-from benchmarks.evaluation_artifacts import publish_evaluation_artifact
-from benchmarks.evaluation_protocol import EvaluationProtocol
+from benchmarks.artifact_io import sha256_file, write_json
+from benchmarks.comparison_artifacts import publish_run_artifact
+from benchmarks.comparison_protocol import ComparisonProtocol
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BENCHMARKS_ROOT = Path(__file__).resolve().parent
-RunRole = Literal["baseline", "candidate"]
+RunRole = Literal["baseline", "challenger"]
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ class PlannedExecution:
     pair_index: int
 
 
-def planned_protocol_runs(protocol: EvaluationProtocol) -> tuple[PlannedProtocolRun, ...]:
+def planned_protocol_runs(protocol: ComparisonProtocol) -> tuple[PlannedProtocolRun, ...]:
     return tuple(
         PlannedProtocolRun(profile.family, profile.model_style, case_id, seed)
         for profile in protocol.profiles
@@ -48,10 +49,10 @@ def planned_protocol_runs(protocol: EvaluationProtocol) -> tuple[PlannedProtocol
     )
 
 
-def interleaved_execution_plan(protocol: EvaluationProtocol) -> tuple[PlannedExecution, ...]:
+def interleaved_execution_plan(protocol: ComparisonProtocol) -> tuple[PlannedExecution, ...]:
     executions = []
     for index, run in enumerate(planned_protocol_runs(protocol)):
-        roles: tuple[RunRole, RunRole] = ("baseline", "candidate") if index % 2 == 0 else ("candidate", "baseline")
+        roles: tuple[RunRole, RunRole] = ("baseline", "challenger") if index % 2 == 0 else ("challenger", "baseline")
         executions.extend(PlannedExecution(run.coordinate, role, run, index) for role in roles)
     return tuple(executions)
 
@@ -59,7 +60,7 @@ def interleaved_execution_plan(protocol: EvaluationProtocol) -> tuple[PlannedExe
 def build_child_command(
     python_executable: str,
     run: PlannedProtocolRun,
-    protocol: EvaluationProtocol,
+    protocol: ComparisonProtocol,
     *,
     allow_download: bool,
 ) -> list[str]:
@@ -93,34 +94,34 @@ def build_child_command(
 
 def run_protocol_pair(
     *,
-    protocol: EvaluationProtocol,
+    protocol: ComparisonProtocol,
     baseline_wheel: str | Path,
-    candidate_wheel: str | Path,
+    challenger_wheel: str | Path,
     output_dir: str | Path,
     bootstrap_python: str,
     allow_download: bool,
     baseline_commit: str = "unknown",
-    candidate_commit: str = "unknown",
+    challenger_commit: str = "unknown",
 ) -> dict[str, Any]:
-    from benchmarks.strategy_evaluation import compare_evaluation_artifacts
+    from benchmarks.strategy_comparison import compare_run_artifacts
 
     out = Path(output_dir).resolve()
     bootstrap_python = str(Path(bootstrap_python).resolve())
     if out.exists() and any(out.iterdir()):
-        raise FileExistsError(f"strategy evaluation output directory is not empty: {out}")
+        raise FileExistsError(f"strategy comparison output directory is not empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
     baseline_wheel_path = Path(baseline_wheel).resolve()
-    candidate_wheel_path = Path(candidate_wheel).resolve()
-    with tempfile.TemporaryDirectory(prefix="optagent-ga-evaluation-") as temp_dir:
+    challenger_wheel_path = Path(challenger_wheel).resolve()
+    with tempfile.TemporaryDirectory(prefix="optagent-ga-comparison-") as temp_dir:
         temp_root = Path(temp_dir)
         python_by_role = {
             "baseline": _install_wheel_environment(bootstrap_python, baseline_wheel_path, temp_root / "baseline"),
-            "candidate": _install_wheel_environment(bootstrap_python, candidate_wheel_path, temp_root / "candidate"),
+            "challenger": _install_wheel_environment(bootstrap_python, challenger_wheel_path, temp_root / "challenger"),
         }
         runtime_by_role = {
             role: _runtime_identity(python_executable) for role, python_executable in python_by_role.items()
         }
-        rows: dict[str, list[dict[str, Any]]] = {"baseline": [], "candidate": []}
+        rows: dict[str, list[dict[str, Any]]] = {"baseline": [], "challenger": []}
         execution_log = []
         for execution in interleaved_execution_plan(protocol):
             row = _run_child(
@@ -146,7 +147,7 @@ def run_protocol_pair(
             "benchmarks_dirty_before_execution": bool(_git_output(BENCHMARKS_ROOT, "status", "--porcelain")),
             "platform": _platform_coordinate(),
         }
-        publish_evaluation_artifact(
+        publish_run_artifact(
             rows["baseline"],
             out / "baseline",
             protocol=protocol,
@@ -154,43 +155,37 @@ def run_protocol_pair(
             provenance={
                 **common_provenance,
                 "optagent_commit": baseline_commit,
-                "wheel_sha256": _sha256(baseline_wheel_path),
+                "wheel_sha256": sha256_file(baseline_wheel_path),
                 "installed_runtime": runtime_by_role["baseline"],
             },
         )
-        publish_evaluation_artifact(
-            rows["candidate"],
-            out / "candidate",
+        publish_run_artifact(
+            rows["challenger"],
+            out / "challenger",
             protocol=protocol,
-            role="candidate",
+            role="challenger",
             provenance={
                 **common_provenance,
-                "optagent_commit": candidate_commit,
-                "wheel_sha256": _sha256(candidate_wheel_path),
-                "installed_runtime": runtime_by_role["candidate"],
+                "optagent_commit": challenger_commit,
+                "wheel_sha256": sha256_file(challenger_wheel_path),
+                "installed_runtime": runtime_by_role["challenger"],
             },
         )
-    (out / "execution_plan.json").write_text(
-        json.dumps(
-            {
-                "protocol_id": protocol.protocol_id,
-                "protocol_checksum": protocol.checksum,
-                "execution_order": protocol.execution_order,
-                "executions": execution_log,
-            },
-            indent=2,
-            ensure_ascii=True,
-            sort_keys=True,
-        )
-        + "\n",
-        encoding="utf-8",
+    write_json(
+        out / "execution_plan.json",
+        {
+            "protocol_id": protocol.protocol_id,
+            "protocol_checksum": protocol.checksum,
+            "execution_order": protocol.execution_order,
+            "executions": execution_log,
+        },
     )
-    return compare_evaluation_artifacts(out / "baseline", out / "candidate", out / "comparison")
+    return compare_run_artifacts(out / "baseline", out / "challenger", out / "comparison")
 
 
 def _run_child(
     run: PlannedProtocolRun,
-    protocol: EvaluationProtocol,
+    protocol: ComparisonProtocol,
     *,
     python_executable: str,
     allow_download: bool,
@@ -259,7 +254,7 @@ def _run_child(
 
 def _failure_row(
     run: PlannedProtocolRun,
-    protocol: EvaluationProtocol,
+    protocol: ComparisonProtocol,
     failure_type: str,
     message: str,
     stderr: str,
@@ -296,7 +291,7 @@ def _failure_row(
     }
 
 
-def _failure_telemetry(run: PlannedProtocolRun, protocol: EvaluationProtocol) -> dict[str, Any]:
+def _failure_telemetry(run: PlannedProtocolRun, protocol: ComparisonProtocol) -> dict[str, Any]:
     return {
         "schema": {"schema_version": 1},
         "identity": {"strategy": protocol.strategy, "seed": run.seed, "thread_count": protocol.thread_count},
@@ -372,7 +367,3 @@ def _platform_coordinate() -> str:
     if machine in {"amd64", "x64"}:
         machine = "x86_64"
     return f"{system}_{machine}"
-
-
-def _sha256(path: Path) -> str:
-    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()

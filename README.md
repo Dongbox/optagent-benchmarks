@@ -10,7 +10,7 @@ environment where `benchmarks` is importable.
 
 - `benchmarks.run`: lightweight single-case runner.
 - `benchmarks.authoritative_baseline`: isolated, provenance-bound release-gate baseline runner.
-- `benchmarks.strategy_evaluation`: protocol-driven GA before/after runner,
+- `benchmarks.strategy_comparison`: protocol-driven GA before/after runner,
   artifact comparator, and explicit baseline promotion CLI.
 - `benchmarks.presentation.suite`: suite runner and run workspace producer.
 - `benchmarks.telemetry_metrics`: canonical telemetry-to-metrics library.
@@ -19,7 +19,7 @@ environment where `benchmarks` is importable.
 - `benchmarks.presentation.dashboard`: dashboard markdown/JSON renderer from
   published telemetry artifacts.
 
-Legacy flat scoring scripts and ad-hoc diagnostics readers are intentionally
+Legacy flat weighted-index scripts and ad-hoc diagnostics readers are intentionally
 removed. New statistics must start from OptAgent canonical runtime telemetry.
 
 The authority rules for capability claims, independent solution verification,
@@ -30,22 +30,22 @@ Authoritative baseline directories are release evidence, not canonical
 dashboard telemetry artifacts. Dashboard publishers and renderers must never
 consume `benchmarks.authoritative_baseline` manifests or row streams.
 
-## GA Strategy Evaluation
+## GA Strategy Comparison
 
-Run a preset baseline/candidate comparison without restating cases, seeds,
-budgets, or scoring weights:
+Run a preset baseline/challenger comparison without restating cases, seeds,
+budgets, or index weights:
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.strategy_evaluation run-pair \
+PYTHONPATH=.. python -m benchmarks.strategy_comparison run-pair \
   --protocol ga_release_smoke_v1 \
   --baseline-wheel /path/to/baseline.whl \
-  --candidate-wheel /path/to/candidate.whl \
-  --output-dir /tmp/ga-evaluation
+  --challenger-wheel /path/to/challenger.whl \
+  --output-dir /tmp/ga-comparison
 ```
 
-The versioned protocol, validity gates, four-dimensional Delta Score,
+The versioned protocol, validity gates, four-dimensional Delta Index,
 statistics, artifact contract, and promotion workflow are documented in
-`../docs/ga-strategy-evaluation.md`.
+`../docs/ga-strategy-comparison.md`.
 
 ## Case Runner
 

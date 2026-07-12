@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
-import json
 from pathlib import Path
 from typing import Any, Iterable, Literal, Mapping
 
-from benchmarks.evaluation_protocol import EvaluationProtocol, get_scoring_profile
+from benchmarks.artifact_io import checksum_json, read_json, read_jsonl, sha256_file, write_json, write_jsonl
+from benchmarks.comparison_protocol import ComparisonProtocol, get_index_profile
 
 
 ARTIFACT_SCHEMA_VERSION = 1
@@ -18,11 +17,11 @@ CURVES = "incumbent_curves.jsonl"
 TELEMETRY = "telemetry.jsonl"
 DIAGNOSTICS = "diagnostics.jsonl"
 
-ArtifactRole = Literal["baseline", "candidate"]
+ArtifactRole = Literal["baseline", "challenger"]
 
 
 @dataclass(frozen=True)
-class EvaluationArtifact:
+class RunArtifact:
     root: Path
     manifest: dict[str, Any]
     protocol: dict[str, Any]
@@ -32,11 +31,11 @@ class EvaluationArtifact:
     diagnostics: list[dict[str, Any]]
 
 
-def publish_evaluation_artifact(
+def publish_run_artifact(
     rows: Iterable[Mapping[str, Any]],
     output_dir: str | Path,
     *,
-    protocol: EvaluationProtocol,
+    protocol: ComparisonProtocol,
     role: ArtifactRole,
     provenance: Mapping[str, Any],
     experiment_mode: str = "implementation_comparison",
@@ -45,7 +44,7 @@ def publish_evaluation_artifact(
 ) -> dict[str, Any]:
     out = Path(output_dir)
     if out.exists() and any(out.iterdir()):
-        raise FileExistsError(f"evaluation artifact output directory is not empty: {out}")
+        raise FileExistsError(f"run artifact output directory is not empty: {out}")
 
     materialized = [dict(row) for row in rows]
     _validate_matrix(materialized, protocol)
@@ -73,30 +72,30 @@ def publish_evaluation_artifact(
         )
 
     out.mkdir(parents=True, exist_ok=True)
-    scoring = get_scoring_profile(protocol.scoring_profile_id)
+    index_policy = get_index_profile(protocol.index_profile_id)
     protocol_payload = {
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "protocol": protocol.protocol_snapshot(),
         "protocol_checksum": protocol.checksum,
-        "scoring_profile": scoring.protocol_snapshot(),
-        "scoring_profile_checksum": scoring.checksum,
+        "index_profile": index_policy.protocol_snapshot(),
+        "index_profile_checksum": index_policy.checksum,
     }
-    _write_json(out / PROTOCOL, protocol_payload)
-    _write_jsonl(out / ROWS, normalized_rows)
-    _write_jsonl(out / CURVES, curves)
-    _write_jsonl(out / TELEMETRY, telemetry_rows)
-    _write_jsonl(out / DIAGNOSTICS, diagnostics_rows)
+    write_json(out / PROTOCOL, protocol_payload)
+    write_jsonl(out / ROWS, normalized_rows)
+    write_jsonl(out / CURVES, curves)
+    write_jsonl(out / TELEMETRY, telemetry_rows)
+    write_jsonl(out / DIAGNOSTICS, diagnostics_rows)
     artifact_names = (PROTOCOL, ROWS, CURVES, TELEMETRY, DIAGNOSTICS)
     manifest = {
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
-        "kind": "optagent_strategy_evaluation",
+        "kind": "optagent_strategy_comparison",
         "status": "complete",
         "role": role,
         "created_at": created_at or datetime.now(timezone.utc).isoformat(),
         "protocol_id": protocol.protocol_id,
         "protocol_checksum": protocol.checksum,
-        "scoring_profile_id": protocol.scoring_profile_id,
-        "scoring_profile_checksum": scoring.checksum,
+        "index_profile_id": protocol.index_profile_id,
+        "index_profile_checksum": index_policy.checksum,
         "experiment_mode": experiment_mode,
         "experimental_variables": sorted(set(experimental_variables)),
         "provenance": dict(provenance),
@@ -106,36 +105,46 @@ def publish_evaluation_artifact(
         "platforms": sorted({str(row.get("platform") or "") for row in normalized_rows}),
         "instance_checksums": _instance_checksums(telemetry_rows),
         "artifacts": {
-            name: {"sha256": _sha256(out / name), "bytes": (out / name).stat().st_size} for name in artifact_names
+            name: {"sha256": sha256_file(out / name), "bytes": (out / name).stat().st_size} for name in artifact_names
         },
     }
-    _write_json(out / MANIFEST, manifest)
+    write_json(out / MANIFEST, manifest)
     return {"output_dir": str(out), "manifest": manifest}
 
 
-def load_evaluation_artifact(path: str | Path) -> EvaluationArtifact:
+def load_run_artifact(path: str | Path) -> RunArtifact:
     root = Path(path)
-    manifest = _read_json(root / MANIFEST)
-    if manifest.get("kind") != "optagent_strategy_evaluation":
-        raise ValueError("unsupported evaluation artifact kind")
-    for name, entry in dict(manifest.get("artifacts") or {}).items():
-        if _sha256(root / name) != entry.get("sha256"):
+    manifest = read_json(root / MANIFEST)
+    if manifest.get("kind") != "optagent_strategy_comparison":
+        raise ValueError("unsupported run artifact kind")
+    artifacts = dict(manifest.get("artifacts") or {})
+    required = {PROTOCOL, ROWS, CURVES, TELEMETRY, DIAGNOSTICS}
+    if set(artifacts) != required:
+        raise ValueError("run artifact manifest does not declare the required evidence set")
+    for name, entry in artifacts.items():
+        if sha256_file(root / name) != entry.get("sha256"):
             raise ValueError(f"artifact checksum mismatch: {name}")
-    protocol = _read_json(root / PROTOCOL)
+    protocol = read_json(root / PROTOCOL)
     if protocol.get("protocol_checksum") != manifest.get("protocol_checksum"):
         raise ValueError("protocol checksum mismatch")
-    rows = _read_jsonl(root / ROWS)
-    curves = _read_jsonl(root / CURVES)
-    telemetry = _read_jsonl(root / TELEMETRY)
-    diagnostics = _read_jsonl(root / DIAGNOSTICS)
-    if len(rows) != int(manifest.get("row_count") or -1):
-        raise ValueError("evaluation row count mismatch")
-    if len(curves) != int(manifest.get("curve_count") or -1):
-        raise ValueError("evaluation curve count mismatch")
-    return EvaluationArtifact(root, manifest, protocol, rows, curves, telemetry, diagnostics)
+    if checksum_json(protocol.get("protocol")) != protocol.get("protocol_checksum"):
+        raise ValueError("protocol snapshot checksum mismatch")
+    if checksum_json(protocol.get("index_profile")) != protocol.get("index_profile_checksum"):
+        raise ValueError("index profile snapshot checksum mismatch")
+    if protocol.get("index_profile_checksum") != manifest.get("index_profile_checksum"):
+        raise ValueError("index profile checksum mismatch")
+    rows = read_jsonl(root / ROWS)
+    curves = read_jsonl(root / CURVES)
+    telemetry = read_jsonl(root / TELEMETRY)
+    diagnostics = read_jsonl(root / DIAGNOSTICS)
+    if len(rows) != int(manifest.get("row_count", -1)):
+        raise ValueError("run row count mismatch")
+    if len(curves) != int(manifest.get("curve_count", -1)):
+        raise ValueError("run curve count mismatch")
+    return RunArtifact(root, manifest, protocol, rows, curves, telemetry, diagnostics)
 
 
-def _validate_matrix(rows: list[dict[str, Any]], protocol: EvaluationProtocol) -> None:
+def _validate_matrix(rows: list[dict[str, Any]], protocol: ComparisonProtocol) -> None:
     expected = {
         _coordinate_values(profile.family, profile.model_style, case_id, seed)
         for profile in protocol.profiles
@@ -144,14 +153,14 @@ def _validate_matrix(rows: list[dict[str, Any]], protocol: EvaluationProtocol) -
     }
     actual = {_coordinate(row) for row in rows}
     if len(actual) != len(rows):
-        raise ValueError("evaluation artifact contains duplicate coordinates")
+        raise ValueError("run artifact contains duplicate coordinates")
     if actual != expected:
         missing = sorted(expected - actual)
         unexpected = sorted(actual - expected)
-        raise ValueError(f"evaluation matrix mismatch; missing={missing}, unexpected={unexpected}")
+        raise ValueError(f"comparison matrix mismatch; missing={missing}, unexpected={unexpected}")
     for row in rows:
         if row.get("strategy") != protocol.strategy or row.get("solve_route") != protocol.solve_route:
-            raise ValueError(f"evaluation route mismatch for {_coordinate(row)}")
+            raise ValueError(f"comparison route mismatch for {_coordinate(row)}")
         budget = row.get("effective_budget")
         expected_budget = {
             "max_iterations": protocol.max_iterations,
@@ -177,9 +186,22 @@ def _validate_telemetry(telemetry: dict[str, Any], coordinate: str) -> bool:
     if int(schema.get("schema_version") or 0) != 1:
         raise ValueError(f"unsupported canonical telemetry schema for {coordinate}")
     overflow = telemetry.get("trace_overflow")
-    return not isinstance(overflow, Mapping) or not (
-        bool(overflow.get("trace_truncated")) or int(overflow.get("omitted_incumbent_events") or 0) > 0
-    )
+    if not isinstance(overflow, Mapping):
+        return False
+    required_overflow_fields = {
+        "trace_truncated",
+        "trace_event_limit",
+        "emitted_event_count",
+        "omitted_incumbent_events",
+        "checkpoint_policy",
+    }
+    if not required_overflow_fields.issubset(overflow):
+        return False
+    try:
+        omitted_incumbents = int(overflow.get("omitted_incumbent_events") or 0)
+    except (TypeError, ValueError):
+        return False
+    return not bool(overflow.get("trace_truncated")) and omitted_incumbents == 0
 
 
 def _incumbent_curve(
@@ -216,6 +238,30 @@ def _incumbent_curve(
                 "objective": objective,
                 "gap_rel": _reference_gap(objective, reference, sense),
                 "evaluated_candidates": _telemetry_integer(event.get("evaluated_candidates")),
+            }
+        )
+    outcome = telemetry.get("outcome")
+    effort = telemetry.get("effort")
+    final_objective = _telemetry_number(outcome.get("objective_value")) if isinstance(outcome, Mapping) else None
+    final_elapsed = _telemetry_number(effort.get("wall_time_s")) if isinstance(effort, Mapping) else None
+    final_candidates = _telemetry_integer(effort.get("evaluated_candidates")) if isinstance(effort, Mapping) else None
+    final_feasible = bool(outcome.get("feasible")) if isinstance(outcome, Mapping) else False
+    final_improved = previous_objective is None or (
+        final_objective is not None
+        and (
+            final_objective < previous_objective - 1e-12
+            if sense != "maximize"
+            else final_objective > previous_objective + 1e-12
+        )
+    )
+    if final_feasible and final_objective is not None and final_elapsed is not None and final_improved:
+        events.append(
+            {
+                "coordinate": coordinate,
+                "elapsed_s": final_elapsed,
+                "objective": final_objective,
+                "gap_rel": _reference_gap(final_objective, reference, sense),
+                "evaluated_candidates": final_candidates,
             }
         )
     return events, monotonic
@@ -269,26 +315,3 @@ def _number(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
-
-
-def _write_json(path: Path, value: Any) -> None:
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _write_jsonl(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
-    path.write_text(
-        "".join(json.dumps(dict(row), ensure_ascii=True, sort_keys=True) + "\n" for row in rows),
-        encoding="utf-8",
-    )
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    return dict(json.loads(path.read_text(encoding="utf-8")))
-
-
-def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [dict(json.loads(line)) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-
-
-def _sha256(path: Path) -> str:
-    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
