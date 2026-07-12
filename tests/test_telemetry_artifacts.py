@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -173,11 +174,16 @@ def test_public_telemetry_modules_do_not_import_legacy_scoring():
     ]
 
     for path in public_modules:
-        source = path.read_text(encoding="utf-8")
-        assert "from benchmarks.scoring" not in source
-        assert "import benchmarks.scoring" not in source
-        assert "from benchmarks.scoring_phase2" not in source
-        assert "import benchmarks.scoring_phase2" not in source
+        imported_modules = _imported_modules(path)
+        legacy_modules = {
+            "benchmarks.scoring",
+            "benchmarks.scoring_phase2",
+        }
+        assert not {
+            module
+            for module in imported_modules
+            if any(module == legacy or module.startswith(f"{legacy}.") for legacy in legacy_modules)
+        }
 
 
 def test_manifest_checksum_validation_rejects_modified_artifact(tmp_path):
@@ -205,3 +211,14 @@ def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+def _imported_modules(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            modules.update(f"{node.module}.{alias.name}" for alias in node.names)
+    return modules
