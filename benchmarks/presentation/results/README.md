@@ -10,4 +10,4 @@ aggregates by hand. New dashboard data flows through:
 canonical telemetry -> telemetry_artifacts -> immutable artifact -> dashboard
 ```
 
-See [Telemetry, metrics, and artifacts](../../docs/telemetry-artifacts.md).
+See [Telemetry, metrics, and artifacts](../../../docs/telemetry-artifacts.md).

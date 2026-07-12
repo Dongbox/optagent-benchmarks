@@ -704,10 +704,10 @@ def _number(value: Any) -> float | None:
         return None
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     from benchmarks.strategy_comparison_cli import main as cli_main
 
-    return cli_main()
+    return cli_main(argv)
 
 
 if __name__ == "__main__":

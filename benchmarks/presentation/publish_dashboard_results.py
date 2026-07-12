@@ -9,7 +9,7 @@ from pathlib import Path
 import platform
 import re
 import sys
-from typing import Any
+from typing import Any, Sequence
 
 from benchmarks.presentation.common import SEARCH_DIAGNOSTIC_KEYS, write_json
 from benchmarks.presentation.generate_dashboard_data import (
@@ -92,7 +92,7 @@ def publish_dashboard_results(
     }
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Publish benchmark suite rows as dashboard run summary JSON.")
     parser.add_argument("run_dir", help="Benchmark suite run directory containing results.jsonl.")
     parser.add_argument("--results-root", default=str(DEFAULT_RESULTS_ROOT))
@@ -107,7 +107,7 @@ def main() -> int:
     parser.add_argument("--runner", default="github-actions")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--no-regenerate", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     summary = publish_dashboard_results(
         args.run_dir,

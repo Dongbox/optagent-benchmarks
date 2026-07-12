@@ -1,0 +1,77 @@
+{
+  "schema": {
+    "schema_version": 1,
+    "schema_revision": 0,
+    "producer_name": "opt-agent",
+    "wire_format": "protobuf",
+    "projection_format": "json_diagnostics"
+  },
+  "identity": {
+    "strategy": "cp_sat",
+    "strategy_framework": "exact",
+    "seed": "0",
+    "thread_count": 1,
+    "solver_name": "cp_sat",
+    "run_route": "direct_exact"
+  },
+  "instance": {
+    "id": "missing-bks",
+    "source": "fixture",
+    "size": {"status": "TELEMETRY_INSUFFICIENT_DATA", "reason": "missing_instance_metadata", "source": "fixture"},
+    "dimension": {"status": "TELEMETRY_INSUFFICIENT_DATA", "reason": "missing_instance_metadata", "source": "fixture"}
+  },
+  "budget": {
+    "time_limit_s": {"status": "TELEMETRY_AVAILABLE", "number_value": 5.0, "source": "fixture"},
+    "max_iterations": {"status": "TELEMETRY_UNSUPPORTED", "reason": "not_iteration_based", "source": "fixture"},
+    "trace_event_limit": 2,
+    "trace_policy": "adaptive"
+  },
+  "outcome": {
+    "status": "failed",
+    "feasible": false,
+    "objective_value": {"status": "TELEMETRY_ERROR", "reason": "solve_failed_before_candidate", "source": "fixture"},
+    "objective_sense": "minimize",
+    "best_objective_bound": {"status": "TELEMETRY_UNSUPPORTED", "reason": "runtime_bound_not_available", "source": "fixture"},
+    "gap_to_bound": {"status": "TELEMETRY_INSUFFICIENT_DATA", "reason": "missing_bks_or_bound", "source": "benchmark"}
+  },
+  "effort": {
+    "wall_time_s": {"status": "TELEMETRY_AVAILABLE", "number_value": 5.0, "source": "fixture"},
+    "cpu_time_s": {"status": "TELEMETRY_UNSUPPORTED", "reason": "cpu_time_not_captured", "source": "fixture"},
+    "peak_rss_bytes": {"status": "TELEMETRY_UNSUPPORTED", "reason": "peak_rss_not_captured", "source": "fixture"},
+    "iterations": {"status": "TELEMETRY_UNSUPPORTED", "reason": "not_iteration_based", "source": "fixture"},
+    "evaluated_candidates": {"status": "TELEMETRY_INSUFFICIENT_DATA", "reason": "backend_did_not_report", "source": "fixture"}
+  },
+  "progress": [
+    {
+      "elapsed_s": 5.0,
+      "objective_value": {"status": "TELEMETRY_ERROR", "reason": "solve_failed_before_candidate", "source": "fixture"},
+      "feasible": false,
+      "iteration": {"status": "TELEMETRY_UNSUPPORTED", "reason": "not_iteration_based", "source": "fixture"},
+      "event_kind": "termination"
+    }
+  ],
+  "search": {
+    "attempted_moves": {"status": "TELEMETRY_UNSUPPORTED", "reason": "exact_backend", "source": "fixture"},
+    "diversity_at_termination": {"status": "TELEMETRY_INSUFFICIENT_DATA", "reason": "missing_trace", "source": "fixture"}
+  },
+  "backend": {
+    "name": "cp_sat",
+    "route": "direct_exact",
+    "exact_callback_sampling": {"status": "TELEMETRY_AVAILABLE", "bool_value": false, "source": "production_default"}
+  },
+  "environment": {
+    "os": "linux",
+    "cpu_core_count": {"status": "TELEMETRY_UNSUPPORTED", "reason": "platform_api_not_available", "source": "fixture"},
+    "compiler": "python",
+    "build_type": "wheel"
+  },
+  "trace_overflow": {
+    "trace_truncated": true,
+    "trace_overflow": true,
+    "trace_event_limit": 2,
+    "emitted_event_count": 2,
+    "omitted_incumbent_events": "5",
+    "omitted_restart_events": "1",
+    "checkpoint_policy": "adaptive"
+  }
+}

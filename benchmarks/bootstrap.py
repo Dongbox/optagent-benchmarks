@@ -6,18 +6,16 @@ import sysconfig
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SRC_ROOT = REPO_ROOT / "src"
-
-
 def prefer_local_development_paths() -> None:
-    """Prefer repo-local Python and native build outputs for benchmark runs."""
+    """Prefer an explicitly configured OptAgent source checkout."""
 
-    if os.environ.get("OPTAGENT_BENCHMARK_USE_INSTALLED") == "1":
+    source_root = os.environ.get("OPTAGENT_SOURCE_ROOT")
+    if not source_root:
         return
 
+    repo_root = Path(source_root).expanduser().resolve()
     sys.meta_path = [finder for finder in sys.meta_path if type(finder).__module__ != "_optagent_editable"]
-    preferred_paths = (SRC_ROOT, *_candidate_native_build_dirs())
+    preferred_paths = (repo_root / "src", *_candidate_native_build_dirs(repo_root))
     for path in reversed(preferred_paths):
         if not path.exists():
             continue
@@ -25,11 +23,12 @@ def prefer_local_development_paths() -> None:
         sys.path = [path_text, *[item for item in sys.path if item != path_text]]
 
 
-def _candidate_native_build_dirs() -> tuple[Path, ...]:
+def _candidate_native_build_dirs(repo_root: Path) -> tuple[Path, ...]:
     ext_suffix = str(sysconfig.get_config_var("EXT_SUFFIX") or "")
     candidates = [
-        REPO_ROOT / "build" / "native-debug",
-        REPO_ROOT / "build" / "native-debug-py314",
+        repo_root / "build" / "native-debug-ninja",
+        repo_root / "build" / "native-debug",
+        repo_root / "build" / "native-debug-py314",
     ]
     matching = [path for path in candidates if any(path.glob(f"_optagent_native*{ext_suffix}"))]
     return tuple(matching + [path for path in candidates if path not in matching])

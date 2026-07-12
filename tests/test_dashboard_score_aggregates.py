@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from benchmarks.presentation.generate_dashboard_data import (
     build_dataset_manifest,
     build_runtime_quality,

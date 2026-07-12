@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import benchmarks.telemetry_artifacts as telemetry_artifacts
 from benchmarks.bootstrap import prefer_local_development_paths
@@ -206,13 +206,13 @@ def render_dashboard_markdown(
     return "\n".join(lines) + "\n"
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     prefer_local_development_paths()
     parser = argparse.ArgumentParser(description="Generate static OptAgent telemetry artifact dashboard.")
     parser.add_argument("artifact_dir")
     parser.add_argument("--output-root", default=str(DEFAULT_DASHBOARD_ROOT))
     parser.add_argument("--dashboard-id")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     dashboard = generate_dashboard(
         args.artifact_dir,

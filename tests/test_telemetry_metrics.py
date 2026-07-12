@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from benchmarks.telemetry_metrics import (
     AVAILABLE,
@@ -34,7 +31,7 @@ from benchmarks.telemetry_metrics import (
 )
 
 
-FIXTURE_DIR = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "telemetry" / "phase0"
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "telemetry" / "phase0"
 
 
 def _fixture(name: str) -> dict:

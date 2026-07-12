@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from benchmarks.bootstrap import prefer_local_development_paths
 from benchmarks.presentation.common import REPO_ROOT, append_jsonl, metadata_highlights, normalize_result_row, utc_timestamp
@@ -256,7 +256,7 @@ def write_curated_report(
     }
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     prefer_local_development_paths()
     parser = argparse.ArgumentParser(description="Compare two OptAgent benchmark run directories.")
     parser.add_argument("baseline_dir")
@@ -273,7 +273,7 @@ def main() -> int:
         help="Decision recorded in the curated benchmark ledger when --report-id is set.",
     )
     parser.add_argument("--follow-up", action="append", dest="follow_ups", default=[], help="Follow-up action recorded in the curated ledger. Repeat as needed.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     comparison = compare_run_dirs(args.baseline_dir, args.candidate_dir)
     if args.report_id:

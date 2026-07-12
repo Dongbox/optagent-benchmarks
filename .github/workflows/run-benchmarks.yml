@@ -39,9 +39,8 @@ on:
       - main
     paths:
       - ".github/workflows/run-benchmarks.yml"
-      - "cases/**"
-      - "runners/**"
-      - "presentation/**"
+      - "benchmark.py"
+      - "benchmarks/**"
 
 permissions:
   contents: write
@@ -141,6 +140,7 @@ jobs:
           PY
 
       - name: Run benchmark suite
+        working-directory: benchmarks
         run: |
           RUN_ARGS=()
           IFS=',' read -ra FAMILIES <<< "${BENCHMARK_FAMILY}"
@@ -164,7 +164,7 @@ jobs:
               RUN_ARGS+=(--tier "${tier}")
             fi
           done
-          python -m benchmarks.presentation.suite \
+          python benchmark.py suite \
             "${RUN_ARGS[@]}" \
             --max-iterations "${BENCHMARK_MAX_ITERATIONS}" \
             --time-limit-s "${BENCHMARK_TIME_LIMIT_S}" \
@@ -180,8 +180,9 @@ jobs:
           PY
 
       - name: Publish dashboard JSON
+        working-directory: benchmarks
         run: |
-          python -m benchmarks.presentation.publish_dashboard_results "${BENCHMARK_RUN_DIR}" \
+          python benchmark.py publish-results "${BENCHMARK_RUN_DIR}" \
             --optagent-version "${OPTAGENT_VERSION}" \
             --optagent-commit "${OPTAGENT_REF}" \
             --optagent-commit-url "https://github.com/${OPTAGENT_REPOSITORY}/commit/${OPTAGENT_REF}" \
@@ -193,17 +194,17 @@ jobs:
       - name: Commit benchmark result updates
         working-directory: benchmarks
         run: |
-          if git diff --quiet -- presentation/results presentation/aggregates; then
+          if git diff --quiet -- benchmarks/presentation/results benchmarks/presentation/aggregates; then
             echo "No dashboard result changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add presentation/results presentation/aggregates
+          git add benchmarks/presentation/results benchmarks/presentation/aggregates
           git commit -m "Add benchmark dashboard results for ${OPTAGENT_REF:0:12}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
-          PYTHONPATH=.. python -m benchmarks.presentation.generate_dashboard_data
-          git add presentation/results/index.json presentation/aggregates
+          python benchmark.py generate-results-index
+          git add benchmarks/presentation/results/index.json benchmarks/presentation/aggregates
           git commit --amend --no-edit
           git push origin "HEAD:${GITHUB_REF_NAME}"
 

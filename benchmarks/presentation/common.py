@@ -1,17 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
 
-from benchmarks.cases.common import (
-    MODEL_STYLE_BY_FAMILY,
-    model_style_from_program,
-    objective_gap,
-    summarize_solution_metadata,
-)
+from benchmarks.cases.common import MODEL_STYLE_BY_FAMILY
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -215,7 +210,7 @@ def strategy_profile_name(
 
 
 def utc_timestamp() -> str:
-    return datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
 
 def ensure_run_dir(output_root: str | Path = DEFAULT_RUN_ROOT, *, timestamp: str | None = None) -> Path:

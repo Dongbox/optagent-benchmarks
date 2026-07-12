@@ -211,7 +211,9 @@ def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> N
 
     command = build_run_command("/tmp/python", planned, allow_download=False)
 
-    assert command[:4] == ["/tmp/python", "-m", "benchmarks.run", "--case"]
+    assert command[0] == "/tmp/python"
+    assert command[1].endswith("/benchmark.py")
+    assert command[2:4] == ["run", "--case"]
     assert command[command.index("--model-style") + 1] == "sequence_var_sequence_transition_sum"
     assert command[command.index("--strategy") + 1] == "ga"
     assert command[-1] == "--no-download"

@@ -1,18 +1,12 @@
 from __future__ import annotations
 
 import importlib
-import re
-import sys
 from pathlib import Path
+import re
 from typing import Any
 
-
-PACKAGE_PARENT = Path(__file__).resolve().parents[2]
-if str(PACKAGE_PARENT) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_PARENT))
-
-from benchmarks.cases.base import case_to_row  # noqa: E402
-from benchmarks.cases.registry import benchmark_cases, run_case  # noqa: E402
+from benchmarks.cases.base import case_to_row
+from benchmarks.cases.registry import benchmark_cases, run_case
 
 
 REQUIRED_SMOKE_CASES = {
@@ -117,7 +111,7 @@ def test_case_sources_do_not_reintroduce_legacy_runner_contracts() -> None:
         "StrategyDeclaration",
         "default_strategies",
     )
-    for path in Path("cases").rglob("*.py"):
+    for path in Path("benchmarks/cases").rglob("*.py"):
         if path.name == "base.py":
             continue
         source = path.read_text(encoding="utf-8")
@@ -126,7 +120,7 @@ def test_case_sources_do_not_reintroduce_legacy_runner_contracts() -> None:
 
 
 def test_case_data_logic_stays_with_family_common_modules() -> None:
-    data_modules = sorted(Path("cases").glob("**/raw/data.py"))
+    data_modules = sorted(Path("benchmarks/cases").glob("**/raw/data.py"))
     assert data_modules == []
 
 

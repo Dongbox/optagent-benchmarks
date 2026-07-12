@@ -111,9 +111,10 @@ an invalid solution.
 From the `benchmarks/` repository directory:
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.authoritative_baseline \
+./.venv/bin/python benchmark.py authority \
   --output-dir /artifact-storage/authoritative-baseline \
   --wheel /path/to/optagent.whl \
+  --optagent-commit <optagent-sha> \
   --python-executable ./.venv/bin/python \
   --allow-download \
   --require-authoritative

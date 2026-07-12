@@ -111,14 +111,14 @@ They are never accepted as dashboard telemetry input.
 ## Publish And Render
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.telemetry_artifacts \
+./.venv/bin/python benchmark.py publish-telemetry \
   /path/to/run-telemetry.json \
   --output-dir /tmp/telemetry-artifacts \
   --reference toy-001=10.0
 ```
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.presentation.dashboard \
+./.venv/bin/python benchmark.py dashboard \
   /tmp/telemetry-artifacts \
   --output-root /tmp/telemetry-dashboard
 ```
@@ -127,6 +127,6 @@ Output directories are immutable. Publish a new directory for every run.
 
 ## Historical Results
 
-`presentation/results/` and `presentation/aggregates/` contain legacy static
+`benchmarks/presentation/results/` and `benchmarks/presentation/aggregates/` contain legacy static
 facts used by older dashboard flows. Do not edit generated indexes by hand and
 do not use historical files as current metric inputs.

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 from statistics import mean
-from typing import Any
+from typing import Any, Sequence
 
 from benchmarks.presentation.common import write_json
 
@@ -466,13 +466,13 @@ def build_dataset_manifest(
     }
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate static dashboard index and aggregate JSON files.")
     parser.add_argument("--results-root", default=str(DEFAULT_RESULTS_ROOT))
     parser.add_argument("--aggregates-root", default=str(DEFAULT_AGGREGATES_ROOT))
     parser.add_argument("--generated-at")
     parser.add_argument("--check", action="store_true", help="fail if generated files differ from committed files")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     summary = generate_dashboard_data(
         results_root=args.results_root,
         aggregates_root=args.aggregates_root,

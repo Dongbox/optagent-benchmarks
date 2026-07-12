@@ -1,6 +1,6 @@
 # Benchmark Cases
 
-`cases/` owns benchmark declarations, source loaders, governed references,
+`benchmarks/cases/` owns benchmark declarations, source loaders, governed references,
 model builders, solution decoding, and independent verification.
 
 ## Source Collections
@@ -18,7 +18,7 @@ model builders, solution decoding, and independent verification.
 Do not maintain a complete case list in Markdown. Query the registry:
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.run --list-cases
+./.venv/bin/python benchmark.py list-cases
 ```
 
 The registry owns IDs, families, tiers, model styles, lifecycle state, size,
@@ -28,7 +28,7 @@ format semantics only.
 ## Layout
 
 ```text
-cases/<source>/<problem>/
+benchmarks/cases/<source>/<problem>/
     __init__.py       source aggregation
     _domain.py        shared parsing/model/verification logic when needed
     <case>.py         declarations

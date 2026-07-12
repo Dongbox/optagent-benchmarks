@@ -13,10 +13,11 @@ from typing import Any, Literal
 from benchmarks.artifact_io import sha256_file, write_json
 from benchmarks.comparison_artifacts import publish_run_artifact
 from benchmarks.comparison_protocol import ComparisonProtocol
+from benchmarks.paths import REPOSITORY_ROOT
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-BENCHMARKS_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = REPOSITORY_ROOT
+BENCHMARKS_ROOT = REPOSITORY_ROOT
 RunRole = Literal["baseline", "challenger"]
 
 
@@ -66,8 +67,8 @@ def build_child_command(
 ) -> list[str]:
     command = [
         python_executable,
-        "-m",
-        "benchmarks.run",
+        str(REPO_ROOT / "benchmark.py"),
+        "run",
         "--case",
         run.benchmark_id,
         "--strategy",
@@ -192,7 +193,7 @@ def _run_child(
     runtime: dict[str, Any],
 ) -> dict[str, Any]:
     command = build_child_command(python_executable, run, protocol, allow_download=allow_download)
-    env = {**os.environ, "OPTAGENT_BENCHMARK_USE_INSTALLED": "1", "PYTHONPATH": str(REPO_ROOT.parent)}
+    env = {**os.environ, "OPTAGENT_BENCHMARK_USE_INSTALLED": "1"}
     timeout_s = protocol.wall_time_s + 15.0
     try:
         completed = subprocess.run(

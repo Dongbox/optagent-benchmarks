@@ -8,7 +8,7 @@ import platform
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from benchmarks.cases.common import MODEL_STYLE_BY_FAMILY
 from benchmarks.cases.registry import INSTANCE_COLLECTION_MODULES, implemented_families, run_case
@@ -103,14 +103,14 @@ STRATEGY_ROW_OPTIONAL_FIELDS = (
 )
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     from benchmarks.bootstrap import prefer_local_development_paths
 
     prefer_local_development_paths()
     parser = argparse.ArgumentParser(
         description=(
             "Run the standard artifact-writing OptAgent benchmark suite presentation scenario. "
-            "Use `python -m benchmarks.run` for lightweight local case tests."
+            "Use `python benchmark.py run` for lightweight local case tests."
         )
     )
     parser.add_argument("--family", action="append", dest="families", help="Benchmark family to run. Defaults to runnable smoke families.")
@@ -171,7 +171,7 @@ def main() -> int:
         help="Write and print benchmark inventory without executing solver routes.",
     )
     parser.add_argument("--timestamp", help="Explicit run directory name, primarily for tests.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     families = tuple(args.families or DEFAULT_RUNNABLE_FAMILIES)
     tiers = tuple(args.tiers or ("calibration" if args.calibration_seeds else "smoke",))

@@ -3,13 +3,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from typing import Sequence
 
 from benchmarks.comparison_protocol import get_comparison_protocol
 from benchmarks.strategy_baselines import promote_comparison_baseline
 from benchmarks.strategy_comparison_runner import run_protocol_pair
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run or compare OptAgent GA strategy comparisons.")
     commands = parser.add_subparsers(dest="command", required=True)
     compare = commands.add_parser("compare", help="Compare two immutable run artifacts.")
@@ -29,7 +30,7 @@ def main() -> int:
     promote.add_argument("--comparison-dir", required=True)
     promote.add_argument("--registry", required=True)
     promote.add_argument("--approved-by", required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.command == "compare":
         from benchmarks.strategy_comparison import compare_run_artifacts

@@ -1,0 +1,123 @@
+{
+  "schema": {
+    "schema_version": 1,
+    "schema_revision": 0,
+    "producer_name": "opt-agent",
+    "wire_format": "protobuf",
+    "projection_format": "json_diagnostics"
+  },
+  "identity": {
+    "strategy": "ga",
+    "strategy_framework": "ga",
+    "strategy_profile": "default",
+    "seed": "11",
+    "thread_count": 1,
+    "solver_name": "native_search",
+    "run_route": "native_search"
+  },
+  "instance": {
+    "id": "toy-001",
+    "name": "toy",
+    "source": "fixture",
+    "size": {"status": "TELEMETRY_AVAILABLE", "integer_value": "4", "source": "fixture"},
+    "dimension": {"status": "TELEMETRY_AVAILABLE", "integer_value": "2", "source": "fixture"}
+  },
+  "budget": {
+    "time_limit_s": {"status": "TELEMETRY_AVAILABLE", "number_value": 30.0, "source": "fixture"},
+    "max_iterations": {"status": "TELEMETRY_AVAILABLE", "integer_value": "100", "source": "fixture"},
+    "population_size": {"status": "TELEMETRY_AVAILABLE", "integer_value": "8", "source": "fixture"},
+    "restart_limit": {"status": "TELEMETRY_NULL", "reason": "not_set", "source": "fixture"},
+    "restart_after": {"status": "TELEMETRY_AVAILABLE", "integer_value": "25", "source": "fixture"},
+    "unimproved_iteration_limit": {"status": "TELEMETRY_NULL", "reason": "not_set", "source": "fixture"},
+    "trace_event_limit": 2000,
+    "trace_policy": "adaptive"
+  },
+  "outcome": {
+    "status": "feasible",
+    "feasible": true,
+    "objective_value": {"status": "TELEMETRY_AVAILABLE", "number_value": 10.0, "source": "fixture"},
+    "objective_sense": "minimize",
+    "best_objective_bound": {"status": "TELEMETRY_UNSUPPORTED", "reason": "runtime_bound_not_available", "source": "fixture"},
+    "bound_source": "unsupported",
+    "gap_to_bound": {"status": "TELEMETRY_UNSUPPORTED", "reason": "benchmark_derived_metric", "source": "fixture"},
+    "termination_reason": "iteration_limit",
+    "termination_policy": "max_iterations",
+    "termination_conclusion": "budget_exhausted",
+    "termination_action": "stop"
+  },
+  "effort": {
+    "wall_time_s": {"status": "TELEMETRY_AVAILABLE", "number_value": 0.25, "source": "fixture"},
+    "cpu_time_s": {"status": "TELEMETRY_UNSUPPORTED", "reason": "cpu_time_not_captured", "source": "fixture"},
+    "peak_rss_bytes": {"status": "TELEMETRY_UNSUPPORTED", "reason": "peak_rss_not_captured", "source": "fixture"},
+    "iterations": {"status": "TELEMETRY_AVAILABLE", "integer_value": "100", "source": "fixture"},
+    "evaluated_candidates": {"status": "TELEMETRY_AVAILABLE", "integer_value": "820", "source": "fixture"},
+    "construct_candidates_evaluated": {"status": "TELEMETRY_AVAILABLE", "integer_value": "20", "source": "fixture"},
+    "loop_candidates_evaluated": {"status": "TELEMETRY_AVAILABLE", "integer_value": "800", "source": "fixture"},
+    "full_evaluations": {"status": "TELEMETRY_UNSUPPORTED", "reason": "full_evaluation_counter_not_wired", "source": "fixture"},
+    "delta_evaluations": {"status": "TELEMETRY_UNSUPPORTED", "reason": "delta_evaluation_counter_not_wired", "source": "fixture"},
+    "external_evaluation_rows": {"status": "TELEMETRY_AVAILABLE", "integer_value": "0", "source": "fixture"},
+    "external_batch_count": {"status": "TELEMETRY_AVAILABLE", "integer_value": "0", "source": "fixture"},
+    "external_cache_hits": {"status": "TELEMETRY_AVAILABLE", "integer_value": "0", "source": "fixture"},
+    "external_cache_misses": {"status": "TELEMETRY_UNSUPPORTED", "reason": "external_cache_misses_not_captured", "source": "fixture"}
+  },
+  "progress": [
+    {
+      "elapsed_s": 0.05,
+      "objective_value": {"status": "TELEMETRY_AVAILABLE", "number_value": 14.0, "source": "fixture"},
+      "feasible": true,
+      "iteration": {"status": "TELEMETRY_AVAILABLE", "integer_value": "10", "source": "fixture"},
+      "evaluated_candidates": {"status": "TELEMETRY_AVAILABLE", "integer_value": "100", "source": "fixture"},
+      "operator": "mutation",
+      "event_kind": "incumbent",
+      "accepted": true,
+      "improved_best": true,
+      "best_objective_bound": {"status": "TELEMETRY_UNSUPPORTED", "reason": "runtime_bound_not_available", "source": "fixture"},
+      "gap_to_bound": {"status": "TELEMETRY_UNSUPPORTED", "reason": "benchmark_derived_metric", "source": "fixture"},
+      "move_kind": "mutation"
+    },
+    {
+      "elapsed_s": 0.25,
+      "objective_value": {"status": "TELEMETRY_AVAILABLE", "number_value": 10.0, "source": "fixture"},
+      "feasible": true,
+      "iteration": {"status": "TELEMETRY_AVAILABLE", "integer_value": "100", "source": "fixture"},
+      "evaluated_candidates": {"status": "TELEMETRY_AVAILABLE", "integer_value": "820", "source": "fixture"},
+      "event_kind": "termination",
+      "accepted": true,
+      "improved_best": true
+    }
+  ],
+  "search": {
+    "attempted_moves": {"status": "TELEMETRY_AVAILABLE", "integer_value": "900", "source": "fixture"},
+    "accepted_moves": {"status": "TELEMETRY_AVAILABLE", "integer_value": "320", "source": "fixture"},
+    "improved_moves": {"status": "TELEMETRY_AVAILABLE", "integer_value": "12", "source": "fixture"},
+    "rejected_moves": {"status": "TELEMETRY_AVAILABLE", "integer_value": "580", "source": "fixture"},
+    "restarts": {"status": "TELEMETRY_AVAILABLE", "integer_value": "1", "source": "fixture"},
+    "unimproved_iterations": {"status": "TELEMETRY_AVAILABLE", "integer_value": "7", "source": "fixture"},
+    "diversity_at_termination": {"status": "TELEMETRY_AVAILABLE", "number_value": 0.42, "source": "fixture"},
+    "termination_snapshot": "{\"iteration\":100}"
+  },
+  "backend": {
+    "name": "native_search",
+    "route": "native_search",
+    "exact_callback_sampling": {"status": "TELEMETRY_AVAILABLE", "bool_value": false, "source": "fixture"}
+  },
+  "environment": {
+    "os": "linux",
+    "cpu_model": "fixture",
+    "cpu_core_count": {"status": "TELEMETRY_AVAILABLE", "integer_value": "8", "source": "fixture"},
+    "compiler": "clang",
+    "compiler_version": "fixture",
+    "build_type": "release",
+    "simd": "unknown",
+    "git_commit": "fixture"
+  },
+  "trace_overflow": {
+    "trace_truncated": false,
+    "trace_overflow": false,
+    "trace_event_limit": 2000,
+    "emitted_event_count": 2,
+    "omitted_incumbent_events": "0",
+    "omitted_restart_events": "0",
+    "checkpoint_policy": "adaptive"
+  }
+}

@@ -24,6 +24,7 @@ from benchmarks.telemetry_metrics import (
     derive_five_dimensional_metrics,
     derive_strategy_optimization_feedback,
 )
+from benchmarks.paths import REPOSITORY_ROOT
 
 
 ARTIFACT_SCHEMA_VERSION = 1
@@ -89,8 +90,8 @@ def publish_telemetry_artifacts(
         created_at=effective_created_at,
         source_count=dataset.source_count,
         source_label=source_label,
-        optagent_commit=optagent_commit or _git_commit(Path(__file__).resolve().parents[1]),
-        benchmarks_commit=benchmarks_commit or _git_commit(Path(__file__).resolve().parents[0]),
+        optagent_commit=optagent_commit or "unknown",
+        benchmarks_commit=benchmarks_commit or _git_commit(REPOSITORY_ROOT),
         availability=dashboard["availability_summary"],
     )
     _write_json(out / MANIFEST_JSON, manifest)

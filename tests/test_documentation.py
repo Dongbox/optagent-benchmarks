@@ -14,7 +14,7 @@ def test_canonical_documentation_layout_has_no_legacy_duplicates() -> None:
         ROOT / "docs" / "authority.md",
         ROOT / "docs" / "ga-comparison.md",
         ROOT / "docs" / "telemetry-artifacts.md",
-        ROOT / "cases" / "README.md",
+        ROOT / "benchmarks" / "cases" / "README.md",
     }
     removed = {
         ROOT / "EVALUATION.md",
@@ -38,3 +38,16 @@ def test_user_documentation_does_not_require_parent_repository_docs() -> None:
     assert "../docs/" not in readme
     assert "parent checkout" not in readme
     assert "OptAgent source repository is not required" in readme
+
+
+def test_user_commands_use_the_single_repository_entrypoint() -> None:
+    documents = [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]
+    text = "\n".join(path.read_text(encoding="utf-8") for path in documents)
+
+    assert "PYTHONPATH" not in text
+    assert "python -m benchmarks." not in text
+    assert "benchmark.py" in text
+
+
+def test_repository_root_exposes_only_the_primary_python_script() -> None:
+    assert [path.name for path in ROOT.glob("*.py")] == ["benchmark.py"]

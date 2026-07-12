@@ -4,7 +4,7 @@ import argparse
 from dataclasses import asdict, dataclass
 import json
 from time import perf_counter
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 from benchmarks.bootstrap import prefer_local_development_paths
 from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row, ensure_benchmark_case
@@ -468,7 +468,7 @@ def _time_to_best(metadata: dict[str, Any], elapsed_seconds: float) -> float | N
     return None
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     prefer_local_development_paths()
     parser = argparse.ArgumentParser(description="Run benchmark cases directly for local development.")
     parser.add_argument("--list-cases", action="store_true", help="List available benchmark cases and exit.")
@@ -491,7 +491,7 @@ def main() -> int:
     parser.add_argument(
         "--no-download", action="store_true", help="Fail when a required public instance is not already cached."
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.list_cases:
         selected_cases = select_cases(

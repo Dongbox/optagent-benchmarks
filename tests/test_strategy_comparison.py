@@ -507,7 +507,9 @@ def test_protocol_runner_expands_matrix_and_interleaves_pair_order() -> None:
     assert all(plan[index].coordinate == plan[index + 1].coordinate for index in range(0, len(plan), 2))
     assert {plan[index].role for index in range(0, len(plan), 2)} == {"baseline", "challenger"}
     command = build_child_command("/tmp/python", runs[0], protocol, allow_download=False)
-    assert command[:4] == ["/tmp/python", "-m", "benchmarks.run", "--case"]
+    assert command[0] == "/tmp/python"
+    assert command[1].endswith("/benchmark.py")
+    assert command[2:4] == ["run", "--case"]
     assert command[command.index("--model-style") + 1] == "test_style"
     assert command[command.index("--max-iterations") + 1] == "1000"
     assert command[-1] == "--no-download"

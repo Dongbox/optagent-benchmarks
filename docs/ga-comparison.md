@@ -94,7 +94,7 @@ all hard gates passing.
 Only the two wheel files are required. OptAgent source access is not required.
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.strategy_comparison run-pair \
+./.venv/bin/python benchmark.py compare-ga run-pair \
   --protocol ga_release_smoke_v1 \
   --baseline-wheel /path/to/baseline.whl \
   --challenger-wheel /path/to/challenger.whl \
@@ -113,7 +113,7 @@ correctness can run on other supported platforms.
 ## Compare Existing Artifacts
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.strategy_comparison compare \
+./.venv/bin/python benchmark.py compare-ga compare \
   --baseline /artifact-storage/run/baseline \
   --challenger /artifact-storage/run/challenger \
   --output-dir /artifact-storage/recomparison
@@ -135,7 +135,7 @@ feedback.md
 Promotion is explicit and immutable:
 
 ```bash
-PYTHONPATH=.. ./.venv/bin/python -m benchmarks.strategy_comparison promote \
+./.venv/bin/python benchmark.py compare-ga promote \
   --comparison-dir /artifact-storage/ga-holdout/comparison \
   --registry /artifact-storage/ga-baselines.json \
   --approved-by maintainer@example.com

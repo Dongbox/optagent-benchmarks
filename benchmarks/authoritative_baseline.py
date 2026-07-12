@@ -11,7 +11,7 @@ import platform
 import subprocess
 import sys
 import tempfile
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from benchmarks.authority import (
     AuthorityInputs,
@@ -22,12 +22,13 @@ from benchmarks.authority import (
     make_run_key,
 )
 from benchmarks.cases.registry import benchmark_case_objects
+from benchmarks.paths import REPOSITORY_ROOT
 from benchmarks.presentation.common import StrategyBudgetRequest, resolve_family_tier_budget
 
 
 SCHEMA_VERSION = 1
-REPO_ROOT = Path(__file__).resolve().parents[1]
-BENCHMARKS_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = REPOSITORY_ROOT
+BENCHMARKS_ROOT = REPOSITORY_ROOT
 
 
 @dataclass(frozen=True)
@@ -87,8 +88,8 @@ def planned_runs() -> tuple[PlannedRun, ...]:
 def build_run_command(python_executable: str, run: PlannedRun, *, allow_download: bool) -> list[str]:
     command = [
         python_executable,
-        "-m",
-        "benchmarks.run",
+        str(REPO_ROOT / "benchmark.py"),
+        "run",
         "--case",
         run.benchmark_id,
         "--strategy",
@@ -120,15 +121,16 @@ def run_baseline(
     bootstrap_python: str,
     allow_download: bool,
     memory_limit_mb: int,
+    optagent_commit: str,
 ) -> dict[str, Any]:
     output_dir = output_dir.resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError(f"authoritative baseline output directory is not empty: {output_dir}")
     inputs = AuthorityInputs(
-        optagent_commit=_git_output(REPO_ROOT, "rev-parse", "HEAD"),
+        optagent_commit=optagent_commit,
         benchmarks_commit=_git_output(BENCHMARKS_ROOT, "rev-parse", "HEAD"),
         wheel_sha256=f"sha256:{_sha256(wheel_path)}",
-        optagent_dirty=bool(_git_output(REPO_ROOT, "status", "--porcelain")),
+        optagent_dirty=False,
         benchmarks_dirty=bool(_git_output(BENCHMARKS_ROOT, "status", "--porcelain")),
     )
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -263,7 +265,6 @@ def _run_child(
     command = build_run_command(python_executable, run, allow_download=allow_download)
     env = dict(os.environ)
     env["OPTAGENT_BENCHMARK_USE_INSTALLED"] = "1"
-    env["PYTHONPATH"] = str(REPO_ROOT.parent)
     timeout_s = max(1.0, run.time_limit_s) + 15.0
     try:
         completed = subprocess.run(
@@ -419,25 +420,27 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate an OptAgent authoritative release-gate baseline.")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument(
         "--wheel", required=True, help="Exact OptAgent wheel to install in an isolated child environment."
     )
+    parser.add_argument("--optagent-commit", required=True, help="Commit SHA used to build the OptAgent wheel.")
     parser.add_argument(
         "--python-executable", default=sys.executable, help="Python used to create the isolated wheel environment."
     )
     parser.add_argument("--allow-download", action="store_true")
     parser.add_argument("--memory-limit-mb", type=int, default=4096)
     parser.add_argument("--require-authoritative", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     manifest = run_baseline(
         output_dir=Path(args.output_dir),
         wheel_path=Path(args.wheel),
         bootstrap_python=args.python_executable,
         allow_download=args.allow_download,
         memory_limit_mb=args.memory_limit_mb,
+        optagent_commit=args.optagent_commit,
     )
     print(json.dumps(manifest, indent=2, ensure_ascii=True, sort_keys=True))
     if args.require_authoritative and manifest["authority_status"] != "authoritative":
