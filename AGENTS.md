@@ -23,7 +23,7 @@ installation, or installation of the benchmark repository itself.
 - `benchmarks/authority.py` and `benchmarks/authoritative_baseline.py` own capability evidence.
 - `benchmarks/comparison_*` and `benchmarks/strategy_comparison*` own paired GA evidence.
 - `benchmarks/telemetry_metrics.py` and `benchmarks/telemetry_artifacts.py` own canonical metrics and artifacts.
-- `benchmarks/presentation/` owns rendering, navigation, and historical adapters only.
+- `benchmarks/presentation/` owns rendering only.
 
 Runtime facts must come from canonical OptAgent telemetry. Do not derive new
 statistics from flat diagnostics, private runner rows, solver logs, or dashboard
@@ -56,5 +56,5 @@ parent-repository documentation as a prerequisite.
 
 Authority, comparison, and telemetry output directories are immutable evidence.
 Never overwrite or hand-edit generated manifests, row streams, indexes, or
-aggregates. Historical files under `benchmarks/presentation/results/` are legacy
-facts and must not become inputs to current metric computation.
+aggregates. CI-published telemetry artifacts under `artifacts/telemetry/` are
+immutable; only `latest.json` may move to point at a newer immutable directory.

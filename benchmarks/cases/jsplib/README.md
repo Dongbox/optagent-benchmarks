@@ -1,19 +1,16 @@
 # JSPLIB
 
-This source contains job-shop scheduling instances from the
-[ScheduleOpt JSPLIB archive](https://scheduleopt.github.io/benchmarks/jsplib/).
-Instance JSON and best-known solutions originate from the linked ScheduleOpt
-benchmark repository.
+Job Shop 实例和 best-known solution 来自
+[ScheduleOpt JSPLIB archive](https://scheduleopt.github.io/benchmarks/jsplib/)。
 
-## Data And Model
+每个 job 是有序 operation 链，每个 operation 具有固定机器和时长。模型约束 job 前置关系
+与机器 no-overlap，并最小化 makespan。
 
-Each job is an ordered operation chain. Every operation has a fixed machine and
-duration. The model enforces job precedence and machine no-overlap constraints,
-then minimizes makespan.
+独立验证重建 operation interval，检查前置关系和机器容量，并在不信任求解器 summary 的
+前提下重新计算 makespan。
 
-Independent verification reconstructs operation intervals, checks precedence
-and machine capacity, and recomputes makespan without trusting solver summary
-fields.
+```bash
+./.venv/bin/python benchmark.py list-cases --family interval_job_shop
+```
 
-Use `benchmarks.run --list-cases` for current IDs, tiers, sizes, and references.
-Downloaded source data belongs under the source's `raw/` directory.
+下载数据放在对应 `raw/` 目录，除非明确治理为 release evidence，否则只作为本地缓存。

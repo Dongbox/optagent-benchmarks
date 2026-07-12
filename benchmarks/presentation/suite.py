@@ -407,7 +407,6 @@ def run_benchmark_suite(
                 )
                 for row in case_rows
             ]
-            append_jsonl(run_dir / "results.jsonl", case_rows)
             append_jsonl(run_dir / "rows.jsonl", case_rows)
             rows.extend(case_rows)
 
@@ -628,7 +627,6 @@ def build_benchmark_inventory(
             "strategy_optional_fields": list(STRATEGY_ROW_OPTIONAL_FIELDS),
             "diagnostic_metadata_fields": list(SEARCH_DIAGNOSTIC_KEYS),
             "canonical_row_stream": "rows.jsonl",
-            "legacy_row_stream": "results.jsonl",
         },
         "budget_policy": "family_tier_ceiling_v1",
         "family_budgets": _budget_matrix(families=families, tiers=tiers, request=budget_request),
@@ -1006,7 +1004,6 @@ def build_summary(
             "inventory": str(run_dir / "inventory.json"),
             "run_metadata": str(run_dir / "run_metadata.json"),
             "rows_jsonl": str(run_dir / "rows.jsonl"),
-            "results_jsonl": str(run_dir / "results.jsonl"),
             "results_csv": str(run_dir / "results.csv"),
             "anytime_jsonl": str(run_dir / "anytime.jsonl"),
             "curves_jsonl": str(run_dir / "curves.jsonl"),
@@ -1519,8 +1516,6 @@ def _safe_ratio(numerator: int, denominator: int) -> float:
 
 def _load_run_rows(run_dir: Path) -> list[dict[str, Any]]:
     path = run_dir / "rows.jsonl"
-    if not path.exists():
-        path = run_dir / "results.jsonl"
     if not path.exists():
         return []
     rows = []

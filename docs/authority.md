@@ -1,129 +1,71 @@
-# Authority And Capability
+# 权威基线与能力声明
 
-## Purpose
+## 目的
 
-Benchmark results support a scoped claim:
+Authority baseline 用于回答“指定 OptAgent wheel 在冻结矩阵上具备哪些原生求解能力”。它
+不是开发 smoke，也不是策略调参工具。
 
-> For explicitly supported problem families, model styles, and solve routes,
-> the supplied OptAgent wheel produces independently verified feasible
-> solutions under a fixed budget and environment, with quality measured against
-> governed references.
+权威证据必须同时绑定：
 
-The suite does not claim universal optimization capability.
+- OptAgent wheel SHA-256 与构建 commit；
+- benchmark commit；
+- Python、平台、CPU 和 backend 版本；
+- 冻结 case/strategy/model-style/seed/thread 矩阵；
+- 每个 case 的 reference 与原始实例校验和；
+- 独立 solution verification 结果；
+- 完整 rows 与 manifest 校验和。
 
-## Capability Classification
+## 原生能力口径
 
-- **Built-in native capability** requires no solver-specific installation beyond
-  the base OptAgent wheel. GA, ALNS, and the embedded HiGHS-backed OptX route
-  are currently classified this way.
-- **OptAgent-authored search capability** is the subset implemented by OptAgent
-  search code, currently GA and ALNS.
-- **Extra capability** requires an optional dependency. OR-Tools CP-SAT and
-  MathOpt routes are reported separately.
-- Every result retains its concrete backend name and version.
+HiGHS 随 OptAgent wheel 一同交付，用户无需安装第三方 solver，因此 `embedded_highs` 属于
+OptAgent 原生能力。需要用户额外安装的 backend 只能算兼容、适配或 extra，不能进入原生
+能力声明。
 
-The full capability coordinate is:
+Native search 只有在对应 case 通过独立验证时才能声明支持。某个策略失败不自动否定整个
+problem family；family 支持与 strategy profile 结果分别记录。
 
-```text
-problem family x model style x solve route x strategy x platform
+## 权威条件
+
+以下任一情况都会使 artifact 变为 `non_authoritative`：
+
+- benchmark 工作树不干净；
+- wheel、commit 或 backend 身份缺失；
+- 冻结坐标缺失或重复；
+- 运行失败、超时或未通过独立解验证；
+- reference/instance 证据缺少校验和；
+- 发生未声明 fallback；
+- 输出目录不是空目录。
+
+## 计划预检
+
+开发和 CI smoke 可以验证冻结矩阵，但不得生成权威结论：
+
+```bash
+./.venv/bin/python benchmark.py authority \
+  --output-dir /tmp/unused \
+  --wheel /path/to/optagent.whl \
+  --optagent-commit OPTAGENT_SHA \
+  --plan-only
 ```
 
-A family does not imply support for modeling primitives that its cases do not
-exercise.
+输出中的 `authoritative` 固定为 `false`。该模式不会创建隔离环境，也不会执行求解。
 
-## Release Gate
+## 完整发布 Gate
 
-The executable matrix is `benchmarks.authority.RELEASE_GATE_PLAN`. It covers six
-heuristic families and a separate embedded-HiGHS exact track. Distinct model
-styles, including TSP External Function and DAG IR transition-sum models, remain
-separate evidence.
-
-- Heuristic release-gate runs use seeds `11`, `23`, and `47`.
-- Deterministic exact routes run once.
-- Explicit strategy runs may not silently fall back.
-- Every returned solution is checked by a benchmark-owned verifier.
-- Every run uses a separate process with an external hard timeout and a memory
-  limit where supported.
-- Linux x86_64 is the authoritative performance platform. macOS arm64 and
-  Windows x86_64 are correctness and packaging gates; their timings are not
-  pooled with Linux.
-
-## Authority Requirements
-
-An artifact is `authoritative` only when:
-
-- the benchmark checkout was clean before execution;
-- the full benchmark commit SHA is recorded;
-- the supplied OptAgent commit identity, wheel SHA256, and installed version
-  are recorded;
-- every planned coordinate exists exactly once;
-- every returned solution was independently verified;
-- raw instance and reference evidence used by the release gate is checksummed;
-- explicit-strategy fallback remains zero.
-
-The benchmark maintainer does not need OptAgent repository access. A trusted
-wheel plus its declared source commit identity is sufficient. If the wheel
-provenance cannot be established, the run remains useful evidence but is marked
-`non_authoritative`.
-
-Authority and capability are separate. An authoritative artifact can truthfully
-show a crash, timeout, invalid solution, or unsupported profile.
-
-## Case Lifecycle
-
-Cases use governed lifecycle states:
-
-- `declared`: metadata exists;
-- `runnable`: data, parser, model builder, and local smoke work;
-- `verified`: independent verifier and governed reference are available;
-- `release_gate`: representative case in the executable release matrix;
-- `experimental`: runnable, but not accepted as supported capability evidence;
-- `retired`: retained for historical evidence only.
-
-Registry membership alone is not capability evidence.
-
-## Execution Tiers
-
-- `smoke`: representative cases for every change;
-- `release-gate`: clean wheel, frozen matrix, authoritative artifact;
-- `extended`: broader inventory, normally scheduled;
-- `pressure`: scale, timeout, memory, and incumbent-preservation behavior.
-
-Pressure cases may miss ordinary quality targets, but must not crash or return
-an invalid solution.
-
-## Metrics And Fairness
-
-- Reliability and independent feasibility are hard gates.
-- Typical quality uses median reference gap; stability uses p90 or worst-case
-  gap. Best seed is display-only.
-- End-to-end API time is the public efficiency metric. Lowering, callback,
-  solver, and decode time are diagnostic breakdowns.
-- Incumbent traces must be complete and monotonic before anytime metrics are
-  authoritative.
-- Official configurations are frozen by family, model style, and tier.
-- Per-case tuning and benchmark-ID special cases are prohibited.
-- Calibration cases and release holdouts are disjoint.
-- External comparisons use the same hardware, budget, and timing boundary.
-
-## Run An Authoritative Baseline
-
-From the `benchmarks/` repository directory:
+只有发布负责人或发布 CI 执行：
 
 ```bash
 ./.venv/bin/python benchmark.py authority \
   --output-dir /artifact-storage/authoritative-baseline \
   --wheel /path/to/optagent.whl \
-  --optagent-commit <optagent-sha> \
+  --optagent-commit OPTAGENT_SHA \
   --python-executable ./.venv/bin/python \
+  --memory-limit-mb 4096 \
   --allow-download \
   --require-authoritative
 ```
 
-The output directory must be empty. The command installs the wheel into an
-isolated child environment and writes immutable `manifest.json` and
-`rows.jsonl` evidence.
+该命令为 wheel 创建隔离环境，按冻结顺序执行全部坐标，写出 `rows.jsonl` 和
+`manifest.json`。`--require-authoritative` 在最终状态不是 `authoritative` 时返回非零退出码。
 
-Authority evidence answers whether a wheel demonstrates a capability. GA
-before/after performance is a separate paired experiment described in
-[GA strategy comparison](ga-comparison.md).
+发布声明只能引用已归档 artifact 的 manifest 和 checksum，不能引用本地控制台输出。

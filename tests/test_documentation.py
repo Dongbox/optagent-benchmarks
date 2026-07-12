@@ -37,7 +37,7 @@ def test_user_documentation_does_not_require_parent_repository_docs() -> None:
 
     assert "../docs/" not in readme
     assert "parent checkout" not in readme
-    assert "OptAgent source repository is not required" in readme
+    assert "无需访问 OptAgent 源代码仓库" in readme
 
 
 def test_user_commands_use_the_single_repository_entrypoint() -> None:
@@ -51,3 +51,16 @@ def test_user_commands_use_the_single_repository_entrypoint() -> None:
 
 def test_repository_root_exposes_only_the_primary_python_script() -> None:
     assert [path.name for path in ROOT.glob("*.py")] == ["benchmark.py"]
+
+
+def test_removed_legacy_dashboard_interfaces_stay_absent() -> None:
+    removed = {
+        ROOT / ".github" / "workflows" / "publish-results-index.yml",
+        ROOT / "benchmarks" / "presentation" / "compare.py",
+        ROOT / "benchmarks" / "presentation" / "generate_dashboard_data.py",
+        ROOT / "benchmarks" / "presentation" / "publish_dashboard_results.py",
+        ROOT / "benchmarks" / "presentation" / "results",
+        ROOT / "benchmarks" / "presentation" / "aggregates",
+    }
+
+    assert not any(path.exists() for path in removed)

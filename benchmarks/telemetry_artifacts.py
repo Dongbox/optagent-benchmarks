@@ -56,6 +56,8 @@ def publish_telemetry_artifacts(
     """Build and publish the complete Phase 4 artifact set."""
 
     out = Path(output_dir)
+    if out.exists() and any(out.iterdir()):
+        raise FileExistsError(f"telemetry artifact output directory is not empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
     dataset = build_metric_dataset(payloads, provenance=[source_label])
     metrics = derive_five_dimensional_metrics(dataset, references=references, targets=targets)
@@ -470,18 +472,39 @@ def _git_commit(path: Path) -> str:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Publish canonical telemetry metric artifacts.")
-    parser.add_argument("telemetry_json", nargs="+", help="Canonical telemetry JSON projection files.")
+    parser.add_argument("telemetry_json", nargs="*", help="Canonical telemetry JSON projection files.")
+    parser.add_argument(
+        "--suite-run",
+        help="Suite workspace containing rows.jsonl with embedded canonical telemetry. Intended for CI.",
+    )
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--reference", action="append", default=[], help="instance_id=objective")
     parser.add_argument("--target", action="append", default=[], help="instance_id=objective")
+    parser.add_argument("--created-at")
+    parser.add_argument("--optagent-commit")
+    parser.add_argument("--benchmarks-commit")
     args = parser.parse_args(argv)
 
+    if not args.telemetry_json and not args.suite_run:
+        parser.error("provide telemetry JSON files or --suite-run")
+
     payloads = [_read_json(path) for path in args.telemetry_json]
+    suite_references: dict[str, float] = {}
+    if args.suite_run:
+        suite_payloads, suite_references = _load_suite_telemetry(args.suite_run)
+        payloads.extend(suite_payloads)
+    if not payloads:
+        parser.error("no telemetry payloads were found")
+    references = {**suite_references, **_parse_key_values(args.reference)}
     result = publish_telemetry_artifacts(
         payloads,
         args.output_dir,
-        references=_parse_key_values(args.reference),
+        references=references,
         targets=_parse_key_values(args.target),
+        source_label="suite-run/rows.jsonl" if args.suite_run else "run-telemetry.pb",
+        created_at=args.created_at,
+        optagent_commit=args.optagent_commit,
+        benchmarks_commit=args.benchmarks_commit,
     )
     print(json.dumps(result["manifest"], indent=2, ensure_ascii=True, sort_keys=True))
     return 0
@@ -493,6 +516,56 @@ def _parse_key_values(values: Sequence[str]) -> dict[str, float]:
         key, raw = value.split("=", 1)
         parsed[key] = float(raw)
     return parsed
+
+
+def _load_suite_telemetry(run_dir: str | Path) -> tuple[list[dict[str, Any]], dict[str, float]]:
+    rows_path = Path(run_dir) / "rows.jsonl"
+    if not rows_path.is_file():
+        raise FileNotFoundError(f"suite rows not found: {rows_path}")
+
+    payloads: list[dict[str, Any]] = []
+    references: dict[str, float] = {}
+    for line in rows_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        telemetry = row.get("telemetry")
+        if not isinstance(telemetry, dict) or not telemetry:
+            if row.get("status") != "error":
+                raise ValueError(f"suite row is missing canonical telemetry: {row.get('benchmark_id') or 'unknown'}")
+            telemetry = _failed_suite_row_telemetry(row)
+        payloads.append(telemetry)
+        reference = row.get("reference_objective")
+        instance = telemetry.get("instance")
+        instance_id = instance.get("id") if isinstance(instance, dict) else None
+        if instance_id and reference is not None:
+            references[str(instance_id)] = float(reference)
+    return payloads, references
+
+
+def _failed_suite_row_telemetry(row: Mapping[str, Any]) -> dict[str, Any]:
+    budget = row.get("effective_budget") if isinstance(row.get("effective_budget"), Mapping) else {}
+    return {
+        "schema": {"schema_version": 1},
+        "identity": {
+            "strategy": str(row.get("strategy") or "unknown"),
+            "seed": int(budget.get("seed") or 0),
+            "thread_count": int(row.get("thread_count") or budget.get("thread_count") or 1),
+        },
+        "instance": {
+            "id": str(row.get("benchmark_id") or "unknown"),
+            "family": str(row.get("family") or "unknown"),
+        },
+        "budget": dict(budget),
+        "outcome": {
+            "status": "failed",
+            "feasible": False,
+            "objective_sense": "minimize",
+        },
+        "effort": {"wall_time_s": row.get("runtime_s") or row.get("elapsed_seconds")},
+        "progress": [],
+        "trace_overflow": {"trace_truncated": False, "omitted_incumbent_events": 0},
+    }
 
 
 if __name__ == "__main__":

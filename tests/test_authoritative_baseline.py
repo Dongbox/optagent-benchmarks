@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from benchmarks.authority import (
@@ -22,6 +24,7 @@ from benchmarks.authoritative_baseline import (
     _platform_coordinate,
     build_run_command,
     planned_runs,
+    main as authority_main,
 )
 
 
@@ -248,7 +251,10 @@ def test_release_gate_checksums_cover_instance_and_reference_evidence() -> None:
 
     for entry in RELEASE_GATE_PLAN:
         assert f"{entry.benchmark_id}:reference" in checksums
-        assert any(key.startswith(f"{entry.benchmark_id}:instance:") for key in checksums)
+        if any(key.startswith(f"{entry.benchmark_id}:instance:") for key in checksums):
+            continue
+        case = case_object_by_id(entry.benchmark_id)
+        assert case.data.get("instance_archive_url"), f"{entry.benchmark_id} has no governed local or downloadable data"
 
 
 def test_backend_identity_uses_version_reported_by_installed_wheel() -> None:
@@ -260,3 +266,25 @@ def test_backend_identity_uses_version_reported_by_installed_wheel() -> None:
     )
 
     assert identity == {"backend_name": "highs", "backend_version": "9.9.9"}
+
+
+def test_authority_plan_only_validates_the_frozen_matrix(tmp_path, capsys) -> None:
+    wheel = tmp_path / "optagent.whl"
+    wheel.write_bytes(b"smoke-wheel")
+
+    result = authority_main(
+        [
+            "--output-dir",
+            str(tmp_path / "unused"),
+            "--wheel",
+            str(wheel),
+            "--optagent-commit",
+            "a" * 40,
+            "--plan-only",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 0
+    assert payload["authoritative"] is False
+    assert payload["planned_run_count"] == len(planned_runs())

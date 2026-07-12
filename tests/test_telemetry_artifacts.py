@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
@@ -19,10 +21,12 @@ from benchmarks.telemetry_artifacts import (
     THROUGHPUT_JSONL,
     load_published_artifacts,
     publish_telemetry_artifacts,
+    _load_suite_telemetry,
 )
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "telemetry" / "phase0"
+PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "benchmarks"
 
 
 def _fixture(name: str) -> dict:
@@ -164,6 +168,44 @@ def test_presentation_dashboard_reads_only_published_artifacts(tmp_path):
     ]
 
 
+def test_public_telemetry_modules_do_not_import_legacy_scoring():
+    public_modules = [
+        PACKAGE_ROOT / "telemetry_metrics.py",
+        PACKAGE_ROOT / "telemetry_artifacts.py",
+        PACKAGE_ROOT / "presentation" / "dashboard.py",
+    ]
+
+    for path in public_modules:
+        imported_modules = _imported_modules(path)
+        legacy_modules = {
+            "benchmarks.scoring",
+            "benchmarks.scoring_phase2",
+        }
+        assert not {
+            module
+            for module in imported_modules
+            if any(module == legacy or module.startswith(f"{legacy}.") for legacy in legacy_modules)
+        }
+
+
+def test_import_parser_resolves_relative_benchmark_modules(tmp_path):
+    package_root = tmp_path / "benchmarks"
+    cases = [
+        (package_root / "telemetry_metrics.py", "from . import scoring"),
+        (package_root / "presentation" / "dashboard.py", "from ..scoring import legacy"),
+        (package_root / "presentation" / "dashboard.py", "from .. import scoring"),
+    ]
+
+    for path, source in cases:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(source, encoding="utf-8")
+        imported_modules = _imported_modules(path, package_root=package_root)
+        assert any(
+            module == "benchmarks.scoring" or module.startswith("benchmarks.scoring.")
+            for module in imported_modules
+        )
+
+
 def test_manifest_checksum_validation_rejects_modified_artifact(tmp_path):
     output_dir = tmp_path / "artifacts"
     publish_telemetry_artifacts(
@@ -185,7 +227,41 @@ def test_manifest_checksum_validation_rejects_modified_artifact(tmp_path):
         raise AssertionError("corrupted artifact was accepted")
 
 
+def test_suite_workspace_exports_embedded_canonical_telemetry(tmp_path):
+    run_dir = tmp_path / "suite"
+    run_dir.mkdir()
+    telemetry = _fixture("native_search_minimal.json")
+    row = {
+        "benchmark_id": "toy-001",
+        "status": "feasible",
+        "reference_objective": 10.0,
+        "telemetry": telemetry,
+    }
+    (run_dir / "rows.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    payloads, references = _load_suite_telemetry(run_dir)
+
+    assert payloads == [telemetry]
+    assert references == {"toy-001": 10.0}
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+def _imported_modules(path: Path, *, package_root: Path = PACKAGE_ROOT) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    relative_module = path.relative_to(package_root.parent).with_suffix("")
+    package = ".".join(relative_module.parts[:-1])
+    modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if node.level > 0:
+                module = importlib.util.resolve_name(f"{'.' * node.level}{module}", package)
+            modules.update(f"{module}.{alias.name}" for alias in node.names)
+    return modules

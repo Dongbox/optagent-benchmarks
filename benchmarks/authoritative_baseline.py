@@ -433,10 +433,35 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--allow-download", action="store_true")
     parser.add_argument("--memory-limit-mb", type=int, default=4096)
     parser.add_argument("--require-authoritative", action="store_true")
+    parser.add_argument(
+        "--plan-only",
+        action="store_true",
+        help="Validate and print the frozen run plan without creating environments or authority evidence.",
+    )
     args = parser.parse_args(argv)
+    wheel_path = Path(args.wheel).resolve()
+    if not wheel_path.is_file():
+        parser.error(f"wheel not found: {wheel_path}")
+    if args.plan_only:
+        print(
+            json.dumps(
+                {
+                    "kind": "optagent_authority_plan",
+                    "authoritative": False,
+                    "optagent_commit": args.optagent_commit,
+                    "wheel": str(wheel_path),
+                    "planned_run_count": len(planned_runs()),
+                    "runs": [asdict(run) for run in planned_runs()],
+                },
+                indent=2,
+                ensure_ascii=True,
+                sort_keys=True,
+            )
+        )
+        return 0
     manifest = run_baseline(
         output_dir=Path(args.output_dir),
-        wheel_path=Path(args.wheel),
+        wheel_path=wheel_path,
         bootstrap_python=args.python_executable,
         allow_download=args.allow_download,
         memory_limit_mb=args.memory_limit_mb,

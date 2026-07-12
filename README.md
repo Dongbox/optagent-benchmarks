@@ -1,23 +1,50 @@
 # OptAgent Benchmarks
 
-`optagent-benchmarks` is the independently maintained benchmark repository for
-OptAgent. Benchmark maintainers work from released or supplied OptAgent wheels;
-access to the OptAgent source repository is not required.
+`optagent-benchmarks` 是独立维护的 OptAgent 评测仓库。评测人员使用已发布或指定的
+OptAgent wheel，无需访问 OptAgent 源代码仓库。
 
-This repository owns benchmark cases and verifiers, suite execution, capability
-evidence, paired GA comparisons, and telemetry-derived evaluation artifacts. It
-does not own OptAgent runtime semantics or solver implementation details.
+本仓库负责 benchmark case、独立解验证、suite 执行、权威能力证据、GA 配对比较，
+以及基于 canonical telemetry 的指标与 dashboard artifact。它不定义 OptAgent 的运行时
+语义，也不实现求解器。
 
-## Documentation
+## 谁需要运行什么
 
-- [Authority and capability](docs/authority.md)
-- [GA strategy comparison](docs/ga-comparison.md)
-- [Telemetry, metrics, and artifacts](docs/telemetry-artifacts.md)
-- [Case sources and maintenance](benchmarks/cases/README.md)
+开发人员日常并不需要执行全部命令。
 
-## Setup
+| 命令 | 责任方 | 何时执行 |
+| --- | --- | --- |
+| `list-cases` | 开发人员手动 | 查找 case ID、family、tier。 |
+| `run` | 开发人员手动 | 修改策略或 case 后做单实例快速诊断。 |
+| `suite` | 开发人员按需；CI 自动 | 本地需要矩阵证据时手动运行；提交后的标准 smoke 由 CI 运行。 |
+| `compare-ga` | GA 开发/评审人员手动；发布 CI 可自动 | 比较 baseline/challenger wheel，形成可审计的策略结论。 |
+| `authority` | 发布负责人或发布 CI | 发布前验证完整能力矩阵；普通开发不运行完整 authority。 |
+| `publish-telemetry` | CI 自动 | 从 suite 工作区发布不可变 telemetry artifact。开发人员只在排查指标时手动运行。 |
+| `dashboard` | CI 自动 | 校验并渲染 telemetry artifact。开发人员只在本地预览时手动运行。 |
 
-The checkout directory may have any name. Run all commands from its root:
+推荐开发循环：
+
+```text
+修改策略/case
+  -> run（开发人员手动）
+  -> 必要时 suite（开发人员手动）
+  -> push
+  -> suite + publish-telemetry（CI 自动）
+  -> dashboard 部署（CI 自动）
+```
+
+GA 候选进入发布评审时再执行：
+
+```text
+compare-ga smoke
+  -> compare-ga calibration
+  -> compare-ga release holdout
+  -> 审批后 promote
+  -> authority release gate
+```
+
+## 环境准备
+
+检出目录可以使用任意名称。所有命令都从仓库根目录执行：
 
 ```bash
 git clone https://github.com/Dongbox/optagent-benchmarks.git optagent-benchmarks
@@ -27,35 +54,17 @@ python -m venv .venv
 ./.venv/bin/python -m pip install /path/to/optagent.whl
 ```
 
-Use a clean environment for release evidence. Do not install an editable
-OptAgent source checkout there. For explicit local source development only, set
-`OPTAGENT_SOURCE_ROOT=/path/to/optagent`.
-
-## Command Guide
-
-All commands run from the repository root:
+发布证据必须使用干净环境，不得安装 editable OptAgent 源码。只有本地源码联调时才设置：
 
 ```bash
-./.venv/bin/python benchmark.py <command> [options]
+export OPTAGENT_SOURCE_ROOT=/path/to/optagent
 ```
 
-| Command | Use it when |
-| --- | --- |
-| `list-cases` | Discover case IDs, families, tiers, and comparison coordinates. |
-| `run` | Diagnose one case or strategy quickly without creating authoritative evidence. |
-| `suite` | Execute a repeatable case matrix and write a benchmark run workspace. |
-| `authority` | Verify release capability from one exact OptAgent wheel. |
-| `compare-ga` | Run, compare, or explicitly promote paired GA strategy evidence. |
-| `publish-telemetry` | Convert canonical runtime telemetry into immutable metric artifacts. |
-| `dashboard` | Render a static view from published telemetry artifacts. |
-| `compare-runs` | Review two suite workspaces and optionally record a curated decision. |
-| `publish-results` | Publish suite rows into the legacy Git-managed dashboard dataset. |
-| `generate-results-index` | Rebuild or verify the legacy dashboard index and aggregates. |
+## 开发人员命令
 
 ### `list-cases`
 
-Use this before selecting a `--case`, family, tier, or model style. It prints
-the filtered registry inventory as JSON and does not execute a solver.
+只读取 registry，不执行求解器。输出为 JSON。
 
 ```bash
 ./.venv/bin/python benchmark.py list-cases
@@ -67,9 +76,7 @@ the filtered registry inventory as JSON and does not execute a solver.
 
 ### `run`
 
-Use this for a fast local smoke test, case development, or failure diagnosis.
-The JSON printed to standard output is diagnostic evidence only: it is not an
-authoritative baseline and cannot promote a strategy.
+用于单 case 快速诊断。标准输出中的 JSON 不是权威证据，也不能用于晋升策略基线。
 
 ```bash
 ./.venv/bin/python benchmark.py run \
@@ -83,14 +90,14 @@ authoritative baseline and cannot promote a strategy.
   --no-download
 ```
 
-Repeat `--strategy` or `--model-style` when comparing multiple routes for the
-same case.
+需要对同一 case 比较多个策略或建模路径时，可重复传入 `--strategy` 或
+`--model-style`。
 
 ### `suite`
 
-Use this for repeatable smoke, calibration, or matrix runs. It writes a run
-workspace containing inventory, environment, result rows, and telemetry under
-`--output-root`; the default is `docs/evals/benchmark-suite/runs/`.
+用于生成可重复的 smoke、calibration 或线程矩阵工作区。默认输出到
+`docs/evals/benchmark-suite/runs/`。普通策略修改通常由 CI 自动执行标准 smoke；只有
+本地需要完整矩阵证据时才手动调用。
 
 ```bash
 ./.venv/bin/python benchmark.py suite \
@@ -101,49 +108,29 @@ workspace containing inventory, environment, result rows, and telemetry under
   --timestamp local-ga-smoke
 ```
 
-For multi-seed calibration, repeat `--calibration-seed`. For concurrency
-analysis, use `--parallel-matrix` or repeat `--thread-count`. To inspect the
-selected matrix without solving, use `--list-inventory`.
+- 多 seed calibration：重复 `--calibration-seed`。
+- 并发分析：使用 `--parallel-matrix`，或重复 `--thread-count`。
+- 只检查将要运行的矩阵：使用 `--list-inventory`。
 
-### `authority`
-
-Use this only for release-gate capability evidence. The command creates an
-isolated environment, installs the exact wheel, executes the frozen authority
-matrix, independently verifies solutions, and writes checksummed rows and a
-manifest. Use a clean benchmark checkout and an empty output directory.
-
-```bash
-./.venv/bin/python benchmark.py authority \
-  --output-dir /artifact-storage/authoritative-baseline \
-  --wheel /path/to/optagent.whl \
-  --optagent-commit <optagent-sha> \
-  --python-executable ./.venv/bin/python \
-  --memory-limit-mb 4096 \
-  --allow-download \
-  --require-authoritative
-```
-
-`--require-authoritative` returns a non-zero status when the generated evidence
-does not satisfy the authority gates. See [Authority and capability](docs/authority.md).
+## GA 评审命令
 
 ### `compare-ga`
 
-Use this for controlled baseline/challenger evaluation of GA changes. It has
-three actions.
+该命令只用于受控的 baseline/challenger GA 评测。
 
-Run two wheels through the same frozen protocol in separate environments:
+分别在隔离环境中运行两个 wheel：
 
 ```bash
 ./.venv/bin/python benchmark.py compare-ga run-pair \
   --protocol ga_release_smoke_v1 \
   --baseline-wheel /path/to/baseline.whl \
   --challenger-wheel /path/to/challenger.whl \
-  --baseline-commit <baseline-sha> \
-  --challenger-commit <challenger-sha> \
+  --baseline-commit BASELINE_SHA \
+  --challenger-commit CHALLENGER_SHA \
   --output-dir /tmp/ga-smoke
 ```
 
-Recompute a comparison from two existing immutable run artifacts:
+从已有不可变 run artifact 重新计算比较结果：
 
 ```bash
 ./.venv/bin/python benchmark.py compare-ga compare \
@@ -152,111 +139,100 @@ Recompute a comparison from two existing immutable run artifacts:
   --output-dir /tmp/ga-recomparison
 ```
 
-Promote an approved `improved` comparison into a baseline registry:
+只有 release holdout 得到 `improved` 且完成审批后才能晋升：
 
 ```bash
 ./.venv/bin/python benchmark.py compare-ga promote \
   --comparison-dir /artifacts/ga-holdout/comparison \
   --registry /artifact-storage/ga-baselines.json \
-  --approved-by <reviewer-id>
+  --approved-by REVIEWER_ID
 ```
 
-Smoke detects invalid evidence and obvious regressions but cannot produce an
-`improved` promotion verdict. Continue with `ga_calibration_v1` and then
-`ga_release_holdout_v1`. See [GA strategy comparison](docs/ga-comparison.md).
+Smoke 只能发现无效证据或明显回退，不能产生 `improved` 晋升结论。完整规则见
+[GA 策略比较](docs/ga-comparison.md)。
+
+## 发布命令
+
+### `authority`
+
+完整 authority 由发布负责人或发布 CI 执行。它创建隔离环境、安装指定 wheel、运行冻结
+矩阵、独立验证解，并写出带校验和的 rows 与 manifest。
+
+提交前 smoke 只检查冻结计划，不生成权威结论：
+
+```bash
+./.venv/bin/python benchmark.py authority \
+  --output-dir /tmp/authority-unused \
+  --wheel /path/to/optagent.whl \
+  --optagent-commit OPTAGENT_SHA \
+  --plan-only
+```
+
+发布时执行完整 gate：
+
+```bash
+./.venv/bin/python benchmark.py authority \
+  --output-dir /artifact-storage/authoritative-baseline \
+  --wheel /path/to/optagent.whl \
+  --optagent-commit OPTAGENT_SHA \
+  --python-executable ./.venv/bin/python \
+  --memory-limit-mb 4096 \
+  --allow-download \
+  --require-authoritative
+```
+
+`--require-authoritative` 在证据未通过 authority gate 时返回非零状态。完整规则见
+[权威基线与能力声明](docs/authority.md)。
 
 ### `publish-telemetry`
 
-Use this after obtaining canonical telemetry JSON projections. It derives the
-five-dimensional metrics, statistical evidence, anytime curves, throughput,
-strategy feedback, checksums, and the immutable dashboard input artifact.
+CI 在 suite 完成后自动执行。它只接受 canonical telemetry JSON，或通过 `--suite-run`
+读取 suite 工作区中嵌入的 canonical telemetry；输出目录不可覆盖。
+
+CI 使用方式：
+
+```bash
+./.venv/bin/python benchmark.py publish-telemetry \
+  --suite-run /artifact-storage/runs/gha-smoke \
+  --output-dir /artifact-storage/telemetry/gha-smoke \
+  --optagent-commit OPTAGENT_SHA \
+  --benchmarks-commit BENCHMARKS_SHA
+```
+
+本地排查单独 telemetry 文件：
 
 ```bash
 ./.venv/bin/python benchmark.py publish-telemetry \
   /path/to/run-a-telemetry.json \
   /path/to/run-b-telemetry.json \
-  --output-dir /tmp/telemetry-artifacts \
+  --output-dir /tmp/telemetry-artifact \
   --reference tsplib_berlin52=7542 \
   --target tsplib_berlin52=7600
 ```
 
-Repeat `--reference` and `--target` for additional instance IDs. See
-[Telemetry, metrics, and artifacts](docs/telemetry-artifacts.md).
+产物包括 `manifest.json`、`rows.jsonl`、`curves.jsonl`、五维指标、统计证据、策略反馈和
+`dashboard.json`。详细契约见 [Telemetry、指标与 Artifact](docs/telemetry-artifacts.md)。
 
 ### `dashboard`
 
-Use this only after `publish-telemetry`. It reads the immutable artifact
-directory, validates its checksums, and writes a static dashboard directory.
-It does not recompute metrics from raw logs or suite rows.
+CI 自动校验并渲染已发布的 telemetry artifact，不从 suite row、日志或历史结果重新计算
+指标。开发人员只有在本地预览 artifact 时才需要手动运行。
 
 ```bash
 ./.venv/bin/python benchmark.py dashboard \
-  /tmp/telemetry-artifacts \
+  /tmp/telemetry-artifact \
   --output-root /tmp/telemetry-dashboard \
-  --dashboard-id ga-calibration-20260712
+  --dashboard-id local-preview
 ```
 
-### `compare-runs`
-
-Use this to compare two artifact-producing `suite` workspaces. Without
-`--report-id` it prints JSON or Markdown. With `--report-id` it also writes a
-curated report and appends a decision to the benchmark ledger.
+查看完整参数：
 
 ```bash
-./.venv/bin/python benchmark.py compare-runs \
-  /artifact-storage/runs/accepted-baseline \
-  /artifact-storage/runs/candidate \
-  --format markdown \
-  --report-id ga-candidate-20260712 \
-  --baseline-commit <baseline-sha> \
-  --candidate-commit <candidate-sha> \
-  --decision needs_follow_up \
-  --follow-up "run release holdout"
+./.venv/bin/python benchmark.py --help
+./.venv/bin/python benchmark.py <command> --help
 ```
 
-This command compares suite-level rows; use `compare-ga` when the decision must
-follow the frozen paired GA protocol and Delta Index rules.
-
-### `publish-results`
-
-This is a dashboard-maintainer and CI command for the legacy Git-managed result
-dataset under `benchmarks/presentation/results/`. It converts one `suite` run
-workspace into a published summary with explicit OptAgent and benchmark
-provenance, then regenerates aggregates unless `--no-regenerate` is set.
-
-```bash
-./.venv/bin/python benchmark.py publish-results \
-  /artifact-storage/runs/gha-smoke \
-  --optagent-version 1.2.0rc1 \
-  --optagent-commit <optagent-sha> \
-  --optagent-commit-url https://example.invalid/optagent/commit/<optagent-sha> \
-  --optagent-wheel-sha256 sha256:<wheel-sha256> \
-  --benchmarks-commit <benchmarks-sha> \
-  --benchmarks-commit-url https://github.com/Dongbox/optagent-benchmarks/commit/<benchmarks-sha>
-```
-
-Do not use this command as the input path for current telemetry metrics.
-
-### `generate-results-index`
-
-This is also a legacy dashboard-maintainer and CI command. It rebuilds
-`results/index.json` and the aggregate JSON files from committed published run
-summaries. Use `--check` in CI to fail when generated data is stale without
-rewriting it.
-
-```bash
-./.venv/bin/python benchmark.py generate-results-index
-
-./.venv/bin/python benchmark.py generate-results-index --check
-```
-
-Use `--results-root` and `--aggregates-root` only when validating an alternate
-dataset outside the repository defaults.
-
-Run `./.venv/bin/python benchmark.py --help` or append `--help` to any command
-for the complete option list.
-
-## Development
+## 开发验证
 
 ```bash
 ./.venv/bin/python -m pytest -q
@@ -265,15 +241,16 @@ for the complete option list.
 ./.venv/bin/python benchmark.py list-cases --tier smoke
 ```
 
-For case changes, also run one small `--no-download` case in the affected
-family. Generated output and downloaded raw caches are not documentation and
-must not be committed unless a case contract governs them as source evidence.
+修改 case 后，至少再运行一个受影响 family 的小型 `--no-download` case。生成的工作区和
+下载缓存不是文档，不应提交；只有 CI 发布的不可变 telemetry artifact 可以进入
+`artifacts/telemetry/`。
 
-## Repository Layout
+## 仓库结构
 
 ```text
-benchmark.py       single command-line entrypoint
-benchmarks/        implementation, cases, verifiers, and presentation code
-docs/              benchmark-owned policies and data contracts
-tests/             governance, artifact, metric, and case regression tests
+benchmark.py        唯一命令入口
+benchmarks/         实现、cases、独立验证与 presentation
+artifacts/telemetry CI 发布的不可变 telemetry artifact 与 latest 指针
+docs/               评测政策和数据契约
+tests/              命令、artifact、指标和 case 回归测试
 ```

@@ -1,84 +1,62 @@
-# Telemetry, Metrics, And Artifacts
+# Telemetry、指标与 Artifact
 
-## Data Flow
+## 数据流
 
-Benchmark statistics start from canonical OptAgent runtime telemetry:
+所有评测统计都从 OptAgent runtime 发布的 canonical telemetry 开始：
 
 ```text
 OptAgent wheel
-    -> canonical RunTelemetry
-    -> benchmarks.telemetry_metrics
-    -> normalized rows, curves, and metrics
-    -> benchmarks.telemetry_artifacts
-    -> immutable artifact directory
-    -> benchmarks.presentation.dashboard
+  -> canonical RunTelemetry
+  -> benchmarks.telemetry_metrics
+  -> normalized rows / curves / metrics
+  -> benchmarks.telemetry_artifacts
+  -> 不可变 artifact 目录
+  -> optagent-dashboard
 ```
 
-Runtime owns facts. Benchmarks own metric derivation and artifact publication.
-Dashboard code owns rendering only.
+Runtime 负责事实，benchmark 负责指标推导和 artifact 发布，dashboard 只负责展示。
 
-Unsupported inputs are rejected:
+以下输入会被拒绝：
 
-- flat solution diagnostics;
-- runner-private row streams;
-- solver text logs;
-- dashboard summaries;
-- Git-managed historical result trees.
+- 扁平 solution diagnostics；
+- runner 私有 row；
+- 求解器文本日志；
+- dashboard summary；
+- 已删除的历史 results/aggregates 数据。
 
-Missing facts remain `unsupported`, `insufficient_data`, or `null`; they are
-never silently converted to zero.
+缺失事实必须保留为 `unsupported`、`insufficient_data`、`error` 或 `null`，不得静默转成
+零。
 
-## Five Dimensions
+## 五维指标
 
-### Effectiveness
+### 有效性（Effectiveness）
 
-Final feasibility, objective, absolute/relative reference gap, and normalized
-quality summaries.
+最终可行性、目标值、相对/绝对 reference gap，以及标准化质量汇总。
 
-### Efficiency
+### 效率（Efficiency）
 
-Wall time, CPU time when available, iteration and evaluated-candidate counts,
-function evaluations, throughput, and memory when reported.
+Wall time、CPU time、迭代数、候选评估数、函数评估、吞吐率和内存。
 
-### Robustness
+### 稳健性（Robustness）
 
-Success rate, solved ratio, distribution summaries, variance, coefficient of
-variation, quantiles, and worst-case normalized gap.
+成功率、求解率、分布、方差、变异系数、分位数和最差标准化 gap。
 
-### Anytime Performance
+### Anytime 表现
 
-Incumbent curves, time/evaluations to target, ECDF data, primal integral,
-normalized primal integral, missed-target penalties, and trace completeness.
+Incumbent curve、达到 target 的时间/评估次数、ECDF、primal integral、遗漏 target 惩罚和
+trace 完整性。
 
-### Statistical Validity
+### 统计有效性（Statistical Validity）
 
-Matched Wilcoxon tests, multi-strategy Friedman tests, Vargha-Delaney A12,
-Cliff's Delta, multiplicity correction, and explicit insufficient-data status.
+Matched Wilcoxon、Friedman、Vargha-Delaney A12、Cliff's Delta、多重比较修正，以及明确的
+样本不足状态。
 
-Strategy optimization feedback interprets these benchmark-owned metrics into
-conservative focus areas. It does not select a user strategy or change runtime
-configuration.
+策略反馈只解释这些指标并给出保守的优化关注点，不会替用户选择策略，也不会修改运行时
+配置。
 
-## Case, Runner, And Presentation Boundary
+## Artifact 契约
 
-Cases expose domain-owned solution facts through:
-
-```python
-case.solution_metrics(solution, **build_kwargs) -> dict[str, Any]
-```
-
-Allowed outputs include objective recomputation, reference objective, decoded
-solution, model style, and small domain diagnostics needed for audit.
-
-Cases do not own solver-common status/runtime fields, derived gap fields, or
-dashboard display truncation. `run.py` assembles lightweight rows.
-`telemetry_metrics.py` derives canonical statistics. `presentation/` renders
-published data and must not recalculate gaps, ranks, integrals, effect sizes, or
-statistical tests.
-
-## Artifact Contract
-
-`benchmarks.telemetry_artifacts` writes an immutable directory:
+`publish-telemetry` 写出不可变目录：
 
 ```text
 manifest.json
@@ -89,44 +67,46 @@ five_dimensional_metrics.json
 statistical_tests.json
 strategy_optimization_feedback.json
 dashboard.json
+dashboard.md
 ```
 
-`manifest.json` is the entrypoint and records schema version, generator,
-creation time, source count, provenance, checksums, and byte sizes. Consumers
-verify it before reading other files.
+`manifest.json` 是唯一入口，记录 schema、生成器版本、创建时间、commit、来源、每个文件的
+SHA-256 和字节数。消费者必须先校验 manifest，再读取其他文件。
 
-File roles:
+文件职责：
 
-- `rows.jsonl`: normalized per-run facts and row-level metrics;
-- `curves.jsonl`: incumbent and checkpoint curves with completeness state;
-- `throughput.jsonl`: effort and throughput summaries;
-- `five_dimensional_metrics.json`: grouped metric dimensions;
-- `statistical_tests.json`: paired and grouped statistical evidence;
-- `strategy_optimization_feedback.json`: signals and conservative focus areas;
-- `dashboard.json`: presentation-ready materialized summary.
+- `rows.jsonl`：每次运行的 canonical 事实；
+- `curves.jsonl`：incumbent/checkpoint 曲线；
+- `throughput.jsonl`：努力量和吞吐率；
+- `five_dimensional_metrics.json`：benchmark 推导的五维指标；
+- `statistical_tests.json`：配对和分组统计证据；
+- `strategy_optimization_feedback.json`：优化信号、关注点和回退保护；
+- `dashboard.json`：只含 presentation-ready 的物化结果。
 
-Authority artifacts and GA comparison artifacts are different evidence types.
-They are never accepted as dashboard telemetry input.
+Authority artifact 与 GA comparison artifact 属于不同证据类型，不能作为 telemetry dashboard
+输入。
 
-## Publish And Render
+## CI 发布
+
+CI 从 suite 工作区发布：
 
 ```bash
 ./.venv/bin/python benchmark.py publish-telemetry \
-  /path/to/run-telemetry.json \
-  --output-dir /tmp/telemetry-artifacts \
-  --reference toy-001=10.0
+  --suite-run /path/to/suite-run \
+  --output-dir artifacts/telemetry/RUN_ID \
+  --optagent-commit OPTAGENT_SHA \
+  --benchmarks-commit BENCHMARKS_SHA
 ```
+
+每次运行使用新的 `RUN_ID`。`artifacts/telemetry/latest.json` 只负责指向最新不可变目录，
+Dashboard 部署 workflow 根据该指针复制 artifact。
+
+本地渲染：
 
 ```bash
 ./.venv/bin/python benchmark.py dashboard \
-  /tmp/telemetry-artifacts \
-  --output-root /tmp/telemetry-dashboard
+  artifacts/telemetry/RUN_ID \
+  --output-root /tmp/dashboard
 ```
 
-Output directories are immutable. Publish a new directory for every run.
-
-## Historical Results
-
-`benchmarks/presentation/results/` and `benchmarks/presentation/aggregates/` contain legacy static
-facts used by older dashboard flows. Do not edit generated indexes by hand and
-do not use historical files as current metric inputs.
+输出目录不得覆盖。

@@ -1,27 +1,22 @@
 # QAPLIB
 
-This source contains quadratic assignment instances from
-[QAPLIB](https://qaplib.mgi.polymtl.ca). A public archive is also available via
-[DOI 10.7488/ds/3428](https://doi.org/10.7488/ds/3428).
+二次指派实例来自 [QAPLIB](https://qaplib.mgi.polymtl.ca)，公共归档也可通过
+[DOI 10.7488/ds/3428](https://doi.org/10.7488/ds/3428) 获取。
 
-## Matrix Semantics
+## 矩阵语义
 
-QAPLIB `.dat` files provide two `n x n` matrices in source order. The loader
-preserves that order and evaluates:
+QAPLIB `.dat` 按源文件顺序提供两个 `n x n` 矩阵。Loader 保持该顺序并计算：
 
 ```text
 sum A[i][j] * B[p[i]][p[j]]
 ```
 
-Names such as `flow` and `distance` are conventional and may not describe every
-instance. Swapping the matrices defines an equivalent optimization problem but
-does not preserve the cost of the same permutation.
+`flow`、`distance` 等名称是惯例，不一定准确描述所有实例。交换两个矩阵会形成等价优化
+问题，但不会保持同一 permutation 的 cost。
 
-`.sln` files and governed solution tables provide reference provenance.
-Independent verification checks that the assignment is a permutation and
-recomputes the quadratic objective.
+`.sln` 和受治理 solution table 提供 reference 来源。独立验证检查 assignment 是
+permutation，并重新计算二次目标。
 
-Use `benchmarks.run --list-cases` for current IDs, tiers, sizes, structural
-metadata, and references. Full archives may be cached below
-`quadratic_assignment/raw/`; selected offline cases live at the loader's
-governed paths.
+```bash
+./.venv/bin/python benchmark.py list-cases --family sequence_quadratic_assignment
+```

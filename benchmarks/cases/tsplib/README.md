@@ -1,25 +1,23 @@
 # TSPLIB
 
-This source contains symmetric traveling-salesperson instances from
-[TSPLIB95](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/). The local
-reference table is derived from the published symmetric-TSP optimum list.
+对称旅行商实例来自
+[TSPLIB95](https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/)，本地 reference table
+来源于公开的 symmetric-TSP optimum list。
 
-## Supported Distance Formats
+## 支持的距离格式
 
-- `EUC_2D`: rounded two-dimensional Euclidean distance
-- `CEIL_2D`: ceiling Euclidean distance
-- `ATT`: TSPLIB pseudo-Euclidean distance
-- `GEO`: TSPLIB geographical distance
-- `EXPLICIT`: `FULL_MATRIX`, row-triangular, and diagonal-triangular matrices
+- `EUC_2D`：二维欧氏距离取整；
+- `CEIL_2D`：二维欧氏距离向上取整；
+- `ATT`：TSPLIB pseudo-Euclidean；
+- `GEO`：TSPLIB 地理距离；
+- `EXPLICIT`：`FULL_MATRIX`、行三角和含对角三角矩阵。
 
-The loader implements TSPLIB rounding rules. Independent verification checks a
-Hamiltonian permutation and recomputes the closed-tour length from governed
-source data.
+Loader 实现 TSPLIB 取整规则。独立验证检查 Hamiltonian permutation，并使用受治理源数据
+重新计算闭合 tour 长度。
 
-The same instance family may expose separate model styles, including External
-Function tour cost and DAG IR transition-sum cost. They remain separate
-capability and GA-comparison profiles.
+同一实例可以暴露 External Function tour cost 和 DAG IR transition-sum 等不同 model
+style，它们是独立的能力和 GA comparison profile。
 
-Use `benchmarks.run --list-cases` for current IDs, tiers, node counts,
-structural statistics, model styles, and references. Full archives may be
-cached below `tsp/raw/`; selected offline cases live at governed loader paths.
+```bash
+./.venv/bin/python benchmark.py list-cases --family sequence_blackbox_tsp
+```

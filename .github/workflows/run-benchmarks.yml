@@ -179,33 +179,48 @@ jobs:
           print(f"BENCHMARK_RUN_DIR={runs[-1].resolve()}")
           PY
 
-      - name: Publish dashboard JSON
+      - name: Publish canonical telemetry artifact
         working-directory: benchmarks
         run: |
-          python benchmark.py publish-results "${BENCHMARK_RUN_DIR}" \
-            --optagent-version "${OPTAGENT_VERSION}" \
-            --optagent-commit "${OPTAGENT_REF}" \
-            --optagent-commit-url "https://github.com/${OPTAGENT_REPOSITORY}/commit/${OPTAGENT_REF}" \
-            --optagent-wheel-sha256 "${OPTAGENT_WHEEL_SHA256}" \
-            --benchmarks-commit "${BENCHMARKS_COMMIT}" \
-            --benchmarks-commit-url "https://github.com/${GITHUB_REPOSITORY}/commit/${BENCHMARKS_COMMIT}" \
-            --created-at "${CREATED_AT}"
+          ARTIFACT_ID="gha-${OPTAGENT_SHA:0:12}-${GITHUB_RUN_ID}"
+          ARTIFACT_DIR="artifacts/telemetry/${ARTIFACT_ID}"
+          python benchmark.py publish-telemetry \
+            --suite-run "${BENCHMARK_RUN_DIR}" \
+            --output-dir "${ARTIFACT_DIR}" \
+            --created-at "${CREATED_AT}" \
+            --optagent-commit "${OPTAGENT_SHA}" \
+            --benchmarks-commit "${BENCHMARKS_COMMIT}"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-      - name: Commit benchmark result updates
+          artifact_id = f"gha-{os.environ['OPTAGENT_SHA'][:12]}-{os.environ['GITHUB_RUN_ID']}"
+          latest = {
+              "schema_version": 1,
+              "artifact_id": artifact_id,
+              "artifact_path": f"artifacts/telemetry/{artifact_id}",
+              "created_at": os.environ["CREATED_AT"],
+              "optagent_commit": os.environ["OPTAGENT_SHA"],
+              "benchmarks_commit": os.environ["BENCHMARKS_COMMIT"],
+          }
+          path = Path("artifacts/telemetry/latest.json")
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps(latest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit telemetry artifact
         working-directory: benchmarks
         run: |
-          if git diff --quiet -- benchmarks/presentation/results benchmarks/presentation/aggregates; then
-            echo "No dashboard result changes to commit."
+          if git diff --quiet -- artifacts/telemetry; then
+            echo "No telemetry artifact changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add benchmarks/presentation/results benchmarks/presentation/aggregates
-          git commit -m "Add benchmark dashboard results for ${OPTAGENT_REF:0:12}"
+          git add artifacts/telemetry
+          git commit -m "Add telemetry artifact for ${OPTAGENT_SHA:0:12}"
           git pull --rebase origin "${GITHUB_REF_NAME}"
-          python benchmark.py generate-results-index
-          git add benchmarks/presentation/results/index.json benchmarks/presentation/aggregates
-          git commit --amend --no-edit
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Dispatch dashboard deploy
