@@ -1,180 +1,212 @@
 # OptAgent Benchmarks
 
-This package contains OptAgent benchmark case declarations, lightweight local
-case execution, telemetry metric derivation, and dashboard artifact rendering.
+`optagent-benchmarks` is the independently maintained benchmark repository for
+OptAgent. Benchmark maintainers work from released or supplied OptAgent wheels;
+access to the OptAgent source repository is not required.
 
-Run commands from the parent checkout with `PYTHONPATH=..`, or from an installed
-environment where `benchmarks` is importable.
+This repository owns:
 
-## Supported Entrypoints
+- benchmark cases, raw-data loaders, references, and independent verifiers;
+- lightweight case and suite runners;
+- authoritative capability evidence;
+- paired GA baseline/challenger comparisons;
+- telemetry-derived metrics and immutable dashboard artifacts.
 
-- `benchmarks.run`: lightweight single-case runner.
-- `benchmarks.authoritative_baseline`: isolated, provenance-bound release-gate baseline runner.
-- `benchmarks.strategy_comparison`: protocol-driven GA before/after runner,
-  artifact comparator, and explicit baseline promotion CLI.
-- `benchmarks.presentation.suite`: suite runner and run workspace producer.
-- `benchmarks.telemetry_metrics`: canonical telemetry-to-metrics library.
-- `benchmarks.telemetry_artifacts`: immutable artifact publisher for dashboard
-  consumption.
-- `benchmarks.presentation.dashboard`: dashboard markdown/JSON renderer from
-  published telemetry artifacts.
+It does not own OptAgent runtime semantics or solver implementation details.
 
-Legacy flat weighted-index scripts and ad-hoc diagnostics readers are intentionally
-removed. New statistics must start from OptAgent canonical runtime telemetry.
+## Documentation
 
-The authority rules for capability claims, independent solution verification,
-case lifecycle, and baseline provenance are documented in
-`../docs/benchmark-authority-spec.md`.
+- [Authority and capability](docs/authority.md)
+- [GA strategy comparison](docs/ga-comparison.md)
+- [Telemetry, metrics, and artifacts](docs/telemetry-artifacts.md)
+- [Case sources and maintenance](cases/README.md)
 
-Authoritative baseline directories are release evidence, not canonical
-dashboard telemetry artifacts. Dashboard publishers and renderers must never
-consume `benchmarks.authoritative_baseline` manifests or row streams.
+These files are canonical. Documentation in an OptAgent source checkout must
+link here instead of duplicating benchmark policy.
 
-## GA Strategy Comparison
+## Setup
 
-Run a preset baseline/challenger comparison without restating cases, seeds,
-budgets, or index weights:
+Clone the repository into a directory named `benchmarks`. The package name is
+`benchmarks`, so commands run from the repository directory with its parent on
+`PYTHONPATH`.
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.strategy_comparison run-pair \
-  --protocol ga_release_smoke_v1 \
-  --baseline-wheel /path/to/baseline.whl \
-  --challenger-wheel /path/to/challenger.whl \
-  --output-dir /tmp/ga-comparison
+git clone https://github.com/Dongbox/optagent-benchmarks.git benchmarks
+cd benchmarks
+python -m venv .venv
+./.venv/bin/python -m pip install --upgrade pip pytest ruff
 ```
 
-The versioned protocol, validity gates, four-dimensional Delta Index,
-statistics, artifact contract, and promotion workflow are documented in
-`../docs/ga-strategy-comparison.md`.
-
-## Case Runner
-
-List cases:
+For local case and suite runs, install the wheel being measured:
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run --list-cases
+./.venv/bin/python -m pip install /path/to/optagent.whl
 ```
 
-Run a local smoke case:
+Use a clean environment for release evidence. Do not install an editable
+OptAgent source checkout into that environment.
+
+All examples below run from the `benchmarks/` directory:
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.run \
+export PYTHONPATH=..
+```
+
+On Windows PowerShell use `$env:PYTHONPATH = ".."` and the corresponding
+`.venv\Scripts\python.exe` path.
+
+## Recommended Workflow
+
+```text
+single-case smoke
+    -> suite smoke
+    -> GA paired smoke (for GA changes)
+    -> calibration
+    -> frozen configuration
+    -> release holdout / authoritative baseline
+    -> explicit baseline promotion
+```
+
+### 1. Discover Cases
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.run --list-cases
+```
+
+The registry is the source of truth for case IDs, tiers, families, model styles,
+references, and lifecycle state. Source README files intentionally do not
+duplicate the complete inventory.
+
+### 2. Run One Case
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.run \
   --case tsplib_berlin52 \
   --strategy ga \
+  --model-style sequence_var_external_call \
   --no-download \
-  --max-iterations 1 \
-  --population-size 4 \
-  --time-limit-s 0.1
+  --max-iterations 10 \
+  --population-size 8 \
+  --time-limit-s 0.5
 ```
 
-Useful options:
+Use this entrypoint for case development and diagnosis. Its output is not an
+authoritative capability claim and must not be used to promote a strategy
+baseline.
 
-- `--case <benchmark_id>`: select one or more cases.
-- `--family <family>`: select cases by family.
-- `--tier <smoke|calibration|full|pressure>`: select by benchmark tier.
-- `--strategy <name>`: select one or more strategies.
-- `--model-style <style>`: select supported modeling variants.
-- `--no-download`: fail if required raw data is missing locally.
-- `--max-iterations`, `--time-limit-s`, `--population-size`, `--trace-limit`:
-  set local run budgets.
-
-Programmatic use:
-
-```python
-from benchmarks.run import LocalRunBudget, run_case
-
-rows = run_case(
-    "tsplib_berlin52",
-    strategies=("ga",),
-    allow_download=False,
-    budget=LocalRunBudget(max_iterations=1, population_size=4, time_limit_s=0.1),
-)
-```
-
-## Suite Runs
-
-Use `presentation.suite` when a run directory, inventory, row streams, reports,
-or CI-style execution metadata are needed:
+### 3. Run A Suite
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.presentation.suite \
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.presentation.suite \
   --family sequence_blackbox_tsp \
   --tier smoke \
   --strategy ga \
   --timestamp local-smoke
 ```
 
-Suite run directories are execution evidence. Dashboard-facing metrics should be
-published through telemetry artifacts, not by making dashboard code read runner
-private files directly.
+Suite workspaces are execution evidence. Publish telemetry artifacts before
+feeding results to the dashboard.
 
-## Five-Dimensional Metrics
+### 4. Compare A GA Change
 
-`benchmarks.telemetry_metrics` accepts OptAgent canonical runtime telemetry
-protobuf objects or JSON projections generated from protobuf. It rejects legacy
-flat diagnostics, runner-private rows, and dashboard summaries.
-
-Derived dimensions:
-
-- Effectiveness
-- Efficiency
-- Robustness
-- Anytime Performance
-- Statistical Validity
-
-Programmatic use:
-
-```python
-from benchmarks.telemetry_metrics import (
-    build_metric_dataset,
-    derive_five_dimensional_metrics,
-)
-
-dataset = build_metric_dataset(run_telemetry_payloads)
-metrics = derive_five_dimensional_metrics(dataset, references=best_known_objectives)
-```
-
-Publish immutable dashboard artifacts:
-
-```python
-from benchmarks.telemetry_artifacts import publish_telemetry_artifacts
-
-publish_telemetry_artifacts(
-    run_telemetry_payloads,
-    "docs/evals/benchmark-suite/artifacts/local-smoke",
-    references=best_known_objectives,
-)
-```
-
-Artifact directories contain:
-
-```text
-manifest.json
-rows.jsonl
-curves.jsonl
-throughput.jsonl
-five_dimensional_metrics.json
-statistical_tests.json
-dashboard.json
-```
-
-Render a dashboard from an artifact directory:
+Build or obtain baseline and challenger wheels, then run the frozen smoke
+protocol:
 
 ```bash
-PYTHONPATH=.. python -m benchmarks.presentation.dashboard \
-  docs/evals/benchmark-suite/artifacts/local-smoke \
-  --output-root /tmp/optagent-dashboard
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.strategy_comparison run-pair \
+  --protocol ga_release_smoke_v1 \
+  --baseline-wheel /path/to/baseline.whl \
+  --challenger-wheel /path/to/challenger.whl \
+  --baseline-commit <baseline-sha> \
+  --challenger-commit <challenger-sha> \
+  --output-dir /tmp/ga-smoke
 ```
 
-## Layout
+`run-pair` installs each wheel into a separate temporary environment. The
+benchmark maintainer does not need either OptAgent source checkout.
 
-- `cases/`: benchmark declarations, source-specific data loaders, and case
-  model builders.
-- `presentation/`: suite execution, dashboard rendering, and historical result
-  helpers.
-- `docs/`: current contracts and responsibility boundaries.
-- `tests/`: governance and telemetry regression tests.
+Smoke detects invalid evidence and obvious regressions but cannot return an
+`improved` promotion verdict. Continue with:
 
-Case source details live in each source directory, for example
-`cases/tsplib/README.md`, `cases/jsplib/README.md`, and
-`cases/custom/README.md`.
+```bash
+--protocol ga_calibration_v1
+--protocol ga_release_holdout_v1
+```
+
+Use a new empty output directory for each run. Read:
+
+```text
+comparison/feedback.md
+comparison/delta_index.json
+comparison/dimension_metrics.json
+comparison/statistical_evidence.json
+```
+
+See [GA strategy comparison](docs/ga-comparison.md) for the Delta Index,
+validity gates, statistical rules, and promotion process.
+
+### 5. Produce An Authoritative Baseline
+
+Use an exact wheel and a clean empty output directory:
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.authoritative_baseline \
+  --output-dir /artifact-storage/authoritative-baseline \
+  --wheel /path/to/optagent.whl \
+  --python-executable ./.venv/bin/python \
+  --allow-download \
+  --require-authoritative
+```
+
+This command installs the wheel into an isolated child environment and records
+wheel, benchmark, platform, backend, case, and evidence checksums. See
+[Authority and capability](docs/authority.md).
+
+## Telemetry And Dashboard Artifacts
+
+Publish canonical runtime telemetry:
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.telemetry_artifacts \
+  /path/to/run-telemetry.json \
+  --output-dir /tmp/telemetry-artifacts \
+  --reference toy-001=10.0
+```
+
+Render a dashboard from the immutable artifact:
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.presentation.dashboard \
+  /tmp/telemetry-artifacts \
+  --output-root /tmp/telemetry-dashboard
+```
+
+Dashboard code must not read authority artifacts, runner workspaces, raw logs,
+or Git-managed historical result trees. See
+[Telemetry, metrics, and artifacts](docs/telemetry-artifacts.md).
+
+## Development
+
+Run the complete repository suite:
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m pytest -q
+./.venv/bin/ruff check .
+./.venv/bin/python -m compileall cases presentation *.py
+```
+
+For case changes, also run `--list-cases` and one small `--no-download` case in
+the affected family.
+
+Generated benchmark output and downloaded raw caches are not documentation.
+Do not commit them unless the case contract explicitly governs them as source
+evidence.
+
+## Repository Layout
+
+```text
+cases/          case declarations, loaders, references, verifiers, raw caches
+docs/           benchmark-owned policy and data contracts
+presentation/   suite workspaces, dashboard rendering, historical adapters
+tests/          governance, artifact, metric, and case regression tests
+```

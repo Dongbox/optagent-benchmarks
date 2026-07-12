@@ -1,37 +1,52 @@
-# cases 目录说明
+# Benchmark Cases
 
-`cases/` 是 benchmark 的 case 声明层。这里定义每个可运行实例的元数据、问题类型、规模信息、建模方式、参考值和结果解码逻辑；不放 dashboard 结果。
+`cases/` owns benchmark declarations, source loaders, governed references,
+model builders, solution decoding, and independent verification.
 
-## 目录分层
+## Source Collections
 
-```text
-cases/
-  README.md
-  tsplib/
-  jsplib/
-  psplib/
-  qaplib/
-  miplib2017/
-  custom/
+- [TSPLIB](tsplib/README.md): symmetric TSP and sequence-model variants
+- [QAPLIB](qaplib/README.md): quadratic assignment
+- [JSPLIB](jsplib/README.md): job-shop scheduling
+- [FJSPLIB](fjsplib/README.md): flexible job-shop scheduling
+- [PSPLIB](psplib/README.md): resource-constrained project scheduling
+- [MIPLIB 2017](miplib2017/README.md): exact linear MIP track
+- [Custom](custom/README.md): benchmark-owned domain cases
+
+## Inventory
+
+Do not maintain a complete case list in Markdown. Query the registry:
+
+```bash
+PYTHONPATH=.. ./.venv/bin/python -m benchmarks.run --list-cases
 ```
 
-每个来源目录都应提供自己的 `README.md`。来源目录下的 README 会继续说明该来源包含哪些 case，以及每个 case 对应的问题描述、数据含义和使用方式。
+The registry owns IDs, families, tiers, model styles, lifecycle state, size,
+references, and data paths. Source README files describe stable source and
+format semantics only.
 
-## 各来源入口
+## Layout
 
-- [TSPLIB](tsplib/README.md)
-- [JSPLIB](jsplib/README.md)
-- [PSPLIB](psplib/README.md)
-- [QAPLIB](qaplib/README.md)
-- [MIPLIB 2017](miplib2017/README.md)
-- [Custom](custom/README.md)
+```text
+cases/<source>/<problem>/
+    __init__.py       source aggregation
+    _domain.py        shared parsing/model/verification logic when needed
+    <case>.py         declarations
+    raw/              governed source files or local download cache
+```
 
-## 组织约定
+Public sources and custom cases use the same `BenchmarkCase` contract. Raw
+caches are not documentation and should be committed only when licensing and
+offline release-gate requirements permit it.
 
-- 公开 benchmark 通常按 `cases/<来源>/<问题类型>/` 组织。
-- 自定义 benchmark 放在 `cases/custom/` 下，优先表达问题建模和实例规模。
-- `raw/` 目录保存原始实例缓存或来源文件，不应把它当作文档入口。
+## Maintenance Rules
 
-## 发现链路
-
-`benchmarks.run` 不逐个 import 具体 case，而是通过 `cases/registry.py` 发现来源包，再由来源包聚合各实例模块的 `CASES`。
+- IDs are lowercase and source-prefixed, for example `tsplib_berlin52`.
+- A reference states its provenance and whether it is an optimum, bound, or
+  best-known value.
+- Independent verification must not trust solver-reported feasibility or
+  objective fields.
+- Case-specific tuning and benchmark-ID strategy special cases are prohibited.
+- New release-gate cases require stable local data and evidence checksums.
+- Registry discovery flows through `cases/registry.py`; runners do not import
+  every case module manually.

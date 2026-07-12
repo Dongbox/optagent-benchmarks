@@ -1,16 +1,13 @@
-# Historical Benchmark Results
+# Historical Results
 
-This directory stores legacy Git-managed benchmark run summaries and generated
-indexes used by older dashboard flows.
+This directory contains legacy Git-managed benchmark summaries used by older
+dashboard flows.
 
-The current five-dimensional telemetry dashboard path is:
+Do not add current telemetry metrics here and do not edit generated indexes or
+aggregates by hand. New dashboard data flows through:
 
 ```text
-benchmarks.telemetry_artifacts -> artifact directory -> benchmarks.presentation.dashboard
+canonical telemetry -> telemetry_artifacts -> immutable artifact -> dashboard
 ```
 
-Do not add new five-dimensional metrics here. Publish immutable telemetry
-artifact directories instead.
-
-The existing files remain only as historical static facts. Do not edit generated
-`index.json` or aggregate files by hand.
+See [Telemetry, metrics, and artifacts](../../docs/telemetry-artifacts.md).
