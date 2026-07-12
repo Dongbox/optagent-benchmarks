@@ -23,6 +23,7 @@ from benchmarks.telemetry_artifacts import (
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "telemetry" / "phase0"
+PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "benchmarks"
 
 
 def _fixture(name: str) -> dict:
@@ -162,6 +163,21 @@ def test_presentation_dashboard_reads_only_published_artifacts(tmp_path):
         STATISTICAL_TESTS_JSON,
         STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
     ]
+
+
+def test_public_telemetry_modules_do_not_import_legacy_scoring():
+    public_modules = [
+        PACKAGE_ROOT / "telemetry_metrics.py",
+        PACKAGE_ROOT / "telemetry_artifacts.py",
+        PACKAGE_ROOT / "presentation" / "dashboard.py",
+    ]
+
+    for path in public_modules:
+        source = path.read_text(encoding="utf-8")
+        assert "from benchmarks.scoring" not in source
+        assert "import benchmarks.scoring" not in source
+        assert "from benchmarks.scoring_phase2" not in source
+        assert "import benchmarks.scoring_phase2" not in source
 
 
 def test_manifest_checksum_validation_rejects_modified_artifact(tmp_path):
