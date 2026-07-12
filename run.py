@@ -302,6 +302,7 @@ def _solver_solution_summary(solution: Any) -> dict[str, Any]:
         "objective": getattr(solution, "objective_value", None),
         "metadata": dict(getattr(solution, "metadata", {}) or {}),
         "diagnostics": dict(getattr(solution, "diagnostics", {}) or {}),
+        "telemetry": dict(getattr(solution, "telemetry", {}) or {}),
     }
 
 
@@ -382,6 +383,7 @@ def _result_row(
         "time_to_best_seconds": _time_to_best(dict(summary.get("metadata") or {}), elapsed_seconds),
         "metadata": metadata,
         "case_size": dict(case.size),
+        "telemetry": dict(summary.get("telemetry") or {}),
     }
     for key, value in summary.items():
         if key not in row and key not in {
@@ -391,6 +393,7 @@ def _result_row(
             "feasible",
             "objective",
             "reference_objective",
+            "telemetry",
         }:
             row[key] = value
     return row
