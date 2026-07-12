@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
@@ -186,6 +187,24 @@ def test_public_telemetry_modules_do_not_import_legacy_scoring():
         }
 
 
+def test_import_parser_resolves_relative_benchmark_modules(tmp_path):
+    package_root = tmp_path / "benchmarks"
+    cases = [
+        (package_root / "telemetry_metrics.py", "from . import scoring"),
+        (package_root / "presentation" / "dashboard.py", "from ..scoring import legacy"),
+        (package_root / "presentation" / "dashboard.py", "from .. import scoring"),
+    ]
+
+    for path, source in cases:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(source, encoding="utf-8")
+        imported_modules = _imported_modules(path, package_root=package_root)
+        assert any(
+            module == "benchmarks.scoring" or module.startswith("benchmarks.scoring.")
+            for module in imported_modules
+        )
+
+
 def test_manifest_checksum_validation_rejects_modified_artifact(tmp_path):
     output_dir = tmp_path / "artifacts"
     publish_telemetry_artifacts(
@@ -213,12 +232,17 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _imported_modules(path: Path) -> set[str]:
+def _imported_modules(path: Path, *, package_root: Path = PACKAGE_ROOT) -> set[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    relative_module = path.relative_to(package_root.parent).with_suffix("")
+    package = ".".join(relative_module.parts[:-1])
     modules: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module is not None:
-            modules.update(f"{node.module}.{alias.name}" for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if node.level > 0:
+                module = importlib.util.resolve_name(f"{'.' * node.level}{module}", package)
+            modules.update(f"{module}.{alias.name}" for alias in node.names)
     return modules
