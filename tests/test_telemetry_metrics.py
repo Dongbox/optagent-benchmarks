@@ -123,6 +123,7 @@ def test_legacy_flat_diagnostics_are_rejected():
         {"metadata": {"objective": 1.0}, "diagnostics": {"runtime_ms": 10}},
         {"benchmark_schema_version": 2, "kind": "strategy_run", "objective": 1.0},
         {"run_id": "old-row", "strategy": "ga", "objective": 1.0},
+        {"dashboard": {"summary": []}},
     ]
 
     for payload in legacy_inputs:
