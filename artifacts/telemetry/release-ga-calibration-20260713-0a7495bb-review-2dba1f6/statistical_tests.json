@@ -1,0 +1,17 @@
+{
+  "omnibus": {
+    "availability": "insufficient_data",
+    "provenance": [
+      "run-telemetry.pb",
+      "rows",
+      "five_dimensional_metrics"
+    ],
+    "reason": "requires_three_strategies",
+    "source": "benchmarks",
+    "unit": "",
+    "value": null
+  },
+  "pairwise": [],
+  "reason": "requires_at_least_two_strategies",
+  "status": "insufficient_data"
+}

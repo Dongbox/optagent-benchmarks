@@ -1,0 +1,8 @@
+{
+  "artifact_id": "release-ga-calibration-20260713-0a7495bb-review-2dba1f6",
+  "artifact_path": "artifacts/reviews/release-ga-calibration-20260713-0a7495bb-review-2dba1f6",
+  "benchmarks_commit": "2dba1f693819ed73b04c401a3f5a9c05ef151ed3",
+  "created_at": "2026-07-13T03:02:12Z",
+  "optagent_commit": "0a7495bb03aec5331ddea71bccf66a2e0e2ef128",
+  "schema_version": 1
+}
