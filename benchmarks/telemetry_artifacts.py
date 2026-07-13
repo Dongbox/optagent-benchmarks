@@ -48,6 +48,7 @@ def publish_telemetry_artifacts(
     *,
     references: Mapping[str, float | Mapping[str, Any]] | None = None,
     targets: Mapping[str, float] | None = None,
+    benchmark_contexts: Sequence[Mapping[str, Any] | None] | None = None,
     source_label: str = "run-telemetry.pb",
     created_at: str | None = None,
     optagent_commit: str | None = None,
@@ -59,8 +60,16 @@ def publish_telemetry_artifacts(
     if out.exists() and any(out.iterdir()):
         raise FileExistsError(f"telemetry artifact output directory is not empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
-    dataset = build_metric_dataset(payloads, provenance=[source_label])
-    metrics = derive_five_dimensional_metrics(dataset, references=references, targets=targets)
+    context_list = list(benchmark_contexts) if benchmark_contexts is not None else None
+    dataset = build_metric_dataset(payloads, provenance=[source_label], benchmark_contexts=context_list)
+    aligned_contexts = context_list if context_list is not None else [None] * len(dataset.rows)
+    suite_references = {
+        row.instance_id: float(context["reference_objective"])
+        for row, context in zip(dataset.rows, aligned_contexts, strict=True)
+        if context is not None and context.get("reference_objective") is not None
+    }
+    effective_references = {**suite_references, **(references or {})}
+    metrics = derive_five_dimensional_metrics(dataset, references=effective_references, targets=targets)
     statistical_tests = metrics["statistical_validity"]
     strategy_feedback = derive_strategy_optimization_feedback(dataset, metrics)
     effective_created_at = created_at or datetime.now(timezone.utc).isoformat()
@@ -489,18 +498,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("provide telemetry JSON files or --suite-run")
 
     payloads = [_read_json(path) for path in args.telemetry_json]
-    suite_references: dict[str, float] = {}
+    benchmark_contexts: list[Mapping[str, Any] | None] = [None] * len(payloads)
     if args.suite_run:
-        suite_payloads, suite_references = _load_suite_telemetry(args.suite_run)
+        suite_payloads, suite_contexts = _load_suite_telemetry(args.suite_run)
         payloads.extend(suite_payloads)
+        benchmark_contexts.extend(suite_contexts)
     if not payloads:
         parser.error("no telemetry payloads were found")
-    references = {**suite_references, **_parse_key_values(args.reference)}
     result = publish_telemetry_artifacts(
         payloads,
         args.output_dir,
-        references=references,
+        references=_parse_key_values(args.reference),
         targets=_parse_key_values(args.target),
+        benchmark_contexts=benchmark_contexts,
         source_label="suite-run/rows.jsonl" if args.suite_run else "run-telemetry.pb",
         created_at=args.created_at,
         optagent_commit=args.optagent_commit,
@@ -518,13 +528,15 @@ def _parse_key_values(values: Sequence[str]) -> dict[str, float]:
     return parsed
 
 
-def _load_suite_telemetry(run_dir: str | Path) -> tuple[list[dict[str, Any]], dict[str, float]]:
+def _load_suite_telemetry(
+    run_dir: str | Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     rows_path = Path(run_dir) / "rows.jsonl"
     if not rows_path.is_file():
         raise FileNotFoundError(f"suite rows not found: {rows_path}")
 
     payloads: list[dict[str, Any]] = []
-    references: dict[str, float] = {}
+    contexts: list[dict[str, Any]] = []
     for line in rows_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
@@ -535,12 +547,15 @@ def _load_suite_telemetry(run_dir: str | Path) -> tuple[list[dict[str, Any]], di
                 raise ValueError(f"suite row is missing canonical telemetry: {row.get('benchmark_id') or 'unknown'}")
             telemetry = _failed_suite_row_telemetry(row)
         payloads.append(telemetry)
-        reference = row.get("reference_objective")
-        instance = telemetry.get("instance")
-        instance_id = instance.get("id") if isinstance(instance, dict) else None
-        if instance_id and reference is not None:
-            references[str(instance_id)] = float(reference)
-    return payloads, references
+        context: dict[str, Any] = {}
+        if row.get("benchmark_id"):
+            context["instance_id"] = str(row["benchmark_id"])
+        if row.get("family"):
+            context["family"] = str(row["family"])
+        if row.get("reference_objective") is not None:
+            context["reference_objective"] = float(row["reference_objective"])
+        contexts.append(context)
+    return payloads, contexts
 
 
 def _failed_suite_row_telemetry(row: Mapping[str, Any]) -> dict[str, Any]:

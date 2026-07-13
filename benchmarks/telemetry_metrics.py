@@ -157,13 +157,18 @@ def build_metric_dataset(
     payloads: Iterable[Any],
     *,
     provenance: Sequence[str] | None = None,
+    benchmark_contexts: Sequence[Mapping[str, Any] | None] | None = None,
 ) -> MetricDataset:
     """Normalize canonical telemetry payloads into benchmark rows and curves."""
 
+    payload_list = list(payloads)
+    context_list = list(benchmark_contexts) if benchmark_contexts is not None else [None] * len(payload_list)
+    if len(context_list) != len(payload_list):
+        raise ValueError("telemetry contexts must align one-to-one with payloads")
     dataset = MetricDataset(provenance=list(provenance or ["run-telemetry.pb"]))
-    for index, payload in enumerate(payloads):
+    for index, (payload, context) in enumerate(zip(payload_list, context_list, strict=True)):
         telemetry = load_run_telemetry(payload)
-        row = _build_row(telemetry, index)
+        row = _build_row(telemetry, index, context=context)
         dataset.rows.append(row)
         dataset.curves.extend(_build_curves(telemetry, row))
         dataset.source_count += 1
@@ -788,7 +793,12 @@ def time_to_target(curve: Sequence[CurvePoint], target: float, objective_sense: 
     return None
 
 
-def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
+def _build_row(
+    telemetry: Mapping[str, Any],
+    index: int,
+    *,
+    context: Mapping[str, Any] | None = None,
+) -> MetricRow:
     schema = telemetry["schema"]
     identity = telemetry["identity"]
     instance = telemetry["instance"]
@@ -800,7 +810,13 @@ def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
     trace_overflow = telemetry.get("trace_overflow") if isinstance(telemetry.get("trace_overflow"), Mapping) else {}
 
     strategy = str(identity.get("strategy") or "unknown_strategy")
-    instance_id = str(instance.get("id") or instance.get("name") or f"instance-{index}")
+    benchmark_context = context or {}
+    instance_id = str(
+        instance.get("id")
+        or benchmark_context.get("instance_id")
+        or instance.get("name")
+        or f"instance-{index}"
+    )
     seed = _parse_int(identity.get("seed"))
     run_id = f"{strategy}:{instance_id}:{seed if seed is not None else 'seedless'}:{index}"
     objective = _telemetry_value(outcome.get("objective_value"))
@@ -816,7 +832,7 @@ def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
         instance_id=instance_id,
         instance_name=str(instance.get("name") or ""),
         dataset=str(instance.get("dataset") or ""),
-        family=str(instance.get("family") or ""),
+        family=str(instance.get("family") or benchmark_context.get("family") or ""),
         objective_sense=str(outcome.get("objective_sense") or "minimize").lower(),
         status=str(outcome.get("status") or ""),
         feasible=bool(outcome.get("feasible", False)),
