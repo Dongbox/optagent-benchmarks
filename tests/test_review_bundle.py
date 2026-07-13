@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from benchmarks.review_bundle import (
+    ANYTIME_CHECKPOINTS,
     _aggregate_curves,
     _build_evidence,
     load_review_bundle,
@@ -264,11 +265,13 @@ def test_comparison_rejects_experiment_identity_drift(tmp_path: Path) -> None:
 
 def test_anytime_aggregation_does_not_use_future_points() -> None:
     rows = [{"run_id": "run-1", "time_budget_s": 1.0}]
-    curves = [{"run_id": "run-1", "elapsed_s": 0.2, "gap_to_reference": 0.5}]
+    curves = [{"run_id": "run-1", "elapsed_s": 0.03, "gap_to_reference": 0.5}]
 
     result = _aggregate_curves({"run-1"}, curves, {"run-1": rows[0]})
 
-    assert [point["budget_fraction"] for point in result] == [index / 10 for index in range(2, 11)]
+    assert [point["budget_fraction"] for point in result] == [
+        checkpoint for checkpoint in ANYTIME_CHECKPOINTS if checkpoint >= 0.03
+    ]
 
 
 def test_target_miss_evidence_hides_hits_and_unknown_targets() -> None:

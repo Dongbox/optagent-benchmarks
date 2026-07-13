@@ -29,6 +29,8 @@ CORE_METRICS = {
     "candidate_throughput": ("efficiency", "candidate_throughput_per_s", "higher", "candidates/s"),
 }
 
+ANYTIME_CHECKPOINTS = (0.0025, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.5, 1.0)
+
 
 def publish_review_bundle(
     current_artifact: str | Path,
@@ -463,9 +465,8 @@ def _aggregate_curves(
         run_id = str(point.get("run_id"))
         if run_id in run_ids and point.get("gap_to_reference") is not None:
             by_run[run_id].append(point)
-    checkpoints = [index / 10 for index in range(11)]
     result: list[dict[str, Any]] = []
-    for checkpoint in checkpoints:
+    for checkpoint in ANYTIME_CHECKPOINTS:
         values: list[float] = []
         for run_id, points in by_run.items():
             ordered = sorted(points, key=lambda item: float(item.get("elapsed_s") or 0.0))
