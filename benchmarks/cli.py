@@ -12,6 +12,7 @@ def _commands() -> dict[str, Command]:
     from benchmarks.authoritative_baseline import main as authority_main
     from benchmarks.presentation.dashboard import main as dashboard_main
     from benchmarks.presentation.suite import main as suite_main
+    from benchmarks.review_bundle import main as publish_review_main
     from benchmarks.run import main as run_main
     from benchmarks.strategy_comparison_cli import main as compare_ga_main
     from benchmarks.telemetry_artifacts import main as publish_telemetry_main
@@ -23,6 +24,7 @@ def _commands() -> dict[str, Command]:
         "authority": ("Produce an authoritative release-gate baseline.", authority_main),
         "compare-ga": ("Run, compare, or promote paired GA evidence.", compare_ga_main),
         "publish-telemetry": ("Publish canonical telemetry metric artifacts.", publish_telemetry_main),
+        "publish-review": ("Publish a static strategy review bundle.", publish_review_main),
         "dashboard": ("Render a dashboard from immutable telemetry artifacts.", dashboard_main),
     }
 

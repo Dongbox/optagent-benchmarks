@@ -19,6 +19,7 @@ OptAgent wheel，无需访问 OptAgent 源代码仓库。
 | `compare-ga` | GA 开发/评审人员手动；发布 CI 可自动 | 比较 baseline/challenger wheel，形成可审计的策略结论。 |
 | `authority` | 发布负责人或发布 CI | 发布前验证完整能力矩阵；普通开发不运行完整 authority。 |
 | `publish-telemetry` | CI 自动 | 从 suite 工作区发布不可变 telemetry artifact。开发人员只在排查指标时手动运行。 |
+| `publish-review` | CI 自动 | 从 telemetry artifact 发布 Dashboard 使用的静态 review bundle。 |
 | `dashboard` | CI 自动 | 校验并渲染 telemetry artifact。开发人员只在本地预览时手动运行。 |
 
 推荐开发循环：
@@ -28,7 +29,7 @@ OptAgent wheel，无需访问 OptAgent 源代码仓库。
   -> run（开发人员手动）
   -> 必要时 suite（开发人员手动）
   -> push
-  -> suite + publish-telemetry（CI 自动）
+  -> suite + publish-telemetry + publish-review（CI 自动）
   -> dashboard 部署（CI 自动）
 ```
 
@@ -212,6 +213,22 @@ CI 使用方式：
 
 产物包括 `manifest.json`、`rows.jsonl`、`curves.jsonl`、五维指标、统计证据、策略反馈和
 `dashboard.json`。详细契约见 [Telemetry、指标与 Artifact](docs/telemetry-artifacts.md)。
+
+### `publish-review`
+
+发布 Dashboard 直接消费的静态策略评审 bundle。单策略结果始终可用；提供兼容的 baseline
+telemetry artifact 时，会额外发布 factual comparison，不包含 verdict、promotable 或综合分。
+
+```bash
+./.venv/bin/python benchmark.py publish-review \
+  --current-artifact /artifacts/telemetry/current \
+  --baseline-artifact /artifacts/telemetry/approved-baseline \
+  --output-dir /artifacts/reviews/current \
+  --protocol-id ga_calibration_v1
+```
+
+省略 `--baseline-artifact` 时，bundle 会记录 `baseline_not_packaged`，Dashboard 的基线比较
+模式只显示缺失原因。
 
 ### `dashboard`
 

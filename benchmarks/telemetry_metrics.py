@@ -84,6 +84,9 @@ class MetricRow:
     trace_truncated: bool
     trace_event_count: int
     source_schema_version: int
+    max_iterations: int | None = None
+    population_size: int | None = None
+    thread_count: int | None = None
 
 
 @dataclass(frozen=True)
@@ -849,6 +852,9 @@ def _build_row(
         attempted_moves=_value_as_int(search.get("attempted_moves")),
         restarts=_value_as_int(search.get("restarts")),
         time_budget_s=_value_as_float(budget.get("time_limit_s")),
+        max_iterations=_value_as_int(budget.get("max_iterations")),
+        population_size=_value_as_int(budget.get("population_size")),
+        thread_count=_parse_int(identity.get("thread_count")),
         trace_truncated=bool(trace_overflow.get("trace_truncated", False)),
         trace_event_count=_parse_int(trace_overflow.get("emitted_event_count")) or 0,
         source_schema_version=_parse_int(schema.get("schema_version")) or SUPPORTED_SCHEMA_VERSION,

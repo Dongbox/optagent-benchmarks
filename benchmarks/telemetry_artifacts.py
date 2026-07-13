@@ -74,8 +74,17 @@ def publish_telemetry_artifacts(
     strategy_feedback = derive_strategy_optimization_feedback(dataset, metrics)
     effective_created_at = created_at or datetime.now(timezone.utc).isoformat()
 
-    rows = [row_to_artifact(row) for row in dataset.rows]
-    curves = [curve_to_artifact(point) for point in dataset.curves]
+    effective_targets = {**effective_references, **(targets or {})}
+    rows = [row_to_artifact(row, references=effective_references, targets=effective_targets) for row in dataset.rows]
+    row_by_run_id = {row.run_id: row for row in dataset.rows}
+    curves = [
+        curve_to_artifact(
+            point,
+            reference=effective_references.get(point.instance_id),
+            objective_sense=row_by_run_id[point.run_id].objective_sense,
+        )
+        for point in dataset.curves
+    ]
     throughput = build_throughput_rows(dataset)
     dashboard = build_dashboard_artifact(
         rows=rows,
@@ -118,11 +127,31 @@ def load_published_artifacts(artifact_dir: str | Path) -> dict[str, Any]:
 
     root = Path(artifact_dir)
     manifest = _read_json(root / MANIFEST_JSON)
-    for name, entry in manifest.get("artifacts", {}).items():
+    if manifest.get("manifest_schema_version") != ARTIFACT_SCHEMA_VERSION:
+        raise ValueError("unsupported telemetry artifact manifest schema")
+    required = {
+        ROWS_JSONL,
+        CURVES_JSONL,
+        THROUGHPUT_JSONL,
+        METRICS_JSON,
+        STATISTICAL_TESTS_JSON,
+        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
+        DASHBOARD_JSON,
+        DASHBOARD_MD,
+    }
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, Mapping) or set(artifacts) != required:
+        raise ValueError("telemetry artifact manifest does not declare the complete artifact set")
+    for name in sorted(required):
+        entry = artifacts[name]
         path = root / name
+        if entry.get("path") != name:
+            raise ValueError(f"invalid telemetry artifact path: {name}")
         expected = entry.get("sha256")
-        if expected and _sha256(path) != expected:
+        if not expected or _sha256(path) != expected:
             raise ValueError(f"artifact checksum mismatch: {name}")
+        if path.stat().st_size != entry.get("bytes"):
+            raise ValueError(f"artifact byte count mismatch: {name}")
     return {
         "manifest": manifest,
         "rows": _read_jsonl(root / ROWS_JSONL),
@@ -135,24 +164,56 @@ def load_published_artifacts(artifact_dir: str | Path) -> dict[str, Any]:
     }
 
 
-def row_to_artifact(row: MetricRow) -> dict[str, Any]:
+def row_to_artifact(
+    row: MetricRow,
+    *,
+    references: Mapping[str, float] | None = None,
+    targets: Mapping[str, float] | None = None,
+) -> dict[str, Any]:
     data = asdict(row)
+    reference = (references or {}).get(row.instance_id)
+    target = (targets or {}).get(row.instance_id)
     return {
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "source_artifact": "run-telemetry.pb",
         "provenance": ["run-telemetry.pb", ROWS_JSONL],
+        "reference_objective": reference,
+        "gap_to_reference": _reference_gap(row.objective, reference, row.objective_sense),
+        "target_objective": target,
+        "target_hit": _meets_target(row.objective, target, row.objective_sense),
         **data,
     }
 
 
-def curve_to_artifact(point: CurvePoint) -> dict[str, Any]:
+def curve_to_artifact(
+    point: CurvePoint,
+    *,
+    reference: float | None = None,
+    objective_sense: str = "minimize",
+) -> dict[str, Any]:
     data = asdict(point)
     return {
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "source_artifact": ROWS_JSONL,
         "provenance": ["run-telemetry.pb", ROWS_JSONL, CURVES_JSONL],
+        "gap_to_reference": _reference_gap(point.objective, reference, objective_sense),
         **data,
     }
+
+
+def _reference_gap(objective: float | None, reference: float | None, objective_sense: str) -> float | None:
+    if objective is None or reference is None:
+        return None
+    if reference == 0:
+        return abs(objective - reference)
+    delta = reference - objective if objective_sense == "maximize" else objective - reference
+    return delta / abs(reference)
+
+
+def _meets_target(objective: float | None, target: float | None, objective_sense: str) -> bool | None:
+    if objective is None or target is None:
+        return None
+    return objective >= target if objective_sense == "maximize" else objective <= target
 
 
 def build_throughput_rows(dataset: MetricDataset) -> list[dict[str, Any]]:

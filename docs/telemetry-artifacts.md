@@ -86,6 +86,30 @@ SHA-256 和字节数。消费者必须先校验 manifest，再读取其他文件
 Authority artifact 与 GA comparison artifact 属于不同证据类型，不能作为 telemetry dashboard
 输入。
 
+## Review Bundle
+
+`publish-review` 将已校验的 telemetry artifact 转换为静态 Dashboard 契约：
+
+```text
+review-index.json
+overview.json
+families.json
+anytime.json
+evidence.json
+runs.jsonl
+comparison.json        # 提供 baseline 时可选
+```
+
+- `overview.json`：策略身份、协议、预算、运行范围和五个核心指标；
+- `families.json`：每个 family 独立计算的质量、命中率、稳定性和吞吐率；
+- `anytime.json`：benchmark 预计算的 median 与 P25-P75 聚合曲线；
+- `evidence.json`：绝对 gap、seed 波动和 target miss 的 case 证据；
+- `runs.jsonl`：运行记录展示字段；
+- `comparison.json`：兼容 baseline 下的 factual delta、family comparison 和配对证据。
+
+Dashboard 不展示 comparison 流程中的 verdict、promotable 或综合指数，也不从 rows 自行重算
+family、curve 或 baseline 差异。
+
 ## CI 发布
 
 CI 从 suite 工作区发布：
@@ -98,8 +122,9 @@ CI 从 suite 工作区发布：
   --benchmarks-commit BENCHMARKS_SHA
 ```
 
-每次运行使用新的 `RUN_ID`。`artifacts/telemetry/latest.json` 只负责指向最新不可变目录，
-Dashboard 部署 workflow 根据该指针复制 artifact。
+每次运行使用新的 `RUN_ID`。CI 先发布 `artifacts/telemetry/RUN_ID`，再发布
+`artifacts/reviews/RUN_ID`。Dashboard 部署 workflow 只读取 `artifacts/reviews/latest.json`
+指向的静态 review bundle。
 
 本地渲染：
 

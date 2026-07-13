@@ -26,6 +26,7 @@ def test_public_command_inventory_is_small_and_current() -> None:
         "authority",
         "compare-ga",
         "publish-telemetry",
+        "publish-review",
         "dashboard",
     }
 
