@@ -3,13 +3,14 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict, dataclass, replace
 import json
+from math import isclose
 from time import perf_counter
 from typing import Any, Iterable, Sequence
 
 from benchmarks.bootstrap import prefer_local_development_paths
 from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row, ensure_benchmark_case
 from benchmarks.cases.common import objective_gap, summarize_solution_metadata
-from benchmarks.cases.registry import benchmark_cases
+from benchmarks.cases.registry import benchmark_cases, default_model_styles_for_family
 from benchmarks.presentation.common import strategy_profile_name
 
 
@@ -110,8 +111,8 @@ def run_benchmark_case(
     if case.family == "exact_linear_mip":
         strategy_names = strategy_names or ("optx",)
     model_style_values = tuple(model_styles or ())
-    if not model_style_values and case.family == "sequence_blackbox_tsp":
-        model_style_values = ("sequence_var_external_call",)
+    if not model_style_values:
+        model_style_values = default_model_styles_for_family(case.family)
     if not model_style_values:
         model_style_values = (None,)
 
@@ -225,7 +226,12 @@ def _run_single_strategy(
             solver_summary,
             _case_solution_metrics(case, solution, build_kwargs),
         )
-        summary = _apply_solution_verification(summary, verification)
+        summary = _apply_solution_verification(
+            summary,
+            verification,
+            solver_reported_feasible=solver_summary.get("feasible"),
+            solver_reported_objective=solver_summary.get("objective"),
+        )
         summary.update(observation_evidence)
         if not observation_evidence["observation_verification_passed"]:
             summary["status"] = "observation_verification_failed"
@@ -315,7 +321,11 @@ def _verify_observation_snapshots(
             feasible=bool(snapshot.feasible),
         )
         verification = case.verify_solution(snapshot_solution, **build_kwargs)
-        passed = bool(verification.passed)
+        solver_reported_objective = (
+            float(next(iter(snapshot.objective_values.values()))) if snapshot.objective_values else None
+        )
+        consistency_violation = _objective_consistency_violation(solver_reported_objective, verification)
+        passed = bool(verification.passed) and consistency_violation is None
         all_passed = all_passed and passed
         snapshots[str(snapshot_id)] = {
             "snapshot_id": str(snapshot_id),
@@ -324,15 +334,14 @@ def _verify_observation_snapshots(
             "constraint_values": {str(key): _json_value(value) for key, value in snapshot.constraint_values.items()},
             "solver_reported_feasible": bool(snapshot.feasible),
             "solver_reported_violation_count": int(snapshot.violation_count),
-            "solver_reported_objective": (
-                float(next(iter(snapshot.objective_values.values()))) if snapshot.objective_values else None
-            ),
+            "solver_reported_objective": solver_reported_objective,
             "incumbent_found_at_s": float(snapshot.incumbent_found_at_s),
-            "verification_status": verification.status,
+            "verification_status": "failed" if consistency_violation is not None else verification.status,
             "verification_passed": passed,
             "verification_feasible": bool(verification.feasible) if passed else None,
             "verification_objective": verification.objective if passed else None,
-            "verification_violations": list(verification.violations),
+            "verification_violations": list(verification.violations)
+            + ([consistency_violation] if consistency_violation is not None else []),
         }
     observations = [
         {
@@ -384,14 +393,39 @@ def _merge_solution_metrics(solver_summary: dict[str, Any], case_metrics: dict[s
     return summary
 
 
-def _apply_solution_verification(summary: dict[str, Any], verification: Any) -> dict[str, Any]:
+def _objective_consistency_violation(solver_reported_objective: Any, verification: Any) -> str | None:
+    if not bool(verification.passed) or verification.objective is None or solver_reported_objective is None:
+        return None
+    try:
+        reported = float(solver_reported_objective)
+        verified = float(verification.objective)
+    except (TypeError, ValueError):
+        return "solver_objective_mismatch:non_numeric"
+    if isclose(reported, verified, rel_tol=1e-9, abs_tol=1e-9):
+        return None
+    return f"solver_objective_mismatch:reported={reported:g}:verified={verified:g}"
+
+
+def _apply_solution_verification(
+    summary: dict[str, Any],
+    verification: Any,
+    *,
+    solver_reported_feasible: Any | None = None,
+    solver_reported_objective: Any | None = None,
+) -> dict[str, Any]:
     verified = dict(summary)
-    verified["solver_reported_feasible"] = bool(summary.get("feasible"))
-    verified["solver_reported_objective"] = summary.get("objective")
-    verified["verification_status"] = verification.status
-    verified["verification_passed"] = bool(verification.passed)
-    verified["verification_violations"] = list(verification.violations)
-    if verification.passed:
+    reported_feasible = summary.get("feasible") if solver_reported_feasible is None else solver_reported_feasible
+    reported_objective = summary.get("objective") if solver_reported_objective is None else solver_reported_objective
+    consistency_violation = _objective_consistency_violation(reported_objective, verification)
+    verification_passed = bool(verification.passed) and consistency_violation is None
+    verified["solver_reported_feasible"] = bool(reported_feasible)
+    verified["solver_reported_objective"] = reported_objective
+    verified["verification_status"] = "failed" if consistency_violation is not None else verification.status
+    verified["verification_passed"] = verification_passed
+    verified["verification_violations"] = list(verification.violations) + (
+        [consistency_violation] if consistency_violation is not None else []
+    )
+    if verification_passed:
         verified["feasible"] = bool(verification.feasible)
         verified["objective"] = verification.objective
         return verified
