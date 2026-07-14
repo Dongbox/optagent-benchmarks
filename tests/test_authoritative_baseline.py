@@ -187,13 +187,28 @@ def test_release_gate_coordinates_and_lifecycle_are_explicit() -> None:
 
 
 def test_release_gate_strategy_configs_match_current_public_api() -> None:
+    from dataclasses import fields
+
+    from optagent import GaConfig
+
     budget = LocalRunBudget(max_iterations=1, time_limit_s=0.1, population_size=4, thread_count=1)
+    expected_ga_fields = {
+        "max_iterations",
+        "unimproved_iteration_limit",
+        "population_size",
+        "crossover_rate",
+    }
 
     for entry in RELEASE_GATE_PLAN:
         case = case_object_by_id(entry.benchmark_id)
         for strategy in entry.strategies:
             config = build_strategy_config(case=case, strategy_name=strategy, budget=budget)
             assert config is not None
+            if isinstance(config, GaConfig):
+                assert {field.name for field in fields(config)} == expected_ga_fields
+                assert config.max_iterations == 1
+                assert config.population_size == 4
+                assert config.crossover_rate == 0.35
 
 
 def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> None:

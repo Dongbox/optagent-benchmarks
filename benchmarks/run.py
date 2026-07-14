@@ -167,26 +167,9 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             time_limit_s=time_limit_s, workers=thread_count, random_seed=int(getattr(budget, "seed", 11))
         )
     if strategy_name == "ga":
-        if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
-            return GaConfig(
-                max_iterations=max_iterations,
-                population_size=population_size,
-                mutation_count=max(2, population_size // 3),
-                search_width=population_size,
-                duplicate_filter=True,
-                mutation_portfolio=("scheduling_lns", "ruin_and_repair", "random_swap"),
-                local_improvement_strategy="lns",
-                local_improvement_top_k=2,
-            )
         return GaConfig(
             max_iterations=max_iterations,
             population_size=population_size,
-            mutation_count=max(2, population_size // 3),
-            search_width=population_size,
-            duplicate_filter=True,
-            mutation_portfolio=("sequence_two_opt", "sequence_block_move", "ruin_and_repair", "random_swap"),
-            local_improvement_strategy="lns",
-            local_improvement_top_k=2,
         )
     if strategy_name == "alns":
         destroy_count = max(
