@@ -206,9 +206,17 @@ def test_release_gate_strategy_configs_match_current_public_api() -> None:
             assert config is not None
             if isinstance(config, GaConfig):
                 assert {field.name for field in fields(config)} == expected_ga_fields
-                assert config.max_iterations == 1
+                assert config.max_iterations is None
                 assert config.population_size == 4
                 assert config.crossover_rate == 0.35
+
+
+def test_strategy_config_rejects_nonpositive_time_limit() -> None:
+    case = case_object_by_id("jsplib_ft06")
+    budget = LocalRunBudget(max_iterations=1, time_limit_s=0.0, population_size=4, thread_count=1)
+
+    with pytest.raises(ValueError, match="time_limit_s must be > 0"):
+        build_strategy_config(case=case, strategy_name="ga", budget=budget)
 
 
 def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> None:
@@ -235,6 +243,28 @@ def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> N
     assert command[command.index("--model-style") + 1] == "sequence_var_sequence_transition_sum"
     assert command[command.index("--strategy") + 1] == "ga"
     assert command[-1] == "--no-download"
+
+
+def test_authoritative_child_command_omits_unbounded_iteration_limit() -> None:
+    planned = PlannedRun(
+        benchmark_id="tsplib_berlin52",
+        family="sequence_blackbox_tsp",
+        tier="smoke",
+        model_style="sequence_var_sequence_transition_sum",
+        solve_route="native_search",
+        strategy="ga",
+        seed=11,
+        max_iterations=None,
+        time_limit_s=2.0,
+        population_size=8,
+        trace_limit=4,
+        thread_count=1,
+    )
+
+    command = build_run_command("/tmp/python", planned, allow_download=True)
+
+    assert "--max-iterations" not in command
+    assert command[command.index("--time-limit-s") + 1] == "2.0"
 
 
 def test_memory_hard_limit_is_only_enabled_on_linux() -> None:

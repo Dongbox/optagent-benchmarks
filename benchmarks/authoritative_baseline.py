@@ -40,7 +40,7 @@ class PlannedRun:
     solve_route: str
     strategy: str
     seed: int
-    max_iterations: int
+    max_iterations: int | None
     time_limit_s: float
     population_size: int
     trace_limit: int
@@ -98,8 +98,10 @@ def build_run_command(python_executable: str, run: PlannedRun, *, allow_download
         run.model_style,
         "--seed",
         str(run.seed),
-        "--max-iterations",
-        str(run.max_iterations),
+    ]
+    if run.max_iterations is not None:
+        command.extend(["--max-iterations", str(run.max_iterations)])
+    command.extend([
         "--time-limit-s",
         str(run.time_limit_s),
         "--population-size",
@@ -108,7 +110,7 @@ def build_run_command(python_executable: str, run: PlannedRun, *, allow_download
         str(run.trace_limit),
         "--thread-count",
         str(run.thread_count),
-    ]
+    ])
     if not allow_download:
         command.append("--no-download")
     return command

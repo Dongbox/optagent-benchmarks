@@ -85,7 +85,6 @@ export OPTAGENT_SOURCE_ROOT=/path/to/optagent
   --strategy ga \
   --model-style sequence_var_external_call \
   --seed 11 \
-  --max-iterations 10 \
   --population-size 8 \
   --time-limit-s 0.5 \
   --no-download

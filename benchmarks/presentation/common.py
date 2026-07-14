@@ -104,7 +104,7 @@ class EffectiveStrategyBudget:
     tier: str
     profile: str
     seed: int
-    max_iterations: int
+    max_iterations: int | None
     time_limit_s: float
     population_size: int
     trace_limit: int
@@ -117,25 +117,25 @@ class EffectiveStrategyBudget:
 
 TIER_BUDGET_DEFAULTS: dict[str, dict[str, Any]] = {
     "smoke": {
-        "max_iterations": 5,
+        "max_iterations": None,
         "time_limit_s": 2.0,
         "population_size": 8,
         "trace_limit": 4,
     },
     "calibration": {
-        "max_iterations": 20,
+        "max_iterations": None,
         "time_limit_s": 5.0,
         "population_size": 16,
         "trace_limit": 8,
     },
     "full": {
-        "max_iterations": 50,
+        "max_iterations": None,
         "time_limit_s": 10.0,
         "population_size": 32,
         "trace_limit": 8,
     },
     "pressure": {
-        "max_iterations": 100,
+        "max_iterations": None,
         "time_limit_s": 30.0,
         "population_size": 64,
         "trace_limit": 8,
@@ -144,21 +144,21 @@ TIER_BUDGET_DEFAULTS: dict[str, dict[str, Any]] = {
 
 FAMILY_TIER_BUDGET_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
     ("exact_linear_mip", "smoke"): {
-        "max_iterations": 0,
+        "max_iterations": None,
         "time_limit_s": 10.0,
         "population_size": 0,
         "trace_limit": 0,
         "exact_time_limit_s": 10.0,
     },
     ("exact_linear_mip", "calibration"): {
-        "max_iterations": 0,
+        "max_iterations": None,
         "time_limit_s": 20.0,
         "population_size": 0,
         "trace_limit": 0,
         "exact_time_limit_s": 20.0,
     },
     ("exact_linear_mip", "full"): {
-        "max_iterations": 0,
+        "max_iterations": None,
         "time_limit_s": 30.0,
         "population_size": 0,
         "trace_limit": 0,
@@ -239,10 +239,6 @@ def resolve_family_tier_budget(
         **TIER_BUDGET_DEFAULTS.get(tier, TIER_BUDGET_DEFAULTS["smoke"]),
         **FAMILY_TIER_BUDGET_OVERRIDES.get((family, tier), {}),
     }
-    default_max_iterations = max(0, int(defaults["max_iterations"]))
-    requested_max_iterations = (
-        default_max_iterations if request.max_iterations is None else max(0, int(request.max_iterations))
-    )
     default_population = max(0, int(defaults["population_size"]))
     requested_population = (
         default_population if request.population_size is None else max(0, int(request.population_size))
@@ -253,20 +249,24 @@ def resolve_family_tier_budget(
     requested_time = (
         default_time if request.time_limit_s is None else max(0.0, float(request.time_limit_s))
     )
+    effective_time_limit_s = min(requested_time, default_time)
+    if effective_time_limit_s <= 0.0:
+        raise ValueError("benchmark time_limit_s must be > 0")
+    effective_max_iterations = None
     requested_thread_count = max(1, int(request.thread_count))
     exact_default = defaults.get("exact_time_limit_s")
     exact_time_limit_s = (
-        min(requested_time, max(0.0, float(exact_default)))
+        min(effective_time_limit_s, max(0.0, float(exact_default)))
         if exact_default is not None
         else None
     )
     return EffectiveStrategyBudget(
         family=family,
         tier=tier,
-        profile=f"{family}_{tier}_budget_v1",
+        profile=f"{family}_{tier}_budget_v2",
         seed=int(request.seed),
-        max_iterations=min(requested_max_iterations, default_max_iterations),
-        time_limit_s=min(requested_time, default_time),
+        max_iterations=effective_max_iterations,
+        time_limit_s=effective_time_limit_s,
         population_size=min(requested_population, default_population),
         trace_limit=min(requested_trace, default_trace),
         thread_count=requested_thread_count,

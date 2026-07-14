@@ -16,7 +16,7 @@ from benchmarks.presentation.common import strategy_profile_name
 @dataclass(frozen=True)
 class LocalRunBudget:
     seed: int = 11
-    max_iterations: int | None = 40
+    max_iterations: int | None = None
     time_limit_s: float = 5.0
     population_size: int = 10
     trace_limit: int = 8
@@ -143,11 +143,12 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
     from optagent import AlnsConfig, CpSatConfig, GaConfig, MilpConfig
 
-    raw_max_iterations = getattr(budget, "max_iterations", 40)
-    max_iterations = int(raw_max_iterations) if raw_max_iterations is not None else None
     population_size = max(4, int(getattr(budget, "population_size", 10)))
     thread_count = int(getattr(budget, "thread_count", 1))
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
+    if time_limit_s <= 0.0:
+        raise ValueError("benchmark time_limit_s must be > 0")
+    max_iterations = None
     size = dict(case.size)
     family = case.family
     dimension = int(
@@ -546,7 +547,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--model-style", action="append", dest="model_styles", help="Explicit benchmark model style.")
     parser.add_argument("--seed", type=int, default=11)
-    parser.add_argument("--max-iterations", type=int, default=40)
     parser.add_argument("--time-limit-s", type=float, default=5.0)
     parser.add_argument("--population-size", type=int, default=10)
     parser.add_argument("--trace-limit", type=int, default=8)
@@ -579,10 +579,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if not args.benchmark_id:
         parser.error("--case is required unless --list-cases is set")
+    if args.time_limit_s <= 0.0:
+        parser.error("--time-limit-s must be > 0")
 
     budget = LocalRunBudget(
         seed=args.seed,
-        max_iterations=args.max_iterations,
+        max_iterations=None,
         time_limit_s=args.time_limit_s,
         population_size=args.population_size,
         trace_limit=args.trace_limit,
