@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
 from time import perf_counter
 from typing import Any, Iterable, Sequence
@@ -16,11 +16,12 @@ from benchmarks.presentation.common import strategy_profile_name
 @dataclass(frozen=True)
 class LocalRunBudget:
     seed: int = 11
-    max_iterations: int = 40
+    max_iterations: int | None = 40
     time_limit_s: float = 5.0
     population_size: int = 10
     trace_limit: int = 8
     thread_count: int = 1
+    observation_times_s: tuple[float, ...] = ()
 
 
 def all_cases() -> list[dict[str, Any]]:
@@ -142,7 +143,8 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
     from optagent import AlnsConfig, CpSatConfig, GaConfig, MilpConfig
 
-    max_iterations = int(getattr(budget, "max_iterations", 40))
+    raw_max_iterations = getattr(budget, "max_iterations", 40)
+    max_iterations = int(raw_max_iterations) if raw_max_iterations is not None else None
     population_size = max(4, int(getattr(budget, "population_size", 10)))
     thread_count = int(getattr(budget, "thread_count", 1))
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
@@ -234,11 +236,17 @@ def _run_single_strategy(
         elapsed_seconds = perf_counter() - solve_started
         solver_summary = _solver_solution_summary(solution)
         verification = case.verify_solution(solution, **build_kwargs)
+        observation_evidence = _verify_observation_snapshots(case, solution, build_kwargs)
         summary = _merge_solution_metrics(
             solver_summary,
             _case_solution_metrics(case, solution, build_kwargs),
         )
         summary = _apply_solution_verification(summary, verification)
+        summary.update(observation_evidence)
+        if not observation_evidence["observation_verification_passed"]:
+            summary["status"] = "observation_verification_failed"
+            summary["feasible"] = False
+            summary["objective"] = None
         return _result_row(
             case,
             strategy_name=strategy_name,
@@ -280,6 +288,7 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
         log_level="off",
         trace_output="full",
         trace_limit=int(getattr(budget, "trace_limit", 8)),
+        observation_times_s=tuple(getattr(budget, "observation_times_s", ())),
     )
 
 
@@ -304,6 +313,77 @@ def _solver_solution_summary(solution: Any) -> dict[str, Any]:
         "diagnostics": dict(getattr(solution, "diagnostics", {}) or {}),
         "telemetry": dict(getattr(solution, "telemetry", {}) or {}),
     }
+
+
+def _verify_observation_snapshots(
+    case: BenchmarkCase,
+    solution: Any,
+    build_kwargs: dict[str, Any],
+) -> dict[str, Any]:
+    snapshots: dict[str, Any] = {}
+    all_passed = True
+    for snapshot_id, snapshot in dict(getattr(solution, "solution_snapshots", {}) or {}).items():
+        snapshot_solution = replace(
+            solution,
+            variable_values=dict(snapshot.variable_values),
+            objective_values=dict(snapshot.objective_values),
+            constraint_values=dict(snapshot.constraint_values),
+            feasible=bool(snapshot.feasible),
+        )
+        verification = case.verify_solution(snapshot_solution, **build_kwargs)
+        passed = bool(verification.passed)
+        all_passed = all_passed and passed
+        snapshots[str(snapshot_id)] = {
+            "snapshot_id": str(snapshot_id),
+            "variable_values": {str(key): _json_value(value) for key, value in snapshot.variable_values.items()},
+            "objective_values": {str(key): _json_value(value) for key, value in snapshot.objective_values.items()},
+            "constraint_values": {str(key): _json_value(value) for key, value in snapshot.constraint_values.items()},
+            "solver_reported_feasible": bool(snapshot.feasible),
+            "solver_reported_violation_count": int(snapshot.violation_count),
+            "solver_reported_objective": (
+                float(next(iter(snapshot.objective_values.values()))) if snapshot.objective_values else None
+            ),
+            "incumbent_found_at_s": float(snapshot.incumbent_found_at_s),
+            "verification_status": verification.status,
+            "verification_passed": passed,
+            "verification_feasible": bool(verification.feasible) if passed else None,
+            "verification_objective": verification.objective if passed else None,
+            "verification_violations": list(verification.violations),
+        }
+    observations = [
+        {
+            "requested_time_s": float(item.requested_time_s),
+            "captured_at_s": float(item.captured_at_s),
+            "state": item.state.value,
+            "snapshot_id": item.snapshot_id,
+            "search_ended": bool(item.search_ended),
+            "search_ended_at_s": float(item.search_ended_at_s),
+            "termination_reason": item.termination_reason,
+        }
+        for item in list(getattr(solution, "observations", ()) or ())
+    ]
+    referenced = {item["snapshot_id"] for item in observations if item["snapshot_id"]}
+    missing = sorted(referenced - set(snapshots))
+    if missing:
+        all_passed = False
+    return {
+        "observations": observations,
+        "solution_snapshots": snapshots,
+        "observation_verification_passed": all_passed,
+        "observation_verification_errors": [f"missing_snapshot:{snapshot_id}" for snapshot_id in missing],
+    }
+
+
+def _json_value(value: Any) -> Any:
+    if isinstance(value, set):
+        return sorted(_json_value(item) for item in value)
+    if isinstance(value, tuple):
+        return [_json_value(item) for item in value]
+    if isinstance(value, list):
+        return [_json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    return value
 
 
 def _merge_solution_metrics(solver_summary: dict[str, Any], case_metrics: dict[str, Any]) -> dict[str, Any]:

@@ -117,9 +117,7 @@ def test_dashboard_artifact_exposes_availability_and_provenance(tmp_path):
 
     effectiveness_metrics = dashboard["sections"]["effectiveness"]["metrics"]
     mean_objective = next(
-        metric
-        for metric in effectiveness_metrics
-        if metric["path"] == "effectiveness.by_strategy.ga.mean_objective"
+        metric for metric in effectiveness_metrics if metric["path"] == "effectiveness.by_strategy.ga.mean_objective"
     )
     assert mean_objective["source_artifact"] == METRICS_JSON
     assert mean_objective["schema_version"] == 1
@@ -202,8 +200,7 @@ def test_import_parser_resolves_relative_benchmark_modules(tmp_path):
         path.write_text(source, encoding="utf-8")
         imported_modules = _imported_modules(path, package_root=package_root)
         assert any(
-            module == "benchmarks.scoring" or module.startswith("benchmarks.scoring.")
-            for module in imported_modules
+            module == "benchmarks.scoring" or module.startswith("benchmarks.scoring.") for module in imported_modules
         )
 
 
@@ -243,7 +240,13 @@ def test_suite_workspace_exports_embedded_canonical_telemetry(tmp_path):
     payloads, contexts = _load_suite_telemetry(run_dir)
 
     assert payloads == [telemetry]
-    assert contexts == [{"instance_id": "toy-001", "reference_objective": 10.0}]
+    assert contexts == [
+        {
+            "instance_id": "toy-001",
+            "benchmark_id": "toy-001",
+            "reference_objective": 10.0,
+        }
+    ]
 
 
 def test_suite_publication_preserves_benchmark_context_when_telemetry_has_no_instance_id(tmp_path):

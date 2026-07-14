@@ -76,6 +76,26 @@ def publish_telemetry_artifacts(
 
     effective_targets = {**effective_references, **(targets or {})}
     rows = [row_to_artifact(row, references=effective_references, targets=effective_targets) for row in dataset.rows]
+    for artifact_row, context in zip(rows, aligned_contexts, strict=True):
+        if context is None:
+            continue
+        for key in (
+            "benchmark_id",
+            "case_checksum",
+            "observations",
+            "solution_snapshots",
+            "observation_verification_passed",
+            "observation_verification_errors",
+            "preset_id",
+            "preset_version",
+            "review_mode",
+            "target_families",
+            "formal_checkpoints_s",
+            "observation_times_s",
+            "expected_seed_count",
+        ):
+            if key in context:
+                artifact_row[key] = context[key]
     row_by_run_id = {row.run_id: row for row in dataset.rows}
     curves = [
         curve_to_artifact(
@@ -205,7 +225,7 @@ def _reference_gap(objective: float | None, reference: float | None, objective_s
     if objective is None or reference is None:
         return None
     if reference == 0:
-        return abs(objective - reference)
+        return None
     delta = reference - objective if objective_sense == "maximize" else objective - reference
     return delta / abs(reference)
 
@@ -269,13 +289,13 @@ def build_dashboard_artifact(
         "dashboard_schema_version": ARTIFACT_SCHEMA_VERSION,
         "created_at": created_at,
         "source_artifacts": [
-        ROWS_JSONL,
-        CURVES_JSONL,
-        THROUGHPUT_JSONL,
-        METRICS_JSON,
-        STATISTICAL_TESTS_JSON,
-        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
-    ],
+            ROWS_JSONL,
+            CURVES_JSONL,
+            THROUGHPUT_JSONL,
+            METRICS_JSON,
+            STATISTICAL_TESTS_JSON,
+            STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
+        ],
         "strategy_count": len(strategies),
         "run_count": len(rows),
         "curve_point_count": len(curves),
@@ -475,8 +495,7 @@ def _flatten_metric_entries(
                 "reason": payload.get("reason"),
                 "source": payload.get("source"),
                 "source_artifact": source_artifact,
-                "provenance": payload.get("provenance")
-                or ["run-telemetry.pb", ROWS_JSONL, source_artifact],
+                "provenance": payload.get("provenance") or ["run-telemetry.pb", ROWS_JSONL, source_artifact],
             }
             return
         for key, value in payload.items():
@@ -615,6 +634,26 @@ def _load_suite_telemetry(
             context["family"] = str(row["family"])
         if row.get("reference_objective") is not None:
             context["reference_objective"] = float(row["reference_objective"])
+        for key in (
+            "benchmark_id",
+            "case_checksum",
+            "observations",
+            "solution_snapshots",
+            "observation_verification_passed",
+            "observation_verification_errors",
+            "preset_id",
+            "preset_version",
+            "review_mode",
+            "target_families",
+            "formal_checkpoints_s",
+            "observation_times_s",
+            "expected_seed_count",
+        ):
+            if key in row:
+                context[key] = row[key]
+        budget = row.get("effective_budget")
+        if isinstance(budget, Mapping):
+            context.setdefault("observation_times_s", list(budget.get("observation_times_s") or ()))
         contexts.append(context)
     return payloads, contexts
 

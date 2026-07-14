@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Sequence
 
 
-SUPPORTED_SCHEMA_VERSION = 1
+METRIC_SCHEMA_VERSION = 1
+SUPPORTED_TELEMETRY_SCHEMA_VERSIONS = frozenset({1, 2})
 
 AVAILABLE = "available"
 NULL = "null"
@@ -109,7 +110,7 @@ class MetricDataset:
     rows: list[MetricRow] = field(default_factory=list)
     curves: list[CurvePoint] = field(default_factory=list)
     source_count: int = 0
-    schema_version: int = SUPPORTED_SCHEMA_VERSION
+    schema_version: int = METRIC_SCHEMA_VERSION
     provenance: list[str] = field(default_factory=list)
 
     def rows_by_strategy(self) -> dict[str, list[MetricRow]]:
@@ -146,7 +147,7 @@ def load_run_telemetry(payload: Any) -> dict[str, Any]:
         raise TelemetryInputError("canonical telemetry requires a schema block")
 
     version = _parse_int(schema.get("schema_version"))
-    if version != SUPPORTED_SCHEMA_VERSION:
+    if version not in SUPPORTED_TELEMETRY_SCHEMA_VERSIONS:
         raise TelemetryInputError(f"unsupported telemetry schema version: {version}")
 
     for block in ("identity", "instance", "outcome", "effort"):
@@ -208,7 +209,9 @@ def derive_strategy_optimization_feedback(
     """
 
     by_strategy: dict[str, dict[str, Any]] = {}
-    statistical = metrics.get("statistical_validity") if isinstance(metrics.get("statistical_validity"), Mapping) else {}
+    statistical = (
+        metrics.get("statistical_validity") if isinstance(metrics.get("statistical_validity"), Mapping) else {}
+    )
     for strategy, rows in dataset.rows_by_strategy().items():
         signals = _strategy_feedback_signals(strategy, metrics)
         recommendations = _strategy_recommendations(signals)
@@ -246,11 +249,7 @@ def calculate_effectiveness(
     for strategy, rows in dataset.rows_by_strategy().items():
         feasible = [row for row in rows if row.feasible and row.objective is not None]
         objectives = [row.objective for row in feasible if row.objective is not None]
-        gaps = [
-            gap
-            for row in feasible
-            if (gap := _row_reference_gap(row, references)) is not None
-        ]
+        gaps = [gap for row in feasible if (gap := _row_reference_gap(row, references)) is not None]
         by_strategy[strategy] = {
             "run_count": metric_entry(len(rows), unit="runs"),
             "feasible_runs": metric_entry(len(feasible), unit="runs"),
@@ -325,11 +324,7 @@ def calculate_robustness(
     by_strategy: dict[str, dict[str, Any]] = {}
     for strategy, rows in dataset.rows_by_strategy().items():
         objectives = [row.objective for row in rows if row.feasible and row.objective is not None]
-        gaps = [
-            gap
-            for row in rows
-            if (gap := _row_reference_gap(row, normalized_refs)) is not None
-        ]
+        gaps = [gap for row in rows if (gap := _row_reference_gap(row, normalized_refs)) is not None]
         success_rate = len(objectives) / len(rows) if rows else None
         by_strategy[strategy] = {
             "run_count": metric_entry(len(rows), unit="runs"),
@@ -490,7 +485,9 @@ def calculate_statistical_validity(
         "bonferroni": bonferroni_correction(p_values),
     }
     return {
-        "status": AVAILABLE if any(pair["a12"].get("availability") == AVAILABLE for pair in pairs) else INSUFFICIENT_DATA,
+        "status": AVAILABLE
+        if any(pair["a12"].get("availability") == AVAILABLE for pair in pairs)
+        else INSUFFICIENT_DATA,
         "pairwise": pairs,
         "omnibus": friedman_test(dataset),
         "multiple_comparison_correction": corrections,
@@ -549,7 +546,9 @@ def matched_normalized_outcomes(
         right_objective = _mean([row.objective for row in grouped[(strategy_b, instance)] if row.objective is not None])
         if left_objective is None or right_objective is None:
             continue
-        objective_sense = _instance_objective_sense([*grouped[(strategy_a, instance)], *grouped[(strategy_b, instance)]])
+        objective_sense = _instance_objective_sense(
+            [*grouped[(strategy_a, instance)], *grouped[(strategy_b, instance)]]
+        )
         reference = normalized_refs.get(instance)
         if reference is not None:
             left.append(_relative_gap(left_objective, reference, objective_sense))
@@ -815,10 +814,7 @@ def _build_row(
     strategy = str(identity.get("strategy") or "unknown_strategy")
     benchmark_context = context or {}
     instance_id = str(
-        instance.get("id")
-        or benchmark_context.get("instance_id")
-        or instance.get("name")
-        or f"instance-{index}"
+        instance.get("id") or benchmark_context.get("instance_id") or instance.get("name") or f"instance-{index}"
     )
     seed = _parse_int(identity.get("seed"))
     run_id = f"{strategy}:{instance_id}:{seed if seed is not None else 'seedless'}:{index}"
@@ -857,7 +853,7 @@ def _build_row(
         thread_count=_parse_int(identity.get("thread_count")),
         trace_truncated=bool(trace_overflow.get("trace_truncated", False)),
         trace_event_count=_parse_int(trace_overflow.get("emitted_event_count")) or 0,
-        source_schema_version=_parse_int(schema.get("schema_version")) or SUPPORTED_SCHEMA_VERSION,
+        source_schema_version=_parse_int(schema.get("schema_version")) or METRIC_SCHEMA_VERSION,
     )
 
 
@@ -1229,9 +1225,27 @@ def _strategy_recommendations(signals: Mapping[str, Any]) -> list[dict[str, Any]
 def _strategy_regression_guards(signals: Mapping[str, Any]) -> list[dict[str, Any]]:
     guards: list[dict[str, Any]] = []
     for dimension, metric, threshold, direction, description in [
-        ("effectiveness", "solved_ratio", 1.0, "below", "Do not accept changes that reduce solved ratio without explicit scope."),
-        ("effectiveness", "median_gap_to_reference", 0.0, "above", "Do not trade away median gap unless another primary objective explicitly improves."),
-        ("anytime", "ecdf_target_hit_ratio", 1.0, "below", "Do not regress target hit ratio when target-reaching is a benchmark goal."),
+        (
+            "effectiveness",
+            "solved_ratio",
+            1.0,
+            "below",
+            "Do not accept changes that reduce solved ratio without explicit scope.",
+        ),
+        (
+            "effectiveness",
+            "median_gap_to_reference",
+            0.0,
+            "above",
+            "Do not trade away median gap unless another primary objective explicitly improves.",
+        ),
+        (
+            "anytime",
+            "ecdf_target_hit_ratio",
+            1.0,
+            "below",
+            "Do not regress target hit ratio when target-reaching is a benchmark goal.",
+        ),
         ("robustness", "gap_cv", 0.25, "above", "Treat high gap variance as a default-strategy release risk."),
     ]:
         value = _signal_number(signals, dimension, metric)

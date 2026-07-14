@@ -22,6 +22,7 @@ def test_public_command_inventory_is_small_and_current() -> None:
     assert set(cli._commands()) == {
         "list-cases",
         "run",
+        "evaluate",
         "suite",
         "authority",
         "compare-ga",
