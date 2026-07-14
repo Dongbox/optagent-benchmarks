@@ -1,0 +1,203 @@
+{
+  "name": "P-n19-k2",
+  "problem_type": "CVRP",
+  "source": "CVRPLIB",
+  "series": "P",
+  "metadata": {
+    "comment": "(Augerat et al, No of trucks: 2, Optimal value: 212)",
+    "edge_weight_type": "EUC_2D",
+    "raw_file": "P-n19-k2.vrp"
+  },
+  "size": {
+    "nodes": 19,
+    "customers": 18,
+    "vehicles": 2,
+    "capacity": 160,
+    "directed_arcs": 342
+  },
+  "depot": {
+    "id": 1
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "x": 30.0,
+      "y": 40.0,
+      "demand": 0.0,
+      "is_depot": true
+    },
+    {
+      "id": 2,
+      "x": 37.0,
+      "y": 52.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 3,
+      "x": 49.0,
+      "y": 43.0,
+      "demand": 30.0,
+      "is_depot": false
+    },
+    {
+      "id": 4,
+      "x": 52.0,
+      "y": 64.0,
+      "demand": 16.0,
+      "is_depot": false
+    },
+    {
+      "id": 5,
+      "x": 31.0,
+      "y": 62.0,
+      "demand": 23.0,
+      "is_depot": false
+    },
+    {
+      "id": 6,
+      "x": 52.0,
+      "y": 33.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 7,
+      "x": 42.0,
+      "y": 41.0,
+      "demand": 31.0,
+      "is_depot": false
+    },
+    {
+      "id": 8,
+      "x": 52.0,
+      "y": 41.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 9,
+      "x": 57.0,
+      "y": 58.0,
+      "demand": 28.0,
+      "is_depot": false
+    },
+    {
+      "id": 10,
+      "x": 62.0,
+      "y": 42.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 11,
+      "x": 42.0,
+      "y": 57.0,
+      "demand": 8.0,
+      "is_depot": false
+    },
+    {
+      "id": 12,
+      "x": 27.0,
+      "y": 68.0,
+      "demand": 7.0,
+      "is_depot": false
+    },
+    {
+      "id": 13,
+      "x": 43.0,
+      "y": 67.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 14,
+      "x": 58.0,
+      "y": 27.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 15,
+      "x": 37.0,
+      "y": 69.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 16,
+      "x": 61.0,
+      "y": 33.0,
+      "demand": 26.0,
+      "is_depot": false
+    },
+    {
+      "id": 17,
+      "x": 62.0,
+      "y": 63.0,
+      "demand": 17.0,
+      "is_depot": false
+    },
+    {
+      "id": 18,
+      "x": 63.0,
+      "y": 69.0,
+      "demand": 6.0,
+      "is_depot": false
+    },
+    {
+      "id": 19,
+      "x": 45.0,
+      "y": 35.0,
+      "demand": 15.0,
+      "is_depot": false
+    }
+  ],
+  "statistics": {
+    "total_demand": 310.0,
+    "route_lower_bound_by_capacity": 2,
+    "demand_mean": 17.22222222222222,
+    "demand_cv": 0.4351850826849046,
+    "demand_density": 0.96875,
+    "vehicle_ratio": 0.1111111111111111,
+    "distance_cv": 0.4636106826270906,
+    "nearest_neighbor_cv": 0.18934424407653694,
+    "depot_distance_cv": 0.3144147388778454,
+    "aspect_ratio": 1.1666666666666667,
+    "spatial_density": 0.011904761904761904
+  },
+  "tier": "smoke",
+  "reference": {
+    "cost": 212,
+    "objective": 212,
+    "routes": [
+      [
+        4,
+        11,
+        14,
+        12,
+        3,
+        17,
+        16,
+        8,
+        6
+      ],
+      [
+        18,
+        5,
+        13,
+        15,
+        9,
+        7,
+        2,
+        10,
+        1
+      ]
+    ],
+    "route_count": 2,
+    "status": "best_known",
+    "value_kind": "best_known",
+    "raw_file": "P-n19-k2.sol",
+    "route_indexing": "CVRPLIB solution customer indices; depot is omitted from each route"
+  }
+}

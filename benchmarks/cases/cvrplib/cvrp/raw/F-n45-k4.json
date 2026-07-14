@@ -1,0 +1,415 @@
+{
+  "name": "F-n45-k4",
+  "problem_type": "CVRP",
+  "source": "CVRPLIB",
+  "series": "F",
+  "metadata": {
+    "comment": "(Fisher: problem 10, No of trucks: 4, Optimal value: 724)",
+    "edge_weight_type": "EUC_2D",
+    "raw_file": "F-n45-k4.vrp"
+  },
+  "size": {
+    "nodes": 45,
+    "customers": 44,
+    "vehicles": 4,
+    "capacity": 2010,
+    "directed_arcs": 1980
+  },
+  "depot": {
+    "id": 1
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "x": 0.0,
+      "y": 0.0,
+      "demand": 0.0,
+      "is_depot": true
+    },
+    {
+      "id": 2,
+      "x": 3.0,
+      "y": 5.0,
+      "demand": 33.0,
+      "is_depot": false
+    },
+    {
+      "id": 3,
+      "x": 2.5,
+      "y": 9.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 4,
+      "x": 48.0,
+      "y": 16.0,
+      "demand": 10.0,
+      "is_depot": false
+    },
+    {
+      "id": 5,
+      "x": 48.0,
+      "y": 17.0,
+      "demand": 40.0,
+      "is_depot": false
+    },
+    {
+      "id": 6,
+      "x": 69.0,
+      "y": 16.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 7,
+      "x": 70.0,
+      "y": 16.0,
+      "demand": 5.0,
+      "is_depot": false
+    },
+    {
+      "id": 8,
+      "x": 64.0,
+      "y": 13.0,
+      "demand": 77.0,
+      "is_depot": false
+    },
+    {
+      "id": 9,
+      "x": 3.0,
+      "y": -22.0,
+      "demand": 435.0,
+      "is_depot": false
+    },
+    {
+      "id": 10,
+      "x": 2.5,
+      "y": 1.0,
+      "demand": 165.0,
+      "is_depot": false
+    },
+    {
+      "id": 11,
+      "x": -13.0,
+      "y": 11.5,
+      "demand": 120.0,
+      "is_depot": false
+    },
+    {
+      "id": 12,
+      "x": -20.0,
+      "y": 45.0,
+      "demand": 65.0,
+      "is_depot": false
+    },
+    {
+      "id": 13,
+      "x": -9.0,
+      "y": 52.0,
+      "demand": 23.0,
+      "is_depot": false
+    },
+    {
+      "id": 14,
+      "x": -8.5,
+      "y": 53.0,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 15,
+      "x": -8.0,
+      "y": 52.0,
+      "demand": 550.0,
+      "is_depot": false
+    },
+    {
+      "id": 16,
+      "x": 2.0,
+      "y": 2.0,
+      "demand": 78.0,
+      "is_depot": false
+    },
+    {
+      "id": 17,
+      "x": -2.0,
+      "y": 9.0,
+      "demand": 627.0,
+      "is_depot": false
+    },
+    {
+      "id": 18,
+      "x": -10.0,
+      "y": 20.0,
+      "demand": 9.0,
+      "is_depot": false
+    },
+    {
+      "id": 19,
+      "x": -20.0,
+      "y": 19.0,
+      "demand": 96.0,
+      "is_depot": false
+    },
+    {
+      "id": 20,
+      "x": -15.0,
+      "y": -21.0,
+      "demand": 116.0,
+      "is_depot": false
+    },
+    {
+      "id": 21,
+      "x": -5.0,
+      "y": -9.0,
+      "demand": 116.0,
+      "is_depot": false
+    },
+    {
+      "id": 22,
+      "x": -4.5,
+      "y": -9.0,
+      "demand": 83.0,
+      "is_depot": false
+    },
+    {
+      "id": 23,
+      "x": -52.0,
+      "y": -36.0,
+      "demand": 41.0,
+      "is_depot": false
+    },
+    {
+      "id": 24,
+      "x": -53.0,
+      "y": -36.0,
+      "demand": 645.0,
+      "is_depot": false
+    },
+    {
+      "id": 25,
+      "x": 0.0,
+      "y": 0.01,
+      "demand": 694.0,
+      "is_depot": false
+    },
+    {
+      "id": 26,
+      "x": -30.0,
+      "y": -18.0,
+      "demand": 573.0,
+      "is_depot": false
+    },
+    {
+      "id": 27,
+      "x": -51.0,
+      "y": -35.0,
+      "demand": 1.0,
+      "is_depot": false
+    },
+    {
+      "id": 28,
+      "x": 81.0,
+      "y": 9.0,
+      "demand": 181.0,
+      "is_depot": false
+    },
+    {
+      "id": 29,
+      "x": 84.0,
+      "y": -99.0,
+      "demand": 106.0,
+      "is_depot": false
+    },
+    {
+      "id": 30,
+      "x": 82.0,
+      "y": -6.0,
+      "demand": 52.0,
+      "is_depot": false
+    },
+    {
+      "id": 31,
+      "x": 40.0,
+      "y": -12.0,
+      "demand": 117.0,
+      "is_depot": false
+    },
+    {
+      "id": 32,
+      "x": 50.0,
+      "y": -7.0,
+      "demand": 52.0,
+      "is_depot": false
+    },
+    {
+      "id": 33,
+      "x": 51.0,
+      "y": -8.0,
+      "demand": 1300.0,
+      "is_depot": false
+    },
+    {
+      "id": 34,
+      "x": 63.0,
+      "y": -17.0,
+      "demand": 57.0,
+      "is_depot": false
+    },
+    {
+      "id": 35,
+      "x": 45.0,
+      "y": -1.0,
+      "demand": 28.0,
+      "is_depot": false
+    },
+    {
+      "id": 36,
+      "x": 54.0,
+      "y": 8.5,
+      "demand": 84.0,
+      "is_depot": false
+    },
+    {
+      "id": 37,
+      "x": 29.0,
+      "y": 4.0,
+      "demand": 1.0,
+      "is_depot": false
+    },
+    {
+      "id": 38,
+      "x": 21.0,
+      "y": 3.0,
+      "demand": 54.0,
+      "is_depot": false
+    },
+    {
+      "id": 39,
+      "x": 22.0,
+      "y": 2.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 40,
+      "x": 39.0,
+      "y": -3.0,
+      "demand": 88.0,
+      "is_depot": false
+    },
+    {
+      "id": 41,
+      "x": 39.5,
+      "y": -3.0,
+      "demand": 41.0,
+      "is_depot": false
+    },
+    {
+      "id": 42,
+      "x": 40.0,
+      "y": -11.0,
+      "demand": 238.0,
+      "is_depot": false
+    },
+    {
+      "id": 43,
+      "x": 28.0,
+      "y": -2.0,
+      "demand": 66.0,
+      "is_depot": false
+    },
+    {
+      "id": 44,
+      "x": 24.0,
+      "y": -18.0,
+      "demand": 44.0,
+      "is_depot": false
+    },
+    {
+      "id": 45,
+      "x": 24.0,
+      "y": -19.0,
+      "demand": 42.0,
+      "is_depot": false
+    }
+  ],
+  "statistics": {
+    "total_demand": 7220.0,
+    "route_lower_bound_by_capacity": 4,
+    "demand_mean": 164.0909090909091,
+    "demand_cv": 1.5576389362974132,
+    "demand_density": 0.8980099502487562,
+    "vehicle_ratio": 0.09090909090909091,
+    "distance_cv": 0.6043524050283657,
+    "nearest_neighbor_cv": 1.984865533151168,
+    "depot_distance_cv": 0.6365907335261344,
+    "aspect_ratio": 1.1094890510948905,
+    "spatial_density": 0.0021129466000768342
+  },
+  "tier": "smoke",
+  "reference": {
+    "cost": 724,
+    "objective": 724,
+    "routes": [
+      [
+        43,
+        44,
+        28,
+        33,
+        29,
+        27,
+        6,
+        5,
+        7,
+        35,
+        3,
+        4,
+        14,
+        13,
+        12,
+        11,
+        18,
+        17,
+        10
+      ],
+      [
+        42,
+        30,
+        41,
+        32,
+        31,
+        34,
+        40,
+        39,
+        36,
+        38,
+        37
+      ],
+      [
+        24,
+        9,
+        15,
+        1,
+        2,
+        16
+      ],
+      [
+        20,
+        21,
+        25,
+        26,
+        23,
+        22,
+        19,
+        8
+      ]
+    ],
+    "route_count": 4,
+    "status": "best_known",
+    "value_kind": "best_known",
+    "raw_file": "F-n45-k4.sol",
+    "route_indexing": "CVRPLIB solution customer indices; depot is omitted from each route"
+  }
+}

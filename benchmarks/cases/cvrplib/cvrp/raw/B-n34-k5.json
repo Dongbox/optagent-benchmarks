@@ -1,0 +1,329 @@
+{
+  "name": "B-n34-k5",
+  "problem_type": "CVRP",
+  "source": "CVRPLIB",
+  "series": "B",
+  "metadata": {
+    "comment": "(Augerat et al, No of trucks: 5, Optimal value: 788)",
+    "edge_weight_type": "EUC_2D",
+    "raw_file": "B-n34-k5.vrp"
+  },
+  "size": {
+    "nodes": 34,
+    "customers": 33,
+    "vehicles": 5,
+    "capacity": 100,
+    "directed_arcs": 1122
+  },
+  "depot": {
+    "id": 1
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "x": 28.0,
+      "y": 57.0,
+      "demand": 0.0,
+      "is_depot": true
+    },
+    {
+      "id": 2,
+      "x": 76.0,
+      "y": 46.0,
+      "demand": 6.0,
+      "is_depot": false
+    },
+    {
+      "id": 3,
+      "x": 67.0,
+      "y": 5.0,
+      "demand": 12.0,
+      "is_depot": false
+    },
+    {
+      "id": 4,
+      "x": 84.0,
+      "y": 22.0,
+      "demand": 2.0,
+      "is_depot": false
+    },
+    {
+      "id": 5,
+      "x": 73.0,
+      "y": 6.0,
+      "demand": 24.0,
+      "is_depot": false
+    },
+    {
+      "id": 6,
+      "x": 67.0,
+      "y": 72.0,
+      "demand": 3.0,
+      "is_depot": false
+    },
+    {
+      "id": 7,
+      "x": 68.0,
+      "y": 74.0,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 8,
+      "x": 68.0,
+      "y": 6.0,
+      "demand": 21.0,
+      "is_depot": false
+    },
+    {
+      "id": 9,
+      "x": 76.0,
+      "y": 7.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 10,
+      "x": 91.0,
+      "y": 30.0,
+      "demand": 69.0,
+      "is_depot": false
+    },
+    {
+      "id": 11,
+      "x": 80.0,
+      "y": 0.0,
+      "demand": 1.0,
+      "is_depot": false
+    },
+    {
+      "id": 12,
+      "x": 0.0,
+      "y": 25.0,
+      "demand": 13.0,
+      "is_depot": false
+    },
+    {
+      "id": 13,
+      "x": 73.0,
+      "y": 13.0,
+      "demand": 2.0,
+      "is_depot": false
+    },
+    {
+      "id": 14,
+      "x": 76.0,
+      "y": 81.0,
+      "demand": 2.0,
+      "is_depot": false
+    },
+    {
+      "id": 15,
+      "x": 92.0,
+      "y": 30.0,
+      "demand": 7.0,
+      "is_depot": false
+    },
+    {
+      "id": 16,
+      "x": 69.0,
+      "y": 80.0,
+      "demand": 7.0,
+      "is_depot": false
+    },
+    {
+      "id": 17,
+      "x": 90.0,
+      "y": 30.0,
+      "demand": 1.0,
+      "is_depot": false
+    },
+    {
+      "id": 18,
+      "x": 71.0,
+      "y": 77.0,
+      "demand": 23.0,
+      "is_depot": false
+    },
+    {
+      "id": 19,
+      "x": 83.0,
+      "y": 47.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 20,
+      "x": 79.0,
+      "y": 47.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 21,
+      "x": 74.0,
+      "y": 6.0,
+      "demand": 8.0,
+      "is_depot": false
+    },
+    {
+      "id": 22,
+      "x": 68.0,
+      "y": 6.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 23,
+      "x": 72.0,
+      "y": 0.0,
+      "demand": 4.0,
+      "is_depot": false
+    },
+    {
+      "id": 24,
+      "x": 80.0,
+      "y": 0.0,
+      "demand": 8.0,
+      "is_depot": false
+    },
+    {
+      "id": 25,
+      "x": 91.0,
+      "y": 25.0,
+      "demand": 24.0,
+      "is_depot": false
+    },
+    {
+      "id": 26,
+      "x": 71.0,
+      "y": 73.0,
+      "demand": 12.0,
+      "is_depot": false
+    },
+    {
+      "id": 27,
+      "x": 78.0,
+      "y": 10.0,
+      "demand": 9.0,
+      "is_depot": false
+    },
+    {
+      "id": 28,
+      "x": 85.0,
+      "y": 24.0,
+      "demand": 4.0,
+      "is_depot": false
+    },
+    {
+      "id": 29,
+      "x": 75.0,
+      "y": 80.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 30,
+      "x": 87.0,
+      "y": 24.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 31,
+      "x": 0.0,
+      "y": 7.0,
+      "demand": 2.0,
+      "is_depot": false
+    },
+    {
+      "id": 32,
+      "x": 71.0,
+      "y": 78.0,
+      "demand": 2.0,
+      "is_depot": false
+    },
+    {
+      "id": 33,
+      "x": 74.0,
+      "y": 0.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 34,
+      "x": 76.0,
+      "y": 0.0,
+      "demand": 66.0,
+      "is_depot": false
+    }
+  ],
+  "statistics": {
+    "total_demand": 457.0,
+    "route_lower_bound_by_capacity": 5,
+    "demand_mean": 13.848484848484848,
+    "demand_cv": 1.108901950946827,
+    "demand_density": 0.914,
+    "vehicle_ratio": 0.15151515151515152,
+    "distance_cv": 0.6754405303543264,
+    "nearest_neighbor_cv": 1.3888290801611476,
+    "depot_distance_cv": 0.17557315673538748,
+    "aspect_ratio": 1.1358024691358024,
+    "spatial_density": 0.004428341384863124
+  },
+  "tier": "smoke",
+  "reference": {
+    "cost": 788,
+    "objective": 788,
+    "routes": [
+      [
+        33,
+        32,
+        22,
+        30,
+        11
+      ],
+      [
+        15,
+        13,
+        28,
+        31,
+        17,
+        25,
+        6,
+        5
+      ],
+      [
+        14,
+        9
+      ],
+      [
+        12,
+        26,
+        3,
+        27,
+        29,
+        24,
+        16,
+        18,
+        19,
+        1
+      ],
+      [
+        8,
+        10,
+        23,
+        20,
+        4,
+        21,
+        7,
+        2
+      ]
+    ],
+    "route_count": 5,
+    "status": "best_known",
+    "value_kind": "best_known",
+    "raw_file": "B-n34-k5.sol",
+    "route_indexing": "CVRPLIB solution customer indices; depot is omitted from each route"
+  }
+}

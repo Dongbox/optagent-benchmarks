@@ -1,0 +1,237 @@
+{
+  "name": "E-n23-k3",
+  "problem_type": "CVRP",
+  "source": "CVRPLIB",
+  "series": "E",
+  "metadata": {
+    "comment": "(Christophides and Eilon, Min no of trucks: 3, Optimal value: 569)",
+    "edge_weight_type": "EUC_2D",
+    "raw_file": "E-n23-k3.vrp"
+  },
+  "size": {
+    "nodes": 23,
+    "customers": 22,
+    "vehicles": 3,
+    "capacity": 4500,
+    "directed_arcs": 506
+  },
+  "depot": {
+    "id": 1
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "x": 266.0,
+      "y": 235.0,
+      "demand": 0.0,
+      "is_depot": true
+    },
+    {
+      "id": 2,
+      "x": 295.0,
+      "y": 272.0,
+      "demand": 125.0,
+      "is_depot": false
+    },
+    {
+      "id": 3,
+      "x": 301.0,
+      "y": 258.0,
+      "demand": 84.0,
+      "is_depot": false
+    },
+    {
+      "id": 4,
+      "x": 309.0,
+      "y": 260.0,
+      "demand": 60.0,
+      "is_depot": false
+    },
+    {
+      "id": 5,
+      "x": 217.0,
+      "y": 274.0,
+      "demand": 500.0,
+      "is_depot": false
+    },
+    {
+      "id": 6,
+      "x": 218.0,
+      "y": 278.0,
+      "demand": 300.0,
+      "is_depot": false
+    },
+    {
+      "id": 7,
+      "x": 282.0,
+      "y": 267.0,
+      "demand": 175.0,
+      "is_depot": false
+    },
+    {
+      "id": 8,
+      "x": 242.0,
+      "y": 249.0,
+      "demand": 350.0,
+      "is_depot": false
+    },
+    {
+      "id": 9,
+      "x": 230.0,
+      "y": 262.0,
+      "demand": 150.0,
+      "is_depot": false
+    },
+    {
+      "id": 10,
+      "x": 249.0,
+      "y": 268.0,
+      "demand": 1100.0,
+      "is_depot": false
+    },
+    {
+      "id": 11,
+      "x": 256.0,
+      "y": 267.0,
+      "demand": 4100.0,
+      "is_depot": false
+    },
+    {
+      "id": 12,
+      "x": 265.0,
+      "y": 257.0,
+      "demand": 225.0,
+      "is_depot": false
+    },
+    {
+      "id": 13,
+      "x": 267.0,
+      "y": 242.0,
+      "demand": 300.0,
+      "is_depot": false
+    },
+    {
+      "id": 14,
+      "x": 259.0,
+      "y": 265.0,
+      "demand": 250.0,
+      "is_depot": false
+    },
+    {
+      "id": 15,
+      "x": 315.0,
+      "y": 233.0,
+      "demand": 500.0,
+      "is_depot": false
+    },
+    {
+      "id": 16,
+      "x": 329.0,
+      "y": 252.0,
+      "demand": 150.0,
+      "is_depot": false
+    },
+    {
+      "id": 17,
+      "x": 318.0,
+      "y": 252.0,
+      "demand": 100.0,
+      "is_depot": false
+    },
+    {
+      "id": 18,
+      "x": 329.0,
+      "y": 224.0,
+      "demand": 250.0,
+      "is_depot": false
+    },
+    {
+      "id": 19,
+      "x": 267.0,
+      "y": 213.0,
+      "demand": 120.0,
+      "is_depot": false
+    },
+    {
+      "id": 20,
+      "x": 275.0,
+      "y": 192.0,
+      "demand": 600.0,
+      "is_depot": false
+    },
+    {
+      "id": 21,
+      "x": 303.0,
+      "y": 201.0,
+      "demand": 500.0,
+      "is_depot": false
+    },
+    {
+      "id": 22,
+      "x": 208.0,
+      "y": 217.0,
+      "demand": 175.0,
+      "is_depot": false
+    },
+    {
+      "id": 23,
+      "x": 326.0,
+      "y": 181.0,
+      "demand": 75.0,
+      "is_depot": false
+    }
+  ],
+  "statistics": {
+    "total_demand": 10189.0,
+    "route_lower_bound_by_capacity": 3,
+    "demand_mean": 463.1363636363636,
+    "demand_cv": 1.7859684203161208,
+    "demand_density": 0.7547407407407407,
+    "vehicle_ratio": 0.13636363636363635,
+    "distance_cv": 0.5007565035001597,
+    "nearest_neighbor_cv": 0.671903019965979,
+    "depot_distance_cv": 0.3777512637525918,
+    "aspect_ratio": 1.2474226804123711,
+    "spatial_density": 0.0018744142455482662
+  },
+  "tier": "smoke",
+  "reference": {
+    "cost": 569,
+    "objective": 569,
+    "routes": [
+      [
+        21,
+        4,
+        5,
+        8,
+        9,
+        7
+      ],
+      [
+        18,
+        19,
+        20,
+        22,
+        17,
+        14,
+        15,
+        16,
+        3,
+        2,
+        1,
+        6,
+        11,
+        12
+      ],
+      [
+        13,
+        10
+      ]
+    ],
+    "route_count": 3,
+    "status": "best_known",
+    "value_kind": "best_known",
+    "raw_file": "E-n23-k3.sol",
+    "route_indexing": "CVRPLIB solution customer indices; depot is omitted from each route"
+  }
+}

@@ -1,0 +1,663 @@
+{
+  "name": "P-n76-k4",
+  "problem_type": "CVRP",
+  "source": "CVRPLIB",
+  "series": "P",
+  "metadata": {
+    "comment": "(Augerat et al, No of trucks: 4, Optimal value: 593)",
+    "edge_weight_type": "EUC_2D",
+    "raw_file": "P-n76-k4.vrp"
+  },
+  "size": {
+    "nodes": 76,
+    "customers": 75,
+    "vehicles": 4,
+    "capacity": 350,
+    "directed_arcs": 5700
+  },
+  "depot": {
+    "id": 1
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "x": 40.0,
+      "y": 40.0,
+      "demand": 0.0,
+      "is_depot": true
+    },
+    {
+      "id": 2,
+      "x": 22.0,
+      "y": 22.0,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 3,
+      "x": 36.0,
+      "y": 26.0,
+      "demand": 26.0,
+      "is_depot": false
+    },
+    {
+      "id": 4,
+      "x": 21.0,
+      "y": 45.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 5,
+      "x": 45.0,
+      "y": 35.0,
+      "demand": 30.0,
+      "is_depot": false
+    },
+    {
+      "id": 6,
+      "x": 55.0,
+      "y": 20.0,
+      "demand": 21.0,
+      "is_depot": false
+    },
+    {
+      "id": 7,
+      "x": 33.0,
+      "y": 34.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 8,
+      "x": 50.0,
+      "y": 50.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 9,
+      "x": 55.0,
+      "y": 45.0,
+      "demand": 16.0,
+      "is_depot": false
+    },
+    {
+      "id": 10,
+      "x": 26.0,
+      "y": 59.0,
+      "demand": 29.0,
+      "is_depot": false
+    },
+    {
+      "id": 11,
+      "x": 40.0,
+      "y": 66.0,
+      "demand": 26.0,
+      "is_depot": false
+    },
+    {
+      "id": 12,
+      "x": 55.0,
+      "y": 65.0,
+      "demand": 37.0,
+      "is_depot": false
+    },
+    {
+      "id": 13,
+      "x": 35.0,
+      "y": 51.0,
+      "demand": 16.0,
+      "is_depot": false
+    },
+    {
+      "id": 14,
+      "x": 62.0,
+      "y": 35.0,
+      "demand": 12.0,
+      "is_depot": false
+    },
+    {
+      "id": 15,
+      "x": 62.0,
+      "y": 57.0,
+      "demand": 31.0,
+      "is_depot": false
+    },
+    {
+      "id": 16,
+      "x": 62.0,
+      "y": 24.0,
+      "demand": 8.0,
+      "is_depot": false
+    },
+    {
+      "id": 17,
+      "x": 21.0,
+      "y": 36.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 18,
+      "x": 33.0,
+      "y": 44.0,
+      "demand": 20.0,
+      "is_depot": false
+    },
+    {
+      "id": 19,
+      "x": 9.0,
+      "y": 56.0,
+      "demand": 13.0,
+      "is_depot": false
+    },
+    {
+      "id": 20,
+      "x": 62.0,
+      "y": 48.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 21,
+      "x": 66.0,
+      "y": 14.0,
+      "demand": 22.0,
+      "is_depot": false
+    },
+    {
+      "id": 22,
+      "x": 44.0,
+      "y": 13.0,
+      "demand": 28.0,
+      "is_depot": false
+    },
+    {
+      "id": 23,
+      "x": 26.0,
+      "y": 13.0,
+      "demand": 12.0,
+      "is_depot": false
+    },
+    {
+      "id": 24,
+      "x": 11.0,
+      "y": 28.0,
+      "demand": 6.0,
+      "is_depot": false
+    },
+    {
+      "id": 25,
+      "x": 7.0,
+      "y": 43.0,
+      "demand": 27.0,
+      "is_depot": false
+    },
+    {
+      "id": 26,
+      "x": 17.0,
+      "y": 64.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 27,
+      "x": 41.0,
+      "y": 46.0,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 28,
+      "x": 55.0,
+      "y": 34.0,
+      "demand": 17.0,
+      "is_depot": false
+    },
+    {
+      "id": 29,
+      "x": 35.0,
+      "y": 16.0,
+      "demand": 29.0,
+      "is_depot": false
+    },
+    {
+      "id": 30,
+      "x": 52.0,
+      "y": 26.0,
+      "demand": 13.0,
+      "is_depot": false
+    },
+    {
+      "id": 31,
+      "x": 43.0,
+      "y": 26.0,
+      "demand": 22.0,
+      "is_depot": false
+    },
+    {
+      "id": 32,
+      "x": 31.0,
+      "y": 76.0,
+      "demand": 25.0,
+      "is_depot": false
+    },
+    {
+      "id": 33,
+      "x": 22.0,
+      "y": 53.0,
+      "demand": 28.0,
+      "is_depot": false
+    },
+    {
+      "id": 34,
+      "x": 26.0,
+      "y": 29.0,
+      "demand": 27.0,
+      "is_depot": false
+    },
+    {
+      "id": 35,
+      "x": 50.0,
+      "y": 40.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 36,
+      "x": 55.0,
+      "y": 50.0,
+      "demand": 10.0,
+      "is_depot": false
+    },
+    {
+      "id": 37,
+      "x": 54.0,
+      "y": 10.0,
+      "demand": 12.0,
+      "is_depot": false
+    },
+    {
+      "id": 38,
+      "x": 60.0,
+      "y": 15.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 39,
+      "x": 47.0,
+      "y": 66.0,
+      "demand": 24.0,
+      "is_depot": false
+    },
+    {
+      "id": 40,
+      "x": 30.0,
+      "y": 60.0,
+      "demand": 16.0,
+      "is_depot": false
+    },
+    {
+      "id": 41,
+      "x": 30.0,
+      "y": 50.0,
+      "demand": 33.0,
+      "is_depot": false
+    },
+    {
+      "id": 42,
+      "x": 12.0,
+      "y": 17.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 43,
+      "x": 15.0,
+      "y": 14.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 44,
+      "x": 16.0,
+      "y": 19.0,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 45,
+      "x": 21.0,
+      "y": 48.0,
+      "demand": 17.0,
+      "is_depot": false
+    },
+    {
+      "id": 46,
+      "x": 50.0,
+      "y": 30.0,
+      "demand": 21.0,
+      "is_depot": false
+    },
+    {
+      "id": 47,
+      "x": 51.0,
+      "y": 42.0,
+      "demand": 27.0,
+      "is_depot": false
+    },
+    {
+      "id": 48,
+      "x": 50.0,
+      "y": 15.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 49,
+      "x": 48.0,
+      "y": 21.0,
+      "demand": 20.0,
+      "is_depot": false
+    },
+    {
+      "id": 50,
+      "x": 12.0,
+      "y": 38.0,
+      "demand": 5.0,
+      "is_depot": false
+    },
+    {
+      "id": 51,
+      "x": 15.0,
+      "y": 56.0,
+      "demand": 22.0,
+      "is_depot": false
+    },
+    {
+      "id": 52,
+      "x": 29.0,
+      "y": 39.0,
+      "demand": 12.0,
+      "is_depot": false
+    },
+    {
+      "id": 53,
+      "x": 54.0,
+      "y": 38.0,
+      "demand": 19.0,
+      "is_depot": false
+    },
+    {
+      "id": 54,
+      "x": 55.0,
+      "y": 57.0,
+      "demand": 22.0,
+      "is_depot": false
+    },
+    {
+      "id": 55,
+      "x": 67.0,
+      "y": 41.0,
+      "demand": 16.0,
+      "is_depot": false
+    },
+    {
+      "id": 56,
+      "x": 10.0,
+      "y": 70.0,
+      "demand": 7.0,
+      "is_depot": false
+    },
+    {
+      "id": 57,
+      "x": 6.0,
+      "y": 25.0,
+      "demand": 26.0,
+      "is_depot": false
+    },
+    {
+      "id": 58,
+      "x": 65.0,
+      "y": 27.0,
+      "demand": 14.0,
+      "is_depot": false
+    },
+    {
+      "id": 59,
+      "x": 40.0,
+      "y": 60.0,
+      "demand": 21.0,
+      "is_depot": false
+    },
+    {
+      "id": 60,
+      "x": 70.0,
+      "y": 64.0,
+      "demand": 24.0,
+      "is_depot": false
+    },
+    {
+      "id": 61,
+      "x": 64.0,
+      "y": 4.0,
+      "demand": 13.0,
+      "is_depot": false
+    },
+    {
+      "id": 62,
+      "x": 36.0,
+      "y": 6.0,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 63,
+      "x": 30.0,
+      "y": 20.0,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 64,
+      "x": 20.0,
+      "y": 30.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 65,
+      "x": 15.0,
+      "y": 5.0,
+      "demand": 28.0,
+      "is_depot": false
+    },
+    {
+      "id": 66,
+      "x": 50.0,
+      "y": 70.0,
+      "demand": 9.0,
+      "is_depot": false
+    },
+    {
+      "id": 67,
+      "x": 57.0,
+      "y": 72.0,
+      "demand": 37.0,
+      "is_depot": false
+    },
+    {
+      "id": 68,
+      "x": 45.0,
+      "y": 42.0,
+      "demand": 30.0,
+      "is_depot": false
+    },
+    {
+      "id": 69,
+      "x": 38.0,
+      "y": 33.0,
+      "demand": 10.0,
+      "is_depot": false
+    },
+    {
+      "id": 70,
+      "x": 50.0,
+      "y": 4.0,
+      "demand": 8.0,
+      "is_depot": false
+    },
+    {
+      "id": 71,
+      "x": 66.0,
+      "y": 8.0,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 72,
+      "x": 59.0,
+      "y": 5.0,
+      "demand": 3.0,
+      "is_depot": false
+    },
+    {
+      "id": 73,
+      "x": 35.0,
+      "y": 60.0,
+      "demand": 1.0,
+      "is_depot": false
+    },
+    {
+      "id": 74,
+      "x": 27.0,
+      "y": 24.0,
+      "demand": 6.0,
+      "is_depot": false
+    },
+    {
+      "id": 75,
+      "x": 40.0,
+      "y": 20.0,
+      "demand": 10.0,
+      "is_depot": false
+    },
+    {
+      "id": 76,
+      "x": 40.0,
+      "y": 37.0,
+      "demand": 20.0,
+      "is_depot": false
+    }
+  ],
+  "statistics": {
+    "total_demand": 1364.0,
+    "route_lower_bound_by_capacity": 4,
+    "demand_mean": 18.186666666666667,
+    "demand_cv": 0.4347847306117721,
+    "demand_density": 0.9742857142857143,
+    "vehicle_ratio": 0.05333333333333334,
+    "distance_cv": 0.4722740592262168,
+    "nearest_neighbor_cv": 0.3074655831733796,
+    "depot_distance_cv": 0.4166705528696886,
+    "aspect_ratio": 1.125,
+    "spatial_density": 0.016276041666666668
+  },
+  "tier": "smoke",
+  "reference": {
+    "cost": 593,
+    "objective": 593,
+    "routes": [
+      [
+        75,
+        68,
+        2,
+        74,
+        28,
+        62,
+        73,
+        1,
+        43,
+        41,
+        42,
+        64,
+        22,
+        61,
+        21,
+        48,
+        30,
+        4
+      ],
+      [
+        67,
+        46,
+        8,
+        19,
+        54,
+        13,
+        57,
+        15,
+        37,
+        20,
+        70,
+        60,
+        71,
+        69,
+        36,
+        47,
+        5,
+        29,
+        45,
+        27,
+        52,
+        34
+      ],
+      [
+        51,
+        16,
+        3,
+        44,
+        32,
+        9,
+        39,
+        31,
+        55,
+        25,
+        50,
+        18,
+        24,
+        49,
+        56,
+        23,
+        63,
+        33,
+        6
+      ],
+      [
+        26,
+        7,
+        35,
+        53,
+        14,
+        59,
+        66,
+        11,
+        65,
+        38,
+        10,
+        58,
+        72,
+        12,
+        40,
+        17
+      ]
+    ],
+    "route_count": 4,
+    "status": "best_known",
+    "value_kind": "best_known",
+    "raw_file": "P-n76-k4.sol",
+    "route_indexing": "CVRPLIB solution customer indices; depot is omitted from each route"
+  }
+}

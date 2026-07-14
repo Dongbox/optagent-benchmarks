@@ -1,0 +1,309 @@
+{
+  "name": "E-n31-k7",
+  "problem_type": "CVRP",
+  "source": "CVRPLIB",
+  "series": "E",
+  "metadata": {
+    "comment": "(Eilon et al, Min no of trucks: 7, Optimal value: 379)",
+    "edge_weight_type": "EXPLICIT",
+    "raw_file": "E-n31-k7.vrp"
+  },
+  "size": {
+    "nodes": 31,
+    "customers": 30,
+    "vehicles": 7,
+    "capacity": 140,
+    "directed_arcs": 930
+  },
+  "depot": {
+    "id": 1
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "x": null,
+      "y": null,
+      "demand": 0.0,
+      "is_depot": true
+    },
+    {
+      "id": 2,
+      "x": null,
+      "y": null,
+      "demand": 24.0,
+      "is_depot": false
+    },
+    {
+      "id": 3,
+      "x": null,
+      "y": null,
+      "demand": 34.0,
+      "is_depot": false
+    },
+    {
+      "id": 4,
+      "x": null,
+      "y": null,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 5,
+      "x": null,
+      "y": null,
+      "demand": 15.0,
+      "is_depot": false
+    },
+    {
+      "id": 6,
+      "x": null,
+      "y": null,
+      "demand": 11.0,
+      "is_depot": false
+    },
+    {
+      "id": 7,
+      "x": null,
+      "y": null,
+      "demand": 1.0,
+      "is_depot": false
+    },
+    {
+      "id": 8,
+      "x": null,
+      "y": null,
+      "demand": 3.0,
+      "is_depot": false
+    },
+    {
+      "id": 9,
+      "x": null,
+      "y": null,
+      "demand": 29.0,
+      "is_depot": false
+    },
+    {
+      "id": 10,
+      "x": null,
+      "y": null,
+      "demand": 6.0,
+      "is_depot": false
+    },
+    {
+      "id": 11,
+      "x": null,
+      "y": null,
+      "demand": 25.0,
+      "is_depot": false
+    },
+    {
+      "id": 12,
+      "x": null,
+      "y": null,
+      "demand": 6.0,
+      "is_depot": false
+    },
+    {
+      "id": 13,
+      "x": null,
+      "y": null,
+      "demand": 25.0,
+      "is_depot": false
+    },
+    {
+      "id": 14,
+      "x": null,
+      "y": null,
+      "demand": 2.0,
+      "is_depot": false
+    },
+    {
+      "id": 15,
+      "x": null,
+      "y": null,
+      "demand": 28.0,
+      "is_depot": false
+    },
+    {
+      "id": 16,
+      "x": null,
+      "y": null,
+      "demand": 8.0,
+      "is_depot": false
+    },
+    {
+      "id": 17,
+      "x": null,
+      "y": null,
+      "demand": 10.0,
+      "is_depot": false
+    },
+    {
+      "id": 18,
+      "x": null,
+      "y": null,
+      "demand": 18.0,
+      "is_depot": false
+    },
+    {
+      "id": 19,
+      "x": null,
+      "y": null,
+      "demand": 45.0,
+      "is_depot": false
+    },
+    {
+      "id": 20,
+      "x": null,
+      "y": null,
+      "demand": 33.0,
+      "is_depot": false
+    },
+    {
+      "id": 21,
+      "x": null,
+      "y": null,
+      "demand": 17.0,
+      "is_depot": false
+    },
+    {
+      "id": 22,
+      "x": null,
+      "y": null,
+      "demand": 9.0,
+      "is_depot": false
+    },
+    {
+      "id": 23,
+      "x": null,
+      "y": null,
+      "demand": 16.0,
+      "is_depot": false
+    },
+    {
+      "id": 24,
+      "x": null,
+      "y": null,
+      "demand": 35.0,
+      "is_depot": false
+    },
+    {
+      "id": 25,
+      "x": null,
+      "y": null,
+      "demand": 5.0,
+      "is_depot": false
+    },
+    {
+      "id": 26,
+      "x": null,
+      "y": null,
+      "demand": 60.0,
+      "is_depot": false
+    },
+    {
+      "id": 27,
+      "x": null,
+      "y": null,
+      "demand": 80.0,
+      "is_depot": false
+    },
+    {
+      "id": 28,
+      "x": null,
+      "y": null,
+      "demand": 39.0,
+      "is_depot": false
+    },
+    {
+      "id": 29,
+      "x": null,
+      "y": null,
+      "demand": 95.0,
+      "is_depot": false
+    },
+    {
+      "id": 30,
+      "x": null,
+      "y": null,
+      "demand": 90.0,
+      "is_depot": false
+    },
+    {
+      "id": 31,
+      "x": null,
+      "y": null,
+      "demand": 123.0,
+      "is_depot": false
+    }
+  ],
+  "statistics": {
+    "total_demand": 903.0,
+    "route_lower_bound_by_capacity": 7,
+    "demand_mean": 30.1,
+    "demand_cv": 1.0009634693005383,
+    "demand_density": 0.9214285714285714,
+    "vehicle_ratio": 0.23333333333333334,
+    "distance_cv": 0.0,
+    "nearest_neighbor_cv": 0.0,
+    "depot_distance_cv": 0.0,
+    "aspect_ratio": 0.0,
+    "spatial_density": 30.0
+  },
+  "tier": "smoke",
+  "reference": {
+    "cost": 379,
+    "objective": 379,
+    "routes": [
+      [
+        30
+      ],
+      [
+        26,
+        4,
+        17,
+        5,
+        16
+      ],
+      [
+        29,
+        23
+      ],
+      [
+        21,
+        11,
+        13,
+        9,
+        28,
+        15
+      ],
+      [
+        20,
+        6,
+        22,
+        8,
+        2,
+        19
+      ],
+      [
+        25,
+        1,
+        14,
+        3,
+        24
+      ],
+      [
+        10,
+        18,
+        12,
+        7,
+        27
+      ]
+    ],
+    "route_count": 7,
+    "status": "best_known",
+    "value_kind": "best_known",
+    "raw_file": "E-n31-k7.sol",
+    "route_indexing": "CVRPLIB solution customer indices; depot is omitted from each route"
+  }
+}
