@@ -115,12 +115,17 @@ def test_publish_single_record_bundle_contains_case_trajectories(tmp_path: Path)
     assert bundle["index"]["render_mode"] == "single"
     assert set(bundle["index"]["artifacts"]) == {"overview.json", "results.json", "runs.jsonl"}
     assert bundle["overview"]["target_families"] == ["family-a"]
+    assert bundle["overview"]["preset"]["configuration"]["time_limit_s"] == 20.0
+    assert bundle["overview"]["preset"]["configuration"]["observation_interval_s"] == 1.0
     family = bundle["results"]["families"][0]
     assert family["role"] == "target"
     case = family["cases"][0]
     assert len(case["trajectory"]) == 20
     assert [point["time_s"] for point in case["checkpoints"]] == [5.0, 10.0, 20.0]
     assert case["trajectory"][-1]["current"]["gap"]["median"] == pytest.approx(0.0)
+    assert case["trajectory"][-1]["current"]["objective"]["median"] == pytest.approx(10.0)
+    assert case["trajectory"][-1]["current"]["objective"]["p25"] == pytest.approx(10.0)
+    assert case["trajectory"][-1]["current"]["objective"]["p75"] == pytest.approx(10.0)
 
 
 def test_publish_comparison_uses_paired_seed_cohort_and_allows_strategy_change(tmp_path: Path) -> None:
@@ -138,6 +143,8 @@ def test_publish_comparison_uses_paired_seed_cohort_and_allows_strategy_change(t
     assert point["paired_gap"]["sample_count"] == 2
     assert point["paired_gap"]["delta_pp"] < 0
     assert point["paired_gap"]["change"] == "improved"
+    assert point["current"]["objective"]["median"] == pytest.approx(9.0)
+    assert point["baseline"]["objective"]["median"] == pytest.approx(10.0)
 
 
 def test_comparison_does_not_fall_back_to_unpaired_current_gap(tmp_path: Path) -> None:

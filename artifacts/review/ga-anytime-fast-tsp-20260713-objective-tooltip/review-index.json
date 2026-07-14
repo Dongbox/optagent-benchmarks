@@ -1,0 +1,27 @@
+{
+  "artifacts": {
+    "overview.json": {
+      "bytes": 6849,
+      "path": "overview.json",
+      "sha256": "sha256:295c0254e3f74728238774d1b8bc9a1d4256fb70c957ffd1c9ccf513ca4cf390"
+    },
+    "results.json": {
+      "bytes": 103160,
+      "path": "results.json",
+      "sha256": "sha256:6d505e114f121ab3e185ccf88754b8448604e542d4450498902423ebe6f41529"
+    },
+    "runs.jsonl": {
+      "bytes": 62644,
+      "path": "runs.jsonl",
+      "sha256": "sha256:00b27cb3b12eb2c9e80db50004db73dee4f68e970e2a54bf3baac3dd3b9abf5b"
+    }
+  },
+  "comparison": {
+    "available": false,
+    "reason": ""
+  },
+  "created_at": "2026-07-14T01:18:40.828283+00:00",
+  "kind": "optagent_review_bundle",
+  "render_mode": "single",
+  "review_schema_version": 2
+}

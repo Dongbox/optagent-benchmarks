@@ -133,6 +133,15 @@ def _artifact_meta(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         )
     checkpoints = tuple(float(value) for value in first.get("formal_checkpoints_s") or DEFAULT_CHECKPOINTS)
     target_families = tuple(str(value) for value in first.get("target_families") or ())
+    raw_max_iterations = first.get("max_iterations")
+    max_iterations = (
+        int(raw_max_iterations) if isinstance(raw_max_iterations, (int, float)) and raw_max_iterations >= 0 else None
+    )
+    observation_interval = None
+    if len(observation_times) >= 2:
+        intervals = [right - left for left, right in zip(observation_times, observation_times[1:])]
+        if intervals and all(math.isclose(value, intervals[0]) for value in intervals[1:]):
+            observation_interval = intervals[0]
     return {
         "preset_id": str(first.get("preset_id") or "unidentified"),
         "preset_version": str(first.get("preset_version") or "0"),
@@ -141,6 +150,13 @@ def _artifact_meta(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "observation_times_s": observation_times,
         "formal_checkpoints_s": checkpoints,
         "expected_seed_count": int(first.get("expected_seed_count") or len({row.get("seed") for row in rows})),
+        "configuration": {
+            "time_limit_s": _optional_float(first.get("time_budget_s")),
+            "max_iterations": max_iterations,
+            "population_size": _optional_int(first.get("population_size")),
+            "thread_count": _optional_int(first.get("thread_count")),
+            "observation_interval_s": observation_interval,
+        },
     }
 
 
@@ -171,6 +187,7 @@ def _build_overview(
             "observation_times_s": list(meta["observation_times_s"]),
             "formal_checkpoints_s": list(meta["formal_checkpoints_s"]),
             "expected_seed_count": meta["expected_seed_count"],
+            "configuration": meta["configuration"],
         },
         "current": _variant_identity(current_source, current_strategy),
         "baseline": _variant_identity(baseline_source, baseline_strategy) if baseline_source else None,
@@ -334,12 +351,14 @@ def _trajectory_point(
 
 def _side_point(samples: Sequence[Mapping[str, Any]], valid: int, expected: int) -> dict[str, Any]:
     gaps = [float(sample["gap_percent"]) for sample in samples if sample.get("gap_percent") is not None]
+    objectives = [float(sample["objective"]) for sample in samples if sample.get("objective") is not None]
     exits = [sample for sample in samples if sample.get("search_ended")]
     return {
         "valid": valid,
         "expected": expected,
         "feasible": len(samples),
         "gap": _stats(gaps),
+        "objective": _stats(objectives),
         "search_ended": len(exits),
     }
 
@@ -406,6 +425,7 @@ def _sample(row: Mapping[str, Any], time_s: float) -> dict[str, Any] | None:
     objective = snapshot.get("verification_objective") if feasible else None
     return {
         "feasible": feasible,
+        "objective": float(objective) if isinstance(objective, (int, float)) else None,
         "gap_percent": _reference_gap_percent(
             objective,
             row.get("reference_objective"),
@@ -541,6 +561,14 @@ def _reference_gap_percent(objective: Any, reference: Any, objective_sense: str)
         return None
     delta = reference - objective if objective_sense == "maximize" else objective - reference
     return float(delta) / abs(float(reference)) * 100.0
+
+
+def _optional_float(value: Any) -> float | None:
+    return float(value) if isinstance(value, (int, float)) else None
+
+
+def _optional_int(value: Any) -> int | None:
+    return int(value) if isinstance(value, (int, float)) else None
 
 
 def _coordinate(row: Mapping[str, Any]) -> tuple[str, str, Any]:
