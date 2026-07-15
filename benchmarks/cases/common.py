@@ -10,6 +10,8 @@ from typing import Any
 # runner 侧只负责运行计划、预算、输出和汇总，不再作为 case solve 的工具库。
 
 MODEL_STYLE_BY_FAMILY = {
+    "capacitated_vehicle_routing_fixed_fleet": "binary_arc_single_commodity_flow",
+    "capacitated_vehicle_routing_variable_fleet": "binary_arc_variable_fleet_single_commodity_flow",
     "cumulative_resource_scheduling": "interval_var_cumulative_precedence",
     "exact_linear_mip": "mps_linear_mp",
     "interval_job_shop": "interval_var_sequence_no_overlap_precedence",

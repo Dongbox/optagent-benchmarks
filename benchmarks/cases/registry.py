@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from importlib import import_module
 from types import ModuleType
@@ -11,6 +11,8 @@ from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row
 # 系列模块，例如 jsplib/scheduling/jobshop/abz.py。
 INSTANCE_COLLECTION_MODULES = (
     "benchmarks.cases.custom.steel_transition_sequence",
+    "benchmarks.cases.cvrplib.cvrp",
+    "benchmarks.cases.cvrp2lib.cvrp_xml",
     "benchmarks.cases.fjsplib.fjobshop",
     "benchmarks.cases.jsplib.jobshop",
     "benchmarks.cases.psplib.rcpsp",
@@ -20,6 +22,8 @@ INSTANCE_COLLECTION_MODULES = (
 )
 
 IMPLEMENTED_FAMILY_NAMES = {
+    "capacitated_vehicle_routing_fixed_fleet",
+    "capacitated_vehicle_routing_variable_fleet",
     "cumulative_resource_scheduling",
     "exact_linear_mip",
     "flexible_interval_job_shop",
