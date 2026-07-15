@@ -13,6 +13,7 @@ def test_top_level_help_lists_the_public_commands(capsys: pytest.CaptureFixture[
     assert "list-cases" in output
     assert "compare-ga" in output
     assert "authority" in output
+    assert "release-plan" in output
     assert "compare-runs" not in output
     assert "publish-results" not in output
     assert "generate-results-index" not in output
@@ -28,6 +29,7 @@ def test_public_command_inventory_is_small_and_current() -> None:
         "compare-ga",
         "publish-telemetry",
         "publish-review",
+        "release-plan",
         "dashboard",
     }
 

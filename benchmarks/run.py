@@ -4,6 +4,7 @@ import argparse
 from dataclasses import asdict, dataclass, replace
 import json
 from math import isclose
+from pathlib import Path
 from time import perf_counter
 from typing import Any, Iterable, Sequence
 
@@ -23,6 +24,7 @@ class LocalRunBudget:
     trace_limit: int = 8
     thread_count: int = 1
     observation_times_s: tuple[float, ...] = ()
+    reproduction_path: str | None = None
 
 
 def all_cases() -> list[dict[str, Any]]:
@@ -266,9 +268,9 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
     thread_count = int(getattr(budget, "thread_count", 1))
     if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
-        return solve_milp(model, config=strategy_config)
+        return solve_milp(model, config=strategy_config, reproduction_path=getattr(budget, "reproduction_path", None))
     if strategy_name == "cpsat":
-        return solve_cpsat(model, config=strategy_config)
+        return solve_cpsat(model, config=strategy_config, reproduction_path=getattr(budget, "reproduction_path", None))
     return solve(
         model,
         strategy=strategy_config,
@@ -279,6 +281,7 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
         trace_output="full",
         trace_limit=int(getattr(budget, "trace_limit", 8)),
         observation_times_s=tuple(getattr(budget, "observation_times_s", ())),
+        reproduction_path=getattr(budget, "reproduction_path", None),
     )
 
 
@@ -585,6 +588,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--population-size", type=int, default=10)
     parser.add_argument("--trace-limit", type=int, default=8)
     parser.add_argument("--thread-count", type=int, default=1)
+    parser.add_argument("--reproduction-path", type=Path)
     parser.add_argument(
         "--no-download", action="store_true", help="Fail when a required public instance is not already cached."
     )
@@ -623,6 +627,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         population_size=args.population_size,
         trace_limit=args.trace_limit,
         thread_count=args.thread_count,
+        reproduction_path=str(args.reproduction_path.resolve()) if args.reproduction_path is not None else None,
     )
     rows = run_case(
         args.benchmark_id,
