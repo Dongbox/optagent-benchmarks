@@ -690,6 +690,16 @@ def _family_route_matrix() -> dict[str, dict[str, Any]]:
             "exact_only": True,
             "ignored_heuristic_metadata": "mip_heuristic_route_enabled=false",
         },
+        "capacitated_vehicle_routing_fixed_fleet": {
+            "routes": ["GaConfig via solve", "MilpConfig via solve_milp"],
+            "strategy_replacements": {},
+            "notes": "CVRPLIB fixed vehicle-count CVRP",
+        },
+        "capacitated_vehicle_routing_variable_fleet": {
+            "routes": ["GaConfig via solve", "MilpConfig via solve_milp"],
+            "strategy_replacements": {},
+            "notes": "CVRP2LIB variable vehicle-count CVRP; model implementation remains scaffold",
+        },
         "interval_job_shop": {
             "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),

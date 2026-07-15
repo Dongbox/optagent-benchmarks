@@ -167,6 +167,8 @@ FAMILY_TIER_BUDGET_OVERRIDES: dict[tuple[str, str], dict[str, Any]] = {
 }
 
 DISPLAY_EDGE_TYPE_BY_FAMILY = {
+    "capacitated_vehicle_routing_fixed_fleet": "cvrp_fixed_fleet_route",
+    "capacitated_vehicle_routing_variable_fleet": "cvrp_variable_fleet_route",
     "cumulative_resource_scheduling": "rcpsp_cumulative",
     "exact_linear_mip": "mps_linear_mip",
     "interval_job_shop": "job_shop_interval",
