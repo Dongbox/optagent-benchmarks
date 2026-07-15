@@ -10,8 +10,11 @@ Command = tuple[str, Callable[[Sequence[str] | None], int]]
 
 def _commands() -> dict[str, Command]:
     from benchmarks.authoritative_baseline import main as authority_main
+    from benchmarks.evaluation_runner import main as evaluate_main
     from benchmarks.presentation.dashboard import main as dashboard_main
     from benchmarks.presentation.suite import main as suite_main
+    from benchmarks.review_bundle import main as publish_review_main
+    from benchmarks.release_validation import main as release_plan_main
     from benchmarks.run import main as run_main
     from benchmarks.strategy_comparison_cli import main as compare_ga_main
     from benchmarks.telemetry_artifacts import main as publish_telemetry_main
@@ -19,10 +22,13 @@ def _commands() -> dict[str, Command]:
     return {
         "list-cases": ("List registered benchmark cases.", lambda argv: run_main(["--list-cases", *(argv or ())])),
         "run": ("Run one benchmark case for local diagnosis.", run_main),
+        "evaluate": ("Run a fixed strategy evaluation preset.", evaluate_main),
         "suite": ("Run an artifact-producing benchmark suite.", suite_main),
         "authority": ("Produce an authoritative release-gate baseline.", authority_main),
         "compare-ga": ("Run, compare, or promote paired GA evidence.", compare_ga_main),
         "publish-telemetry": ("Publish canonical telemetry metric artifacts.", publish_telemetry_main),
+        "publish-review": ("Publish a static strategy review bundle.", publish_review_main),
+        "release-plan": ("Print the fixed cross-platform release-validation plan.", release_plan_main),
         "dashboard": ("Render a dashboard from immutable telemetry artifacts.", dashboard_main),
     }
 

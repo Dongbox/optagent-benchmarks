@@ -1,0 +1,283 @@
+{
+  "by_strategy": {
+    "ga": {
+      "highest_variability": [
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.46200255247818184,
+          "instance_id": "qaplib_tai20b",
+          "max_gap": 0.7392641964372327,
+          "mean_gap": 0.37088150903432787,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.24525075268710775,
+          "instance_id": "qaplib_bur26a",
+          "max_gap": 0.03202000490171689,
+          "mean_gap": 0.023527043288056947,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.2270564425786561,
+          "instance_id": "qaplib_had20",
+          "max_gap": 0.05605316382548396,
+          "mean_gap": 0.044698064143311185,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.20918819037774736,
+          "instance_id": "qaplib_bur26g",
+          "max_gap": 0.04090174606105342,
+          "mean_gap": 0.028282429121497588,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.1360580897871303,
+          "instance_id": "qaplib_tai30b",
+          "max_gap": 0.6463547683736444,
+          "mean_gap": 0.5083016800083975,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.1293516451906892,
+          "instance_id": "jsplib_orb03",
+          "max_gap": 0.6288557213930348,
+          "mean_gap": 0.5155223880597015,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.12162186218246296,
+          "instance_id": "jsplib_orb04",
+          "max_gap": 1.090547263681592,
+          "mean_gap": 0.9905472636815921,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.12006525776909341,
+          "instance_id": "qaplib_scr20",
+          "max_gap": 0.5168045078614923,
+          "mean_gap": 0.40890120876124697,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.11818333628271586,
+          "instance_id": "jsplib_abz5",
+          "max_gap": 1.3371150729335495,
+          "mean_gap": 1.0344408427876823,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.11085311178939336,
+          "instance_id": "qaplib_nug20",
+          "max_gap": 0.16653696498054474,
+          "mean_gap": 0.14700389105058365,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        }
+      ],
+      "largest_gaps": [
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.006318219740655128,
+          "instance_id": "tsplib_rd400",
+          "max_gap": 12.426281002552189,
+          "mean_gap": 12.311720437144166,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.013130158517234711,
+          "instance_id": "tsplib_gil262",
+          "max_gap": 9.254415475189235,
+          "mean_gap": 9.102607232968882,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.027915242401595458,
+          "instance_id": "tsplib_kroa150",
+          "max_gap": 8.40125923691751,
+          "mean_gap": 7.959251998190318,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.027543238998692612,
+          "instance_id": "tsplib_ch130",
+          "max_gap": 5.754828150572831,
+          "mean_gap": 5.541538461538462,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.002020679223500321,
+          "instance_id": "tsplib_pcb442",
+          "max_gap": 3.3609437157824256,
+          "mean_gap": 3.3527472527472524,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_quadratic_assignment",
+          "gap_cv": 0.09826393054815062,
+          "instance_id": "qaplib_chr25a",
+          "max_gap": 2.6517386722866174,
+          "mean_gap": 2.295468914646997,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.03161669844690103,
+          "instance_id": "tsplib_eil101",
+          "max_gap": 2.192368839427663,
+          "mean_gap": 2.0993640699523053,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.005581925261190094,
+          "instance_id": "tsplib_lin318",
+          "max_gap": 1.85212591306003,
+          "mean_gap": 1.8349068500321206,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.07363139810352565,
+          "instance_id": "jsplib_la21",
+          "max_gap": 1.9024856596558317,
+          "mean_gap": 1.7414913957934992,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.00014709686851976887,
+          "instance_id": "tsplib_ts225",
+          "max_gap": 1.183618518196821,
+          "mean_gap": 1.1834053204677715,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        }
+      ],
+      "target_misses": [
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.11818333628271586,
+          "instance_id": "jsplib_abz5",
+          "max_gap": 1.3371150729335495,
+          "mean_gap": 1.0344408427876823,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.09509632283624352,
+          "instance_id": "jsplib_abz6",
+          "max_gap": 1.3690349946977731,
+          "mean_gap": 1.1646871686108164,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.10132229532165601,
+          "instance_id": "jsplib_la16",
+          "max_gap": 1.0455026455026455,
+          "mean_gap": 0.871005291005291,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.07363139810352565,
+          "instance_id": "jsplib_la21",
+          "max_gap": 1.9024856596558317,
+          "mean_gap": 1.7414913957934992,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.1293516451906892,
+          "instance_id": "jsplib_orb03",
+          "max_gap": 0.6288557213930348,
+          "mean_gap": 0.5155223880597015,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "interval_job_shop",
+          "gap_cv": 0.12162186218246296,
+          "instance_id": "jsplib_orb04",
+          "max_gap": 1.090547263681592,
+          "mean_gap": 0.9905472636815921,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.0,
+          "instance_id": "tsplib_a280",
+          "max_gap": 0.08879410624272974,
+          "mean_gap": 0.08879410624272974,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.027543238998692612,
+          "instance_id": "tsplib_ch130",
+          "max_gap": 5.754828150572831,
+          "mean_gap": 5.541538461538462,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.03161669844690103,
+          "instance_id": "tsplib_eil101",
+          "max_gap": 2.192368839427663,
+          "mean_gap": 2.0993640699523053,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        },
+        {
+          "family": "sequence_blackbox_tsp",
+          "gap_cv": 0.013130158517234711,
+          "instance_id": "tsplib_gil262",
+          "max_gap": 9.254415475189235,
+          "mean_gap": 9.102607232968882,
+          "run_count": 10,
+          "target_hit_ratio": 0.0
+        }
+      ]
+    }
+  },
+  "review_schema_version": 1
+}

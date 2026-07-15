@@ -48,6 +48,7 @@ def publish_telemetry_artifacts(
     *,
     references: Mapping[str, float | Mapping[str, Any]] | None = None,
     targets: Mapping[str, float] | None = None,
+    benchmark_contexts: Sequence[Mapping[str, Any] | None] | None = None,
     source_label: str = "run-telemetry.pb",
     created_at: str | None = None,
     optagent_commit: str | None = None,
@@ -59,14 +60,51 @@ def publish_telemetry_artifacts(
     if out.exists() and any(out.iterdir()):
         raise FileExistsError(f"telemetry artifact output directory is not empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
-    dataset = build_metric_dataset(payloads, provenance=[source_label])
-    metrics = derive_five_dimensional_metrics(dataset, references=references, targets=targets)
+    context_list = list(benchmark_contexts) if benchmark_contexts is not None else None
+    dataset = build_metric_dataset(payloads, provenance=[source_label], benchmark_contexts=context_list)
+    aligned_contexts = context_list if context_list is not None else [None] * len(dataset.rows)
+    suite_references = {
+        row.instance_id: float(context["reference_objective"])
+        for row, context in zip(dataset.rows, aligned_contexts, strict=True)
+        if context is not None and context.get("reference_objective") is not None
+    }
+    effective_references = {**suite_references, **(references or {})}
+    metrics = derive_five_dimensional_metrics(dataset, references=effective_references, targets=targets)
     statistical_tests = metrics["statistical_validity"]
     strategy_feedback = derive_strategy_optimization_feedback(dataset, metrics)
     effective_created_at = created_at or datetime.now(timezone.utc).isoformat()
 
-    rows = [row_to_artifact(row) for row in dataset.rows]
-    curves = [curve_to_artifact(point) for point in dataset.curves]
+    effective_targets = {**effective_references, **(targets or {})}
+    rows = [row_to_artifact(row, references=effective_references, targets=effective_targets) for row in dataset.rows]
+    for artifact_row, context in zip(rows, aligned_contexts, strict=True):
+        if context is None:
+            continue
+        for key in (
+            "benchmark_id",
+            "case_checksum",
+            "observations",
+            "solution_snapshots",
+            "observation_verification_passed",
+            "observation_verification_errors",
+            "preset_id",
+            "preset_version",
+            "review_mode",
+            "target_families",
+            "formal_checkpoints_s",
+            "observation_times_s",
+            "expected_seed_count",
+        ):
+            if key in context:
+                artifact_row[key] = context[key]
+    row_by_run_id = {row.run_id: row for row in dataset.rows}
+    curves = [
+        curve_to_artifact(
+            point,
+            reference=effective_references.get(point.instance_id),
+            objective_sense=row_by_run_id[point.run_id].objective_sense,
+        )
+        for point in dataset.curves
+    ]
     throughput = build_throughput_rows(dataset)
     dashboard = build_dashboard_artifact(
         rows=rows,
@@ -109,11 +147,31 @@ def load_published_artifacts(artifact_dir: str | Path) -> dict[str, Any]:
 
     root = Path(artifact_dir)
     manifest = _read_json(root / MANIFEST_JSON)
-    for name, entry in manifest.get("artifacts", {}).items():
+    if manifest.get("manifest_schema_version") != ARTIFACT_SCHEMA_VERSION:
+        raise ValueError("unsupported telemetry artifact manifest schema")
+    required = {
+        ROWS_JSONL,
+        CURVES_JSONL,
+        THROUGHPUT_JSONL,
+        METRICS_JSON,
+        STATISTICAL_TESTS_JSON,
+        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
+        DASHBOARD_JSON,
+        DASHBOARD_MD,
+    }
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, Mapping) or set(artifacts) != required:
+        raise ValueError("telemetry artifact manifest does not declare the complete artifact set")
+    for name in sorted(required):
+        entry = artifacts[name]
         path = root / name
+        if entry.get("path") != name:
+            raise ValueError(f"invalid telemetry artifact path: {name}")
         expected = entry.get("sha256")
-        if expected and _sha256(path) != expected:
+        if not expected or _sha256(path) != expected:
             raise ValueError(f"artifact checksum mismatch: {name}")
+        if path.stat().st_size != entry.get("bytes"):
+            raise ValueError(f"artifact byte count mismatch: {name}")
     return {
         "manifest": manifest,
         "rows": _read_jsonl(root / ROWS_JSONL),
@@ -126,24 +184,56 @@ def load_published_artifacts(artifact_dir: str | Path) -> dict[str, Any]:
     }
 
 
-def row_to_artifact(row: MetricRow) -> dict[str, Any]:
+def row_to_artifact(
+    row: MetricRow,
+    *,
+    references: Mapping[str, float] | None = None,
+    targets: Mapping[str, float] | None = None,
+) -> dict[str, Any]:
     data = asdict(row)
+    reference = (references or {}).get(row.instance_id)
+    target = (targets or {}).get(row.instance_id)
     return {
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "source_artifact": "run-telemetry.pb",
         "provenance": ["run-telemetry.pb", ROWS_JSONL],
+        "reference_objective": reference,
+        "gap_to_reference": _reference_gap(row.objective, reference, row.objective_sense),
+        "target_objective": target,
+        "target_hit": _meets_target(row.objective, target, row.objective_sense),
         **data,
     }
 
 
-def curve_to_artifact(point: CurvePoint) -> dict[str, Any]:
+def curve_to_artifact(
+    point: CurvePoint,
+    *,
+    reference: float | None = None,
+    objective_sense: str = "minimize",
+) -> dict[str, Any]:
     data = asdict(point)
     return {
         "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
         "source_artifact": ROWS_JSONL,
         "provenance": ["run-telemetry.pb", ROWS_JSONL, CURVES_JSONL],
+        "gap_to_reference": _reference_gap(point.objective, reference, objective_sense),
         **data,
     }
+
+
+def _reference_gap(objective: float | None, reference: float | None, objective_sense: str) -> float | None:
+    if objective is None or reference is None:
+        return None
+    if reference == 0:
+        return None
+    delta = reference - objective if objective_sense == "maximize" else objective - reference
+    return delta / abs(reference)
+
+
+def _meets_target(objective: float | None, target: float | None, objective_sense: str) -> bool | None:
+    if objective is None or target is None:
+        return None
+    return objective >= target if objective_sense == "maximize" else objective <= target
 
 
 def build_throughput_rows(dataset: MetricDataset) -> list[dict[str, Any]]:
@@ -199,13 +289,13 @@ def build_dashboard_artifact(
         "dashboard_schema_version": ARTIFACT_SCHEMA_VERSION,
         "created_at": created_at,
         "source_artifacts": [
-        ROWS_JSONL,
-        CURVES_JSONL,
-        THROUGHPUT_JSONL,
-        METRICS_JSON,
-        STATISTICAL_TESTS_JSON,
-        STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
-    ],
+            ROWS_JSONL,
+            CURVES_JSONL,
+            THROUGHPUT_JSONL,
+            METRICS_JSON,
+            STATISTICAL_TESTS_JSON,
+            STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
+        ],
         "strategy_count": len(strategies),
         "run_count": len(rows),
         "curve_point_count": len(curves),
@@ -405,8 +495,7 @@ def _flatten_metric_entries(
                 "reason": payload.get("reason"),
                 "source": payload.get("source"),
                 "source_artifact": source_artifact,
-                "provenance": payload.get("provenance")
-                or ["run-telemetry.pb", ROWS_JSONL, source_artifact],
+                "provenance": payload.get("provenance") or ["run-telemetry.pb", ROWS_JSONL, source_artifact],
             }
             return
         for key, value in payload.items():
@@ -489,18 +578,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("provide telemetry JSON files or --suite-run")
 
     payloads = [_read_json(path) for path in args.telemetry_json]
-    suite_references: dict[str, float] = {}
+    benchmark_contexts: list[Mapping[str, Any] | None] = [None] * len(payloads)
     if args.suite_run:
-        suite_payloads, suite_references = _load_suite_telemetry(args.suite_run)
+        suite_payloads, suite_contexts = _load_suite_telemetry(args.suite_run)
         payloads.extend(suite_payloads)
+        benchmark_contexts.extend(suite_contexts)
     if not payloads:
         parser.error("no telemetry payloads were found")
-    references = {**suite_references, **_parse_key_values(args.reference)}
     result = publish_telemetry_artifacts(
         payloads,
         args.output_dir,
-        references=references,
+        references=_parse_key_values(args.reference),
         targets=_parse_key_values(args.target),
+        benchmark_contexts=benchmark_contexts,
         source_label="suite-run/rows.jsonl" if args.suite_run else "run-telemetry.pb",
         created_at=args.created_at,
         optagent_commit=args.optagent_commit,
@@ -518,13 +608,15 @@ def _parse_key_values(values: Sequence[str]) -> dict[str, float]:
     return parsed
 
 
-def _load_suite_telemetry(run_dir: str | Path) -> tuple[list[dict[str, Any]], dict[str, float]]:
+def _load_suite_telemetry(
+    run_dir: str | Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     rows_path = Path(run_dir) / "rows.jsonl"
     if not rows_path.is_file():
         raise FileNotFoundError(f"suite rows not found: {rows_path}")
 
     payloads: list[dict[str, Any]] = []
-    references: dict[str, float] = {}
+    contexts: list[dict[str, Any]] = []
     for line in rows_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
@@ -535,12 +627,35 @@ def _load_suite_telemetry(run_dir: str | Path) -> tuple[list[dict[str, Any]], di
                 raise ValueError(f"suite row is missing canonical telemetry: {row.get('benchmark_id') or 'unknown'}")
             telemetry = _failed_suite_row_telemetry(row)
         payloads.append(telemetry)
-        reference = row.get("reference_objective")
-        instance = telemetry.get("instance")
-        instance_id = instance.get("id") if isinstance(instance, dict) else None
-        if instance_id and reference is not None:
-            references[str(instance_id)] = float(reference)
-    return payloads, references
+        context: dict[str, Any] = {}
+        if row.get("benchmark_id"):
+            context["instance_id"] = str(row["benchmark_id"])
+        if row.get("family"):
+            context["family"] = str(row["family"])
+        if row.get("reference_objective") is not None:
+            context["reference_objective"] = float(row["reference_objective"])
+        for key in (
+            "benchmark_id",
+            "case_checksum",
+            "observations",
+            "solution_snapshots",
+            "observation_verification_passed",
+            "observation_verification_errors",
+            "preset_id",
+            "preset_version",
+            "review_mode",
+            "target_families",
+            "formal_checkpoints_s",
+            "observation_times_s",
+            "expected_seed_count",
+        ):
+            if key in row:
+                context[key] = row[key]
+        budget = row.get("effective_budget")
+        if isinstance(budget, Mapping):
+            context.setdefault("observation_times_s", list(budget.get("observation_times_s") or ()))
+        contexts.append(context)
+    return payloads, contexts
 
 
 def _failed_suite_row_telemetry(row: Mapping[str, Any]) -> dict[str, Any]:

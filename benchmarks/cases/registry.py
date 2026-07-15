@@ -79,7 +79,7 @@ def run_case(case: CaseDeclaration, **kwargs: Any) -> list[dict[str, Any]]:
 
 def default_model_styles_for_family(family: str) -> tuple[str, ...]:
     if family == "sequence_blackbox_tsp":
-        from benchmarks.cases.tsplib.tsp.pr import DEFAULT_TSP_MODEL_STYLES
+        from benchmarks.cases.tsplib.tsp._domain import DEFAULT_TSP_MODEL_STYLES
 
         return DEFAULT_TSP_MODEL_STYLES
     return ()
@@ -87,4 +87,3 @@ def default_model_styles_for_family(family: str) -> tuple[str, ...]:
 
 def implemented_families() -> set[str]:
     return set(IMPLEMENTED_FAMILY_NAMES)
-

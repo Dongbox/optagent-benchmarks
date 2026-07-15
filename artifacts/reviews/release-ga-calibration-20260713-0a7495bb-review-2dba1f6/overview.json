@@ -1,0 +1,81 @@
+{
+  "current": {
+    "benchmarks_commit": "2dba1f693819ed73b04c401a3f5a9c05ef151ed3",
+    "created_at": "2026-07-13T03:02:12Z",
+    "optagent_commit": "0a7495bb03aec5331ddea71bccf66a2e0e2ef128",
+    "protocol_id": "suite_calibration_v1"
+  },
+  "review_schema_version": 1,
+  "strategies": [
+    "ga"
+  ],
+  "strategies_data": {
+    "ga": {
+      "budgets": {
+        "max_iterations": [
+          20
+        ],
+        "population_size": [
+          16
+        ],
+        "thread_count": [
+          1
+        ],
+        "time_budget_s": [
+          5.0
+        ]
+      },
+      "case_count": 32,
+      "core_metrics": {
+        "candidate_throughput": {
+          "availability": "available",
+          "direction": "higher",
+          "reason": "",
+          "sample_count": 320,
+          "unit": "candidates/s",
+          "value": 36968.32514816943
+        },
+        "gap_cv": {
+          "availability": "available",
+          "direction": "lower",
+          "reason": "",
+          "sample_count": 320,
+          "unit": "ratio",
+          "value": 1.6156793733915948
+        },
+        "median_reference_gap": {
+          "availability": "available",
+          "direction": "lower",
+          "reason": "",
+          "sample_count": 320,
+          "unit": "gap",
+          "value": 0.7205796414751638
+        },
+        "normalized_primal_integral": {
+          "availability": "available",
+          "direction": "lower",
+          "reason": "",
+          "sample_count": 320,
+          "unit": "gap",
+          "value": 1.7826146225345734
+        },
+        "target_hit_ratio": {
+          "availability": "available",
+          "direction": "higher",
+          "reason": "",
+          "sample_count": null,
+          "unit": "ratio",
+          "value": 0.03125
+        }
+      },
+      "families": [
+        "interval_job_shop",
+        "sequence_blackbox_tsp",
+        "sequence_quadratic_assignment"
+      ],
+      "feasible_count": 320,
+      "run_count": 320,
+      "seed_count": 10
+    }
+  }
+}

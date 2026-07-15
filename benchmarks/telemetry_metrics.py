@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Sequence
 
 
-SUPPORTED_SCHEMA_VERSION = 1
+METRIC_SCHEMA_VERSION = 1
+SUPPORTED_TELEMETRY_SCHEMA_VERSIONS = frozenset({1, 2})
 
 AVAILABLE = "available"
 NULL = "null"
@@ -84,6 +85,9 @@ class MetricRow:
     trace_truncated: bool
     trace_event_count: int
     source_schema_version: int
+    max_iterations: int | None = None
+    population_size: int | None = None
+    thread_count: int | None = None
 
 
 @dataclass(frozen=True)
@@ -106,7 +110,7 @@ class MetricDataset:
     rows: list[MetricRow] = field(default_factory=list)
     curves: list[CurvePoint] = field(default_factory=list)
     source_count: int = 0
-    schema_version: int = SUPPORTED_SCHEMA_VERSION
+    schema_version: int = METRIC_SCHEMA_VERSION
     provenance: list[str] = field(default_factory=list)
 
     def rows_by_strategy(self) -> dict[str, list[MetricRow]]:
@@ -143,7 +147,7 @@ def load_run_telemetry(payload: Any) -> dict[str, Any]:
         raise TelemetryInputError("canonical telemetry requires a schema block")
 
     version = _parse_int(schema.get("schema_version"))
-    if version != SUPPORTED_SCHEMA_VERSION:
+    if version not in SUPPORTED_TELEMETRY_SCHEMA_VERSIONS:
         raise TelemetryInputError(f"unsupported telemetry schema version: {version}")
 
     for block in ("identity", "instance", "outcome", "effort"):
@@ -157,13 +161,18 @@ def build_metric_dataset(
     payloads: Iterable[Any],
     *,
     provenance: Sequence[str] | None = None,
+    benchmark_contexts: Sequence[Mapping[str, Any] | None] | None = None,
 ) -> MetricDataset:
     """Normalize canonical telemetry payloads into benchmark rows and curves."""
 
+    payload_list = list(payloads)
+    context_list = list(benchmark_contexts) if benchmark_contexts is not None else [None] * len(payload_list)
+    if len(context_list) != len(payload_list):
+        raise ValueError("telemetry contexts must align one-to-one with payloads")
     dataset = MetricDataset(provenance=list(provenance or ["run-telemetry.pb"]))
-    for index, payload in enumerate(payloads):
+    for index, (payload, context) in enumerate(zip(payload_list, context_list, strict=True)):
         telemetry = load_run_telemetry(payload)
-        row = _build_row(telemetry, index)
+        row = _build_row(telemetry, index, context=context)
         dataset.rows.append(row)
         dataset.curves.extend(_build_curves(telemetry, row))
         dataset.source_count += 1
@@ -200,7 +209,9 @@ def derive_strategy_optimization_feedback(
     """
 
     by_strategy: dict[str, dict[str, Any]] = {}
-    statistical = metrics.get("statistical_validity") if isinstance(metrics.get("statistical_validity"), Mapping) else {}
+    statistical = (
+        metrics.get("statistical_validity") if isinstance(metrics.get("statistical_validity"), Mapping) else {}
+    )
     for strategy, rows in dataset.rows_by_strategy().items():
         signals = _strategy_feedback_signals(strategy, metrics)
         recommendations = _strategy_recommendations(signals)
@@ -238,11 +249,7 @@ def calculate_effectiveness(
     for strategy, rows in dataset.rows_by_strategy().items():
         feasible = [row for row in rows if row.feasible and row.objective is not None]
         objectives = [row.objective for row in feasible if row.objective is not None]
-        gaps = [
-            gap
-            for row in feasible
-            if (gap := _row_reference_gap(row, references)) is not None
-        ]
+        gaps = [gap for row in feasible if (gap := _row_reference_gap(row, references)) is not None]
         by_strategy[strategy] = {
             "run_count": metric_entry(len(rows), unit="runs"),
             "feasible_runs": metric_entry(len(feasible), unit="runs"),
@@ -317,11 +324,7 @@ def calculate_robustness(
     by_strategy: dict[str, dict[str, Any]] = {}
     for strategy, rows in dataset.rows_by_strategy().items():
         objectives = [row.objective for row in rows if row.feasible and row.objective is not None]
-        gaps = [
-            gap
-            for row in rows
-            if (gap := _row_reference_gap(row, normalized_refs)) is not None
-        ]
+        gaps = [gap for row in rows if (gap := _row_reference_gap(row, normalized_refs)) is not None]
         success_rate = len(objectives) / len(rows) if rows else None
         by_strategy[strategy] = {
             "run_count": metric_entry(len(rows), unit="runs"),
@@ -482,7 +485,9 @@ def calculate_statistical_validity(
         "bonferroni": bonferroni_correction(p_values),
     }
     return {
-        "status": AVAILABLE if any(pair["a12"].get("availability") == AVAILABLE for pair in pairs) else INSUFFICIENT_DATA,
+        "status": AVAILABLE
+        if any(pair["a12"].get("availability") == AVAILABLE for pair in pairs)
+        else INSUFFICIENT_DATA,
         "pairwise": pairs,
         "omnibus": friedman_test(dataset),
         "multiple_comparison_correction": corrections,
@@ -541,7 +546,9 @@ def matched_normalized_outcomes(
         right_objective = _mean([row.objective for row in grouped[(strategy_b, instance)] if row.objective is not None])
         if left_objective is None or right_objective is None:
             continue
-        objective_sense = _instance_objective_sense([*grouped[(strategy_a, instance)], *grouped[(strategy_b, instance)]])
+        objective_sense = _instance_objective_sense(
+            [*grouped[(strategy_a, instance)], *grouped[(strategy_b, instance)]]
+        )
         reference = normalized_refs.get(instance)
         if reference is not None:
             left.append(_relative_gap(left_objective, reference, objective_sense))
@@ -788,7 +795,12 @@ def time_to_target(curve: Sequence[CurvePoint], target: float, objective_sense: 
     return None
 
 
-def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
+def _build_row(
+    telemetry: Mapping[str, Any],
+    index: int,
+    *,
+    context: Mapping[str, Any] | None = None,
+) -> MetricRow:
     schema = telemetry["schema"]
     identity = telemetry["identity"]
     instance = telemetry["instance"]
@@ -800,7 +812,10 @@ def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
     trace_overflow = telemetry.get("trace_overflow") if isinstance(telemetry.get("trace_overflow"), Mapping) else {}
 
     strategy = str(identity.get("strategy") or "unknown_strategy")
-    instance_id = str(instance.get("id") or instance.get("name") or f"instance-{index}")
+    benchmark_context = context or {}
+    instance_id = str(
+        instance.get("id") or benchmark_context.get("instance_id") or instance.get("name") or f"instance-{index}"
+    )
     seed = _parse_int(identity.get("seed"))
     run_id = f"{strategy}:{instance_id}:{seed if seed is not None else 'seedless'}:{index}"
     objective = _telemetry_value(outcome.get("objective_value"))
@@ -816,7 +831,7 @@ def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
         instance_id=instance_id,
         instance_name=str(instance.get("name") or ""),
         dataset=str(instance.get("dataset") or ""),
-        family=str(instance.get("family") or ""),
+        family=str(instance.get("family") or benchmark_context.get("family") or ""),
         objective_sense=str(outcome.get("objective_sense") or "minimize").lower(),
         status=str(outcome.get("status") or ""),
         feasible=bool(outcome.get("feasible", False)),
@@ -833,9 +848,12 @@ def _build_row(telemetry: Mapping[str, Any], index: int) -> MetricRow:
         attempted_moves=_value_as_int(search.get("attempted_moves")),
         restarts=_value_as_int(search.get("restarts")),
         time_budget_s=_value_as_float(budget.get("time_limit_s")),
+        max_iterations=_value_as_int(budget.get("max_iterations")),
+        population_size=_value_as_int(budget.get("population_size")),
+        thread_count=_parse_int(identity.get("thread_count")),
         trace_truncated=bool(trace_overflow.get("trace_truncated", False)),
         trace_event_count=_parse_int(trace_overflow.get("emitted_event_count")) or 0,
-        source_schema_version=_parse_int(schema.get("schema_version")) or SUPPORTED_SCHEMA_VERSION,
+        source_schema_version=_parse_int(schema.get("schema_version")) or METRIC_SCHEMA_VERSION,
     )
 
 
@@ -1207,9 +1225,27 @@ def _strategy_recommendations(signals: Mapping[str, Any]) -> list[dict[str, Any]
 def _strategy_regression_guards(signals: Mapping[str, Any]) -> list[dict[str, Any]]:
     guards: list[dict[str, Any]] = []
     for dimension, metric, threshold, direction, description in [
-        ("effectiveness", "solved_ratio", 1.0, "below", "Do not accept changes that reduce solved ratio without explicit scope."),
-        ("effectiveness", "median_gap_to_reference", 0.0, "above", "Do not trade away median gap unless another primary objective explicitly improves."),
-        ("anytime", "ecdf_target_hit_ratio", 1.0, "below", "Do not regress target hit ratio when target-reaching is a benchmark goal."),
+        (
+            "effectiveness",
+            "solved_ratio",
+            1.0,
+            "below",
+            "Do not accept changes that reduce solved ratio without explicit scope.",
+        ),
+        (
+            "effectiveness",
+            "median_gap_to_reference",
+            0.0,
+            "above",
+            "Do not trade away median gap unless another primary objective explicitly improves.",
+        ),
+        (
+            "anytime",
+            "ecdf_target_hit_ratio",
+            1.0,
+            "below",
+            "Do not regress target hit ratio when target-reaching is a benchmark goal.",
+        ),
         ("robustness", "gap_cv", 0.25, "above", "Treat high gap variance as a default-strategy release risk."),
     ]:
         value = _signal_number(signals, dimension, metric)

@@ -147,6 +147,17 @@ def test_unsupported_schema_version_is_rejected():
         raise AssertionError("unsupported schema was accepted")
 
 
+def test_telemetry_schema_v2_strategy_route_is_supported():
+    payload = copy.deepcopy(_fixture("native_search_minimal.json"))
+    payload["schema"]["schema_version"] = 2
+    payload["identity"]["run_route"] = "RUN_ROUTE_STRATEGY"
+
+    dataset = build_metric_dataset([payload])
+
+    assert dataset.rows[0].source_schema_version == 2
+    assert dataset.rows[0].route == "RUN_ROUTE_STRATEGY"
+
+
 def test_statistical_effect_size_defaults_require_matched_sample_threshold():
     too_small = vargha_delaney_a12([1.0, 2.0], [2.0, 3.0])
     assert too_small["availability"] == INSUFFICIENT_DATA

@@ -42,6 +42,7 @@ RUNNER_SCENARIO_DESCRIPTION = (
     "Standard artifact-writing benchmark suite for CI, calibration, strategy matrices, "
     "and dashboard publication inputs. Use benchmarks.run for lightweight local case tests."
 )
+BUDGET_POLICY_ID = "family_time_first_v2"
 IMPLEMENTED_FAMILIES = implemented_families()
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
 DEFAULT_STRATEGIES = ("ga", "alns")
@@ -159,7 +160,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             "When set, --seed is ignored and the default tier remains calibration unless --tier is provided."
         ),
     )
-    parser.add_argument("--max-iterations", type=int)
     parser.add_argument("--time-limit-s", type=float)
     parser.add_argument("--population-size", type=int)
     parser.add_argument("--trace-limit", type=int)
@@ -192,7 +192,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             benchmark_ids=benchmark_ids,
             strategies=strategies,
             seed=args.seed,
-            max_iterations=args.max_iterations,
+            max_iterations=None,
             time_limit_s=args.time_limit_s,
             population_size=args.population_size,
             trace_limit=args.trace_limit,
@@ -225,7 +225,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             benchmark_ids=benchmark_ids,
             strategies=strategies,
             seeds=tuple(args.calibration_seeds),
-            max_iterations=args.max_iterations,
+            max_iterations=None,
             time_limit_s=args.time_limit_s,
             population_size=args.population_size,
             trace_limit=args.trace_limit,
@@ -245,7 +245,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         benchmark_ids=benchmark_ids,
         strategies=strategies,
         seed=args.seed,
-        max_iterations=args.max_iterations,
+        max_iterations=None,
         time_limit_s=args.time_limit_s,
         population_size=args.population_size,
         trace_limit=args.trace_limit,
@@ -262,7 +262,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 @dataclass(frozen=True)
 class ScenarioCaseBudget:
     seed: int
-    max_iterations: int
+    max_iterations: int | None
     time_limit_s: float
     population_size: int
     trace_limit: int
@@ -341,7 +341,7 @@ def run_benchmark_suite(
         "parallel_thread_counts": list(thread_counts or (1,)),
         "model_styles": list(model_styles),
         "budget": asdict(budget_request),
-        "budget_policy": "family_tier_ceiling_v1",
+        "budget_policy": BUDGET_POLICY_ID,
         "family_budgets": budget_matrix,
         "allow_download": allow_download,
         "implemented_families": sorted(IMPLEMENTED_FAMILIES),
@@ -518,7 +518,7 @@ def _normalize_thread_counts(thread_counts: tuple[int, ...]) -> tuple[int, ...]:
 def _scenario_case_budget(*, family: str, effective_budget: EffectiveStrategyBudget) -> ScenarioCaseBudget:
     return ScenarioCaseBudget(
         seed=effective_budget.seed,
-        max_iterations=0 if family == "exact_linear_mip" else effective_budget.max_iterations,
+        max_iterations=effective_budget.max_iterations,
         time_limit_s=effective_budget.exact_time_limit_s or effective_budget.time_limit_s,
         population_size=0 if family == "exact_linear_mip" else effective_budget.population_size,
         trace_limit=0 if family == "exact_linear_mip" else effective_budget.trace_limit,
@@ -628,7 +628,7 @@ def build_benchmark_inventory(
             "diagnostic_metadata_fields": list(SEARCH_DIAGNOSTIC_KEYS),
             "canonical_row_stream": "rows.jsonl",
         },
-        "budget_policy": "family_tier_ceiling_v1",
+        "budget_policy": BUDGET_POLICY_ID,
         "family_budgets": _budget_matrix(families=families, tiers=tiers, request=budget_request),
         "thread_counts": list(normalized_thread_counts),
         "environment": build_run_environment_metadata(),
@@ -1059,7 +1059,7 @@ def build_calibration_summary(
             "families": list(families),
             "tiers": list(tiers),
             "strategies": list(strategies),
-            "budget_policy": "family_tier_ceiling_v1",
+            "budget_policy": BUDGET_POLICY_ID,
         }),
         "artifacts": {
             "rows_jsonl": str(calibration_dir / "rows.jsonl"),

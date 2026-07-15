@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from benchmarks.cases.base import BenchmarkCase, SolutionVerification
-from benchmarks.run import LocalRunBudget, run_benchmark_case
+from benchmarks.run import LocalRunBudget, _verify_observation_snapshots, run_benchmark_case
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,8 @@ class _FakeSolution:
     constraint_values: dict[int, Any] = None  # type: ignore[assignment]
     metadata: dict[str, Any] = None  # type: ignore[assignment]
     diagnostics: dict[str, Any] = None  # type: ignore[assignment]
+    observations: tuple[Any, ...] = ()
+    solution_snapshots: dict[str, Any] = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "variable_values", self.variable_values or {})
@@ -25,6 +27,7 @@ class _FakeSolution:
         object.__setattr__(self, "constraint_values", self.constraint_values or {})
         object.__setattr__(self, "metadata", self.metadata or {})
         object.__setattr__(self, "diagnostics", self.diagnostics or {})
+        object.__setattr__(self, "solution_snapshots", self.solution_snapshots or {})
 
     @property
     def objective_value(self) -> float:
@@ -40,6 +43,14 @@ class _VerifiedCase(BenchmarkCase):
 
     def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
         return SolutionVerification.failed("independent verifier rejected the candidate")
+
+
+class _ObjectiveMismatchCase(_VerifiedCase):
+    def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
+        return {"objective": 5.0}
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        return SolutionVerification.accepted(objective=5.0)
 
 
 def _case() -> _VerifiedCase:
@@ -76,6 +87,66 @@ def test_runner_rejects_solver_claim_when_independent_verification_fails(monkeyp
     assert row["solver_reported_objective"] == 1.0
     assert row["verification_status"] == "failed"
     assert row["verification_violations"] == ["independent verifier rejected the candidate"]
+
+
+def test_runner_rejects_solver_objective_that_disagrees_with_independent_verification(
+    monkeypatch: Any,
+) -> None:
+    import benchmarks.run as run_module
+
+    monkeypatch.setattr(run_module, "build_strategy_config", lambda **_kwargs: object())
+    monkeypatch.setattr(run_module, "_solve_model", lambda *_args, **_kwargs: _FakeSolution())
+
+    [row] = run_benchmark_case(
+        _ObjectiveMismatchCase(**_case().__dict__),
+        strategies=("ga",),
+        allow_download=False,
+        budget=LocalRunBudget(max_iterations=1, time_limit_s=0.1, population_size=4),
+    )
+
+    assert row["status"] == "verification_failed"
+    assert row["feasible"] is False
+    assert row["objective"] is None
+    assert row["solver_reported_objective"] == 1.0
+    assert row["verification_passed"] is False
+    assert row["verification_violations"] == ["solver_objective_mismatch:reported=1:verified=5"]
+
+
+def test_observation_snapshot_rejects_solver_objective_mismatch() -> None:
+    solution = _FakeSolution(
+        objective_values={1: 5.0},
+        solution_snapshots={
+            "snapshot-1": SimpleNamespace(
+                variable_values={},
+                objective_values={1: 1.0},
+                constraint_values={},
+                feasible=True,
+                violation_count=0,
+                incumbent_found_at_s=0.5,
+            )
+        },
+    )
+
+    evidence = _verify_observation_snapshots(_ObjectiveMismatchCase(**_case().__dict__), solution, {})
+
+    assert evidence["observation_verification_passed"] is False
+    snapshot = evidence["solution_snapshots"]["snapshot-1"]
+    assert snapshot["verification_status"] == "failed"
+    assert snapshot["verification_passed"] is False
+    assert snapshot["verification_violations"] == ["solver_objective_mismatch:reported=1:verified=5"]
+
+
+def test_tsplib_defaults_to_the_graph_model_required_by_routing_search() -> None:
+    from benchmarks.cases.registry import default_model_styles_for_family
+    from benchmarks.cases.tsplib.tsp._domain import (
+        DEFAULT_TSP_MODEL_STYLES,
+        GRAPH_TSP_MODEL_STYLE,
+        MODEL_STYLE,
+    )
+
+    assert MODEL_STYLE == GRAPH_TSP_MODEL_STYLE
+    assert DEFAULT_TSP_MODEL_STYLES == (GRAPH_TSP_MODEL_STYLE,)
+    assert default_model_styles_for_family("sequence_blackbox_tsp") == (GRAPH_TSP_MODEL_STYLE,)
 
 
 def test_public_elapsed_time_excludes_case_setup(monkeypatch: Any) -> None:

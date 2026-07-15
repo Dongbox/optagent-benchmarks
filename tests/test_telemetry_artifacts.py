@@ -20,6 +20,7 @@ from benchmarks.telemetry_artifacts import (
     STRATEGY_OPTIMIZATION_FEEDBACK_JSON,
     THROUGHPUT_JSONL,
     load_published_artifacts,
+    main as publish_telemetry_main,
     publish_telemetry_artifacts,
     _load_suite_telemetry,
 )
@@ -116,9 +117,7 @@ def test_dashboard_artifact_exposes_availability_and_provenance(tmp_path):
 
     effectiveness_metrics = dashboard["sections"]["effectiveness"]["metrics"]
     mean_objective = next(
-        metric
-        for metric in effectiveness_metrics
-        if metric["path"] == "effectiveness.by_strategy.ga.mean_objective"
+        metric for metric in effectiveness_metrics if metric["path"] == "effectiveness.by_strategy.ga.mean_objective"
     )
     assert mean_objective["source_artifact"] == METRICS_JSON
     assert mean_objective["schema_version"] == 1
@@ -201,8 +200,7 @@ def test_import_parser_resolves_relative_benchmark_modules(tmp_path):
         path.write_text(source, encoding="utf-8")
         imported_modules = _imported_modules(path, package_root=package_root)
         assert any(
-            module == "benchmarks.scoring" or module.startswith("benchmarks.scoring.")
-            for module in imported_modules
+            module == "benchmarks.scoring" or module.startswith("benchmarks.scoring.") for module in imported_modules
         )
 
 
@@ -239,10 +237,92 @@ def test_suite_workspace_exports_embedded_canonical_telemetry(tmp_path):
     }
     (run_dir / "rows.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
 
-    payloads, references = _load_suite_telemetry(run_dir)
+    payloads, contexts = _load_suite_telemetry(run_dir)
 
     assert payloads == [telemetry]
-    assert references == {"toy-001": 10.0}
+    assert contexts == [
+        {
+            "instance_id": "toy-001",
+            "benchmark_id": "toy-001",
+            "reference_objective": 10.0,
+        }
+    ]
+
+
+def test_suite_publication_preserves_benchmark_context_when_telemetry_has_no_instance_id(tmp_path):
+    run_dir = tmp_path / "suite"
+    run_dir.mkdir()
+    telemetry = _fixture("native_search_minimal.json")
+    telemetry["instance"].pop("id")
+    row = {
+        "benchmark_id": "suite-toy-001",
+        "family": "sequence_blackbox_tsp",
+        "status": "feasible",
+        "reference_objective": 10.0,
+        "telemetry": telemetry,
+    }
+    (run_dir / "rows.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+    output_dir = tmp_path / "artifacts"
+
+    exit_code = publish_telemetry_main(
+        [
+            "--suite-run",
+            str(run_dir),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert exit_code == 0
+    published = load_published_artifacts(output_dir)
+    assert published["rows"][0]["instance_id"] == "suite-toy-001"
+    assert published["rows"][0]["family"] == "sequence_blackbox_tsp"
+    mean_gap = published["metrics"]["effectiveness"]["by_strategy"]["ga"]["mean_gap_to_reference"]
+    assert mean_gap["availability"] == "available"
+    assert mean_gap["value"] == 0.0
+
+
+def test_direct_publication_without_benchmark_id_uses_canonical_instance_name(tmp_path):
+    telemetry = _fixture("native_search_minimal.json")
+    telemetry["instance"].pop("id")
+    output_dir = tmp_path / "artifacts"
+
+    result = publish_telemetry_artifacts([telemetry], output_dir)
+
+    assert result["manifest"]["source"]["count"] == 1
+    published = load_published_artifacts(output_dir)
+    assert published["rows"][0]["instance_id"] == "toy"
+
+
+def test_suite_publication_keeps_existing_canonical_instance_identity(tmp_path):
+    run_dir = tmp_path / "suite"
+    run_dir.mkdir()
+    telemetry = _fixture("native_search_minimal.json")
+    row = {
+        "benchmark_id": "suite-alias",
+        "family": "suite-family",
+        "status": "feasible",
+        "reference_objective": 10.0,
+        "telemetry": telemetry,
+    }
+    (run_dir / "rows.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+    output_dir = tmp_path / "artifacts"
+
+    exit_code = publish_telemetry_main(
+        [
+            "--suite-run",
+            str(run_dir),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert exit_code == 0
+    published = load_published_artifacts(output_dir)
+    assert published["rows"][0]["instance_id"] == "toy-001"
+    mean_gap = published["metrics"]["effectiveness"]["by_strategy"]["ga"]["mean_gap_to_reference"]
+    assert mean_gap["availability"] == "available"
+    assert mean_gap["value"] == 0.0
 
 
 def _sha256(path: Path) -> str:

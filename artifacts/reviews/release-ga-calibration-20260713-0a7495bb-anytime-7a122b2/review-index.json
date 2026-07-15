@@ -1,0 +1,37 @@
+{
+  "artifacts": {
+    "anytime.json": {
+      "bytes": 9545,
+      "path": "anytime.json",
+      "sha256": "sha256:138a37cd22d4c39b439855a56cd277a2ca227e2a45eb9134e2d1100d0c6292d7"
+    },
+    "evidence.json": {
+      "bytes": 8954,
+      "path": "evidence.json",
+      "sha256": "sha256:dd84be67a7e50394d1948cd072b5748a97142050a27ec264b71e938b0304b1e0"
+    },
+    "families.json": {
+      "bytes": 1186,
+      "path": "families.json",
+      "sha256": "sha256:f822677af9e43dfb9a9a66d8b0170a30a99d2af306bdf23d3ace3f761ee33b07"
+    },
+    "overview.json": {
+      "bytes": 2009,
+      "path": "overview.json",
+      "sha256": "sha256:2ea714be9715854f6366e167b2ffb2acabb55268b0acd57a549262ec2a2c866d"
+    },
+    "runs.jsonl": {
+      "bytes": 148438,
+      "path": "runs.jsonl",
+      "sha256": "sha256:595778429deecd8ac457d1aad198d98b7a4b614c26d9bba5ae945486f722e390"
+    }
+  },
+  "comparison": {
+    "available": false,
+    "reason": "baseline_not_packaged"
+  },
+  "created_at": "2026-07-13T03:35:26Z",
+  "default_mode": "single",
+  "kind": "optagent_review_bundle",
+  "review_schema_version": 1
+}

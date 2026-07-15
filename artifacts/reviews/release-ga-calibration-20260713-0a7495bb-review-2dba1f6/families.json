@@ -1,0 +1,40 @@
+{
+  "by_strategy": {
+    "ga": [
+      {
+        "candidate_throughput": 2761.296985697726,
+        "case_count": 6,
+        "family": "interval_job_shop",
+        "feasible_rate": 1.0,
+        "gap_cv": 0.364362549159286,
+        "mean_reference_gap": 1.052949058323097,
+        "median_reference_gap": 1.0060777957860616,
+        "run_count": 60,
+        "target_hit_ratio": 0.0
+      },
+      {
+        "candidate_throughput": 17260.96456635674,
+        "case_count": 12,
+        "family": "sequence_blackbox_tsp",
+        "feasible_rate": 1.0,
+        "gap_cv": 1.0065325836147216,
+        "mean_reference_gap": 3.8121816960075914,
+        "median_reference_gap": 1.9236782188511596,
+        "run_count": 120,
+        "target_hit_ratio": 0.0
+      },
+      {
+        "candidate_throughput": 50790.986254965756,
+        "case_count": 14,
+        "family": "sequence_quadratic_assignment",
+        "feasible_rate": 1.0,
+        "gap_cv": 1.6367014403743843,
+        "mean_reference_gap": 0.3474727574230626,
+        "median_reference_gap": 0.1642023346303502,
+        "run_count": 140,
+        "target_hit_ratio": 0.07142857142857142
+      }
+    ]
+  },
+  "review_schema_version": 1
+}

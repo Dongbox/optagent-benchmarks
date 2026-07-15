@@ -1,26 +1,30 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
+from math import isclose
+from pathlib import Path
 from time import perf_counter
 from typing import Any, Iterable, Sequence
 
 from benchmarks.bootstrap import prefer_local_development_paths
 from benchmarks.cases.base import BenchmarkCase, CaseDeclaration, case_to_row, ensure_benchmark_case
 from benchmarks.cases.common import objective_gap, summarize_solution_metadata
-from benchmarks.cases.registry import benchmark_cases
+from benchmarks.cases.registry import benchmark_cases, default_model_styles_for_family
 from benchmarks.presentation.common import strategy_profile_name
 
 
 @dataclass(frozen=True)
 class LocalRunBudget:
     seed: int = 11
-    max_iterations: int = 40
+    max_iterations: int | None = None
     time_limit_s: float = 5.0
     population_size: int = 10
     trace_limit: int = 8
     thread_count: int = 1
+    observation_times_s: tuple[float, ...] = ()
+    reproduction_path: str | None = None
 
 
 def all_cases() -> list[dict[str, Any]]:
@@ -109,8 +113,8 @@ def run_benchmark_case(
     if case.family == "exact_linear_mip":
         strategy_names = strategy_names or ("optx",)
     model_style_values = tuple(model_styles or ())
-    if not model_style_values and case.family == "sequence_blackbox_tsp":
-        model_style_values = ("sequence_var_external_call",)
+    if not model_style_values:
+        model_style_values = default_model_styles_for_family(case.family)
     if not model_style_values:
         model_style_values = (None,)
 
@@ -142,10 +146,12 @@ def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
     from optagent import AlnsConfig, CpSatConfig, GaConfig, MilpConfig
 
-    max_iterations = int(getattr(budget, "max_iterations", 40))
     population_size = max(4, int(getattr(budget, "population_size", 10)))
     thread_count = int(getattr(budget, "thread_count", 1))
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
+    if time_limit_s <= 0.0:
+        raise ValueError("benchmark time_limit_s must be > 0")
+    max_iterations = None
     size = dict(case.size)
     family = case.family
     dimension = int(
@@ -165,26 +171,9 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             time_limit_s=time_limit_s, workers=thread_count, random_seed=int(getattr(budget, "seed", 11))
         )
     if strategy_name == "ga":
-        if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
-            return GaConfig(
-                max_iterations=max_iterations,
-                population_size=population_size,
-                mutation_count=max(2, population_size // 3),
-                search_width=population_size,
-                duplicate_filter=True,
-                mutation_portfolio=("scheduling_lns", "ruin_and_repair", "random_swap"),
-                local_improvement_strategy="lns",
-                local_improvement_top_k=2,
-            )
         return GaConfig(
             max_iterations=max_iterations,
             population_size=population_size,
-            mutation_count=max(2, population_size // 3),
-            search_width=population_size,
-            duplicate_filter=True,
-            mutation_portfolio=("sequence_two_opt", "sequence_block_move", "ruin_and_repair", "random_swap"),
-            local_improvement_strategy="lns",
-            local_improvement_top_k=2,
         )
     if strategy_name == "alns":
         destroy_count = max(
@@ -234,11 +223,22 @@ def _run_single_strategy(
         elapsed_seconds = perf_counter() - solve_started
         solver_summary = _solver_solution_summary(solution)
         verification = case.verify_solution(solution, **build_kwargs)
+        observation_evidence = _verify_observation_snapshots(case, solution, build_kwargs)
         summary = _merge_solution_metrics(
             solver_summary,
             _case_solution_metrics(case, solution, build_kwargs),
         )
-        summary = _apply_solution_verification(summary, verification)
+        summary = _apply_solution_verification(
+            summary,
+            verification,
+            solver_reported_feasible=solver_summary.get("feasible"),
+            solver_reported_objective=solver_summary.get("objective"),
+        )
+        summary.update(observation_evidence)
+        if not observation_evidence["observation_verification_passed"]:
+            summary["status"] = "observation_verification_failed"
+            summary["feasible"] = False
+            summary["objective"] = None
         return _result_row(
             case,
             strategy_name=strategy_name,
@@ -268,9 +268,9 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
     time_limit_s = float(getattr(budget, "time_limit_s", 5.0))
     thread_count = int(getattr(budget, "thread_count", 1))
     if case.family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
-        return solve_milp(model, config=strategy_config)
+        return solve_milp(model, config=strategy_config, reproduction_path=getattr(budget, "reproduction_path", None))
     if strategy_name == "cpsat":
-        return solve_cpsat(model, config=strategy_config)
+        return solve_cpsat(model, config=strategy_config, reproduction_path=getattr(budget, "reproduction_path", None))
     return solve(
         model,
         strategy=strategy_config,
@@ -280,6 +280,8 @@ def _solve_model(case: BenchmarkCase, model: Any, *, strategy_name: str, strateg
         log_level="off",
         trace_output="full",
         trace_limit=int(getattr(budget, "trace_limit", 8)),
+        observation_times_s=tuple(getattr(budget, "observation_times_s", ())),
+        reproduction_path=getattr(budget, "reproduction_path", None),
     )
 
 
@@ -306,6 +308,80 @@ def _solver_solution_summary(solution: Any) -> dict[str, Any]:
     }
 
 
+def _verify_observation_snapshots(
+    case: BenchmarkCase,
+    solution: Any,
+    build_kwargs: dict[str, Any],
+) -> dict[str, Any]:
+    snapshots: dict[str, Any] = {}
+    all_passed = True
+    for snapshot_id, snapshot in dict(getattr(solution, "solution_snapshots", {}) or {}).items():
+        snapshot_solution = replace(
+            solution,
+            variable_values=dict(snapshot.variable_values),
+            objective_values=dict(snapshot.objective_values),
+            constraint_values=dict(snapshot.constraint_values),
+            feasible=bool(snapshot.feasible),
+        )
+        verification = case.verify_solution(snapshot_solution, **build_kwargs)
+        solver_reported_objective = (
+            float(next(iter(snapshot.objective_values.values()))) if snapshot.objective_values else None
+        )
+        consistency_violation = _objective_consistency_violation(solver_reported_objective, verification)
+        passed = bool(verification.passed) and consistency_violation is None
+        all_passed = all_passed and passed
+        snapshots[str(snapshot_id)] = {
+            "snapshot_id": str(snapshot_id),
+            "variable_values": {str(key): _json_value(value) for key, value in snapshot.variable_values.items()},
+            "objective_values": {str(key): _json_value(value) for key, value in snapshot.objective_values.items()},
+            "constraint_values": {str(key): _json_value(value) for key, value in snapshot.constraint_values.items()},
+            "solver_reported_feasible": bool(snapshot.feasible),
+            "solver_reported_violation_count": int(snapshot.violation_count),
+            "solver_reported_objective": solver_reported_objective,
+            "incumbent_found_at_s": float(snapshot.incumbent_found_at_s),
+            "verification_status": "failed" if consistency_violation is not None else verification.status,
+            "verification_passed": passed,
+            "verification_feasible": bool(verification.feasible) if passed else None,
+            "verification_objective": verification.objective if passed else None,
+            "verification_violations": list(verification.violations)
+            + ([consistency_violation] if consistency_violation is not None else []),
+        }
+    observations = [
+        {
+            "requested_time_s": float(item.requested_time_s),
+            "captured_at_s": float(item.captured_at_s),
+            "state": item.state.value,
+            "snapshot_id": item.snapshot_id,
+            "search_ended": bool(item.search_ended),
+            "search_ended_at_s": float(item.search_ended_at_s),
+            "termination_reason": item.termination_reason,
+        }
+        for item in list(getattr(solution, "observations", ()) or ())
+    ]
+    referenced = {item["snapshot_id"] for item in observations if item["snapshot_id"]}
+    missing = sorted(referenced - set(snapshots))
+    if missing:
+        all_passed = False
+    return {
+        "observations": observations,
+        "solution_snapshots": snapshots,
+        "observation_verification_passed": all_passed,
+        "observation_verification_errors": [f"missing_snapshot:{snapshot_id}" for snapshot_id in missing],
+    }
+
+
+def _json_value(value: Any) -> Any:
+    if isinstance(value, set):
+        return sorted(_json_value(item) for item in value)
+    if isinstance(value, tuple):
+        return [_json_value(item) for item in value]
+    if isinstance(value, list):
+        return [_json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _json_value(item) for key, item in value.items()}
+    return value
+
+
 def _merge_solution_metrics(solver_summary: dict[str, Any], case_metrics: dict[str, Any]) -> dict[str, Any]:
     summary = dict(solver_summary)
     metrics = dict(case_metrics or {})
@@ -320,14 +396,39 @@ def _merge_solution_metrics(solver_summary: dict[str, Any], case_metrics: dict[s
     return summary
 
 
-def _apply_solution_verification(summary: dict[str, Any], verification: Any) -> dict[str, Any]:
+def _objective_consistency_violation(solver_reported_objective: Any, verification: Any) -> str | None:
+    if not bool(verification.passed) or verification.objective is None or solver_reported_objective is None:
+        return None
+    try:
+        reported = float(solver_reported_objective)
+        verified = float(verification.objective)
+    except (TypeError, ValueError):
+        return "solver_objective_mismatch:non_numeric"
+    if isclose(reported, verified, rel_tol=1e-9, abs_tol=1e-9):
+        return None
+    return f"solver_objective_mismatch:reported={reported:g}:verified={verified:g}"
+
+
+def _apply_solution_verification(
+    summary: dict[str, Any],
+    verification: Any,
+    *,
+    solver_reported_feasible: Any | None = None,
+    solver_reported_objective: Any | None = None,
+) -> dict[str, Any]:
     verified = dict(summary)
-    verified["solver_reported_feasible"] = bool(summary.get("feasible"))
-    verified["solver_reported_objective"] = summary.get("objective")
-    verified["verification_status"] = verification.status
-    verified["verification_passed"] = bool(verification.passed)
-    verified["verification_violations"] = list(verification.violations)
-    if verification.passed:
+    reported_feasible = summary.get("feasible") if solver_reported_feasible is None else solver_reported_feasible
+    reported_objective = summary.get("objective") if solver_reported_objective is None else solver_reported_objective
+    consistency_violation = _objective_consistency_violation(reported_objective, verification)
+    verification_passed = bool(verification.passed) and consistency_violation is None
+    verified["solver_reported_feasible"] = bool(reported_feasible)
+    verified["solver_reported_objective"] = reported_objective
+    verified["verification_status"] = "failed" if consistency_violation is not None else verification.status
+    verified["verification_passed"] = verification_passed
+    verified["verification_violations"] = list(verification.violations) + (
+        [consistency_violation] if consistency_violation is not None else []
+    )
+    if verification_passed:
         verified["feasible"] = bool(verification.feasible)
         verified["objective"] = verification.objective
         return verified
@@ -483,11 +584,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--model-style", action="append", dest="model_styles", help="Explicit benchmark model style.")
     parser.add_argument("--seed", type=int, default=11)
-    parser.add_argument("--max-iterations", type=int, default=40)
     parser.add_argument("--time-limit-s", type=float, default=5.0)
     parser.add_argument("--population-size", type=int, default=10)
     parser.add_argument("--trace-limit", type=int, default=8)
     parser.add_argument("--thread-count", type=int, default=1)
+    parser.add_argument("--reproduction-path", type=Path)
     parser.add_argument(
         "--no-download", action="store_true", help="Fail when a required public instance is not already cached."
     )
@@ -516,14 +617,17 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if not args.benchmark_id:
         parser.error("--case is required unless --list-cases is set")
+    if args.time_limit_s <= 0.0:
+        parser.error("--time-limit-s must be > 0")
 
     budget = LocalRunBudget(
         seed=args.seed,
-        max_iterations=args.max_iterations,
+        max_iterations=None,
         time_limit_s=args.time_limit_s,
         population_size=args.population_size,
         trace_limit=args.trace_limit,
         thread_count=args.thread_count,
+        reproduction_path=str(args.reproduction_path.resolve()) if args.reproduction_path is not None else None,
     )
     rows = run_case(
         args.benchmark_id,

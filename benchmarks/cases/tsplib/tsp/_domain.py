@@ -19,8 +19,8 @@ INSTANCE_TYPE = "tsp"
 FAMILY = "sequence_blackbox_tsp"
 BLACKBOX_TSP_MODEL_STYLE = "sequence_var_external_call"
 GRAPH_TSP_MODEL_STYLE = "sequence_var_sequence_transition_sum"
-MODEL_STYLE = BLACKBOX_TSP_MODEL_STYLE
-DEFAULT_TSP_MODEL_STYLES = (BLACKBOX_TSP_MODEL_STYLE,)
+MODEL_STYLE = GRAPH_TSP_MODEL_STYLE
+DEFAULT_TSP_MODEL_STYLES = (GRAPH_TSP_MODEL_STYLE,)
 SUPPORTED_TSP_MODEL_STYLES = (BLACKBOX_TSP_MODEL_STYLE, GRAPH_TSP_MODEL_STYLE)
 RAW_DIR = Path(__file__).resolve().parent / "raw"
 
@@ -71,7 +71,7 @@ class TspInstance:
 class TspCase(BenchmarkCase):
     def build_model(self, **kwargs: Any) -> ModelBuilder:
         allow_download = bool(kwargs.get("allow_download", True))
-        model_style = str(kwargs.get("model_style", BLACKBOX_TSP_MODEL_STYLE))
+        model_style = str(kwargs.get("model_style", GRAPH_TSP_MODEL_STYLE))
         instance = load_tsp_case(self.to_row(), cache_dir=RAW_DIR, allow_download=allow_download)
         default_tour = list(range(instance.dimension))
         builder = ModelBuilder(metadata={"model_style": model_style})
@@ -180,14 +180,14 @@ def make_tsp_case(
         },
         problem_description=(
             f"TSPLIB symmetric TSP instance {instance}: find the shortest Hamiltonian cycle over "
-            f"{nodes} cities using the instance distance metric. The benchmark is a blackbox "
-            "sequence optimization case with a published optimal tour length."
+            f"{nodes} cities using the instance distance metric. The benchmark exposes explicit "
+            "closed-tour transition costs with a published optimal tour length."
         ),
         case_module=case_module,
         modeling_notes={
             "model_style": MODEL_STYLE,
             "objective_sense": "minimize",
-            "public_api_primitives": ["sequence_var", "external_call"],
+            "public_api_primitives": ["sequence_var", "sequence_transition_sum"],
         },
     )
 
