@@ -184,11 +184,15 @@ jobs:
             "${RUN_ARGS[@]}" \
             --time-limit-s "${BENCHMARK_TIME_LIMIT_S}" \
             --population-size "${BENCHMARK_POPULATION_SIZE}" \
-            --timestamp "gha-${OPTAGENT_REF:0:12}-${GITHUB_RUN_ID}"
+            --timestamp "gha-${OPTAGENT_REF//\//-}-${GITHUB_RUN_ID}"
           python - <<'PY' >> "$GITHUB_ENV"
           import json
           from pathlib import Path
-          runs = sorted(Path("docs/evals/benchmark-suite/runs").glob("gha-*"))
+          runs = sorted(
+              path
+              for path in Path("docs/evals/benchmark-suite/runs").glob("gha-*")
+              if (path / "rows.jsonl").is_file()
+          )
           if not runs:
               raise SystemExit("no benchmark run directory found")
           print(f"BENCHMARK_RUN_DIR={runs[-1].resolve()}")
