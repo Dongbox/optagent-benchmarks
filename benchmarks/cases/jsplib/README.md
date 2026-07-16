@@ -28,8 +28,8 @@ tier 分类范围：
 
 | tier | case 数量 | operations 范围 |
 |---|---:|---:|
-| smoke | 20 | 30–99 |
-| calibration | 20 | 100–199 |
+| smoke | 20 | 30–100 |
+| calibration | 20 | 101–199 |
 | full | 15 | 200–499 |
 | pressure | 10 | 500–750 |
 
