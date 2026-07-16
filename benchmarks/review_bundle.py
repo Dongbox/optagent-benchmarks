@@ -119,6 +119,9 @@ def load_review_bundle(path: str | Path) -> dict[str, Any]:
 
 def _artifact_meta(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     first = rows[0] if rows else {}
+    time_limits = sorted(
+        {float(row["time_budget_s"]) for row in rows if isinstance(row.get("time_budget_s"), (int, float))}
+    )
     observation_times = tuple(float(value) for value in first.get("observation_times_s") or ())
     if not observation_times:
         observation_times = tuple(
@@ -151,7 +154,8 @@ def _artifact_meta(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "formal_checkpoints_s": checkpoints,
         "expected_seed_count": int(first.get("expected_seed_count") or len({row.get("seed") for row in rows})),
         "configuration": {
-            "time_limit_s": _optional_float(first.get("time_budget_s")),
+            "time_limit_s": time_limits[0] if len(time_limits) == 1 else None,
+            "time_limit_range_s": time_limits,
             "max_iterations": max_iterations,
             "population_size": _optional_int(first.get("population_size")),
             "thread_count": _optional_int(first.get("thread_count")),
