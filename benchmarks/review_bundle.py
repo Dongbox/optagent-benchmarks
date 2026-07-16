@@ -606,13 +606,18 @@ def _validate_artifact_invariants(rows: Sequence[Mapping[str, Any]], role: str) 
         expected = first.get(field)
         if any(row.get(field) != expected for row in rows[1:]):
             raise ValueError(f"{role} artifact has inconsistent {field}")
-    if first.get("review_mode") != "single_family_focus":
-        raise ValueError(f"{role} artifact must use single_family_focus review mode")
+    review_mode = first.get("review_mode")
+    if review_mode not in {"single_family_focus", "multi_family_suite"}:
+        raise ValueError(f"{role} artifact has unsupported review mode: {review_mode}")
     target_families = tuple(first.get("target_families") or ())
-    if len(target_families) != 1:
-        raise ValueError(f"{role} artifact must declare exactly one target family")
-    if not any(str(row.get("family") or "unknown") == str(target_families[0]) for row in rows):
-        raise ValueError(f"{role} artifact target family is not present in its runs")
+    if not target_families:
+        raise ValueError(f"{role} artifact must declare at least one target family")
+    if review_mode == "single_family_focus" and len(target_families) != 1:
+        raise ValueError(f"{role} single-family artifact must declare exactly one target family")
+    present_families = {str(row.get("family") or "unknown") for row in rows}
+    missing_families = set(target_families) - present_families
+    if missing_families:
+        raise ValueError(f"{role} target families are not present in its runs: {sorted(missing_families)}")
 
 
 def _empty_point(time_s: float, expected: int) -> dict[str, Any]:

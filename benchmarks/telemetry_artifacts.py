@@ -651,11 +651,80 @@ def _load_suite_telemetry(
         ):
             if key in row:
                 context[key] = row[key]
+        if not context.get("observations"):
+            review_context = _review_context_from_telemetry(row, telemetry)
+            context.update(review_context)
         budget = row.get("effective_budget")
         if isinstance(budget, Mapping):
             context.setdefault("observation_times_s", list(budget.get("observation_times_s") or ()))
         contexts.append(context)
     return payloads, contexts
+
+
+def _review_context_from_telemetry(row: Mapping[str, Any], telemetry: Mapping[str, Any]) -> dict[str, Any]:
+    """Project canonical progress into the review snapshot contract when suite rows lack snapshots."""
+
+    requested_times = tuple(float(value) for value in row.get("observation_times_s") or ())
+    if not requested_times:
+        budget = row.get("effective_budget")
+        if isinstance(budget, Mapping) and budget.get("time_limit_s") is not None:
+            requested_times = (float(budget["time_limit_s"]),)
+    progress = telemetry.get("progress")
+    if not requested_times or not isinstance(progress, list):
+        return {}
+
+    events = [
+        event
+        for event in progress
+        if isinstance(event, Mapping)
+        and _telemetry_number(event.get("elapsed_s")) is not None
+        and _telemetry_number((event.get("objective_value") or {}).get("number_value")) is not None
+    ]
+    events.sort(key=lambda event: _telemetry_number(event.get("elapsed_s")) or 0.0)
+    snapshots: dict[str, dict[str, Any]] = {}
+    observations: list[dict[str, Any]] = []
+    for index, requested_time in enumerate(requested_times):
+        eligible = [
+            event
+            for event in events
+            if (_telemetry_number(event.get("elapsed_s")) or 0.0) <= requested_time
+        ]
+        event = eligible[-1] if eligible else None
+        snapshot_id = f"telemetry-review-{index}"
+        objective = _telemetry_number((event.get("objective_value") or {}).get("number_value")) if event else None
+        feasible = bool(event and event.get("feasible") is True and objective is not None)
+        snapshots[snapshot_id] = {
+            "snapshot_id": snapshot_id,
+            "verification_passed": feasible,
+            "verification_feasible": feasible,
+            "verification_objective": objective if feasible else None,
+            "incumbent_found_at_s": _telemetry_number(event.get("elapsed_s")) if event else None,
+        }
+        observations.append(
+            {
+                "requested_time_s": requested_time,
+                "captured_at_s": requested_time,
+                "state": "feasible_incumbent" if feasible else "no_feasible_incumbent",
+                "snapshot_id": snapshot_id,
+                "search_ended": requested_time >= float(row.get("effective_time_limit_s") or requested_time),
+                "search_ended_at_s": _telemetry_number(event.get("elapsed_s")) if event else 0.0,
+                "termination_reason": str((telemetry.get("outcome") or {}).get("termination_reason") or ""),
+            }
+        )
+    return {
+        "observations": observations,
+        "solution_snapshots": snapshots,
+        "observation_verification_passed": str(row.get("status") or "") == "feasible" and all(
+            item["verification_passed"] for item in snapshots.values()
+        ),
+        "observation_verification_errors": [],
+    }
+
+
+def _telemetry_number(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
 
 
 def _failed_suite_row_telemetry(row: Mapping[str, Any]) -> dict[str, Any]:
