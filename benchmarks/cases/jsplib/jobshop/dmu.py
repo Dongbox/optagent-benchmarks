@@ -1,8 +1,8 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from benchmarks.cases.jsplib.jobshop._domain import (
-    make_job_shop_case,
     RAW_DIR,
+    make_job_shop_case,
 )
 
 CASE_MODULE = __name__
@@ -18,37 +18,6 @@ DMU01 = make_job_shop_case(
     case_module=CASE_MODULE,
     instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/dmu01.json',
     reported_time_seconds=60,
-)
-
-DMU06 = make_job_shop_case(
-    benchmark_id='jsplib_dmu06',
-    instance='dmu06',
-    tier='full',
-    jobs=20,
-    machines=20,
-    raw_path=RAW_DIR / 'dmu06.json',
-    objective=3244,
-    case_module=CASE_MODULE,
-    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/dmu06.json',
-    reported_time_seconds=120,
-)
-
-DMU16 = make_job_shop_case(
-    benchmark_id='jsplib_dmu16',
-    instance='dmu16',
-    tier='pressure',
-    jobs=30,
-    machines=20,
-    raw_path=RAW_DIR / 'dmu16.json',
-    objective=3750,
-    case_module=CASE_MODULE,
-    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/dmu16.json',
-    reference={
-        'lower_bound': 3734,
-        'upper_bound': 3750,
-        'status': 'open',
-        'value_kind': 'best_known_upper_bound',
-    },
 )
 
 DMU41 = make_job_shop_case(
@@ -123,4 +92,62 @@ DMU56 = make_job_shop_case(
     },
 )
 
-CASES = (DMU01, DMU06, DMU16, DMU41, DMU46, DMU51, DMU56)
+DMU59 = make_job_shop_case(
+    benchmark_id='jsplib_dmu59',
+    instance='dmu59',
+    tier='pressure',
+    jobs=30,
+    machines=20,
+    raw_path=RAW_DIR / 'dmu59.json',
+    objective=4607,
+    case_module=CASE_MODULE,
+    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/dmu59.json',
+    reference={
+        'lower_bound': 4366,
+        'upper_bound': 4607,
+        'status': 'open',
+        'value_kind': 'best_known_upper_bound',
+    },
+)
+
+DMU32 = make_job_shop_case(
+    benchmark_id='jsplib_dmu32',
+    instance='dmu32',
+    tier='pressure',
+    jobs=50,
+    machines=15,
+    raw_path=RAW_DIR / 'dmu32.json',
+    objective=5927,
+    case_module=CASE_MODULE,
+    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/dmu32.json',
+    reported_time_seconds=1,
+)
+
+DMU73 = make_job_shop_case(
+    benchmark_id='jsplib_dmu73',
+    instance='dmu73',
+    tier='pressure',
+    jobs=50,
+    machines=15,
+    raw_path=RAW_DIR / 'dmu73.json',
+    objective=6132,
+    case_module=CASE_MODULE,
+    instance_url='https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/jobshop/instances/json/dmu73.json',
+    reference={
+        'lower_bound': 6107,
+        'upper_bound': 6132,
+        'status': 'open',
+        'value_kind': 'best_known_upper_bound',
+    },
+)
+
+CASES = (
+    DMU01,
+    DMU41,
+    DMU46,
+    DMU51,
+    DMU56,
+    DMU59,
+    DMU32,
+    DMU73,
+)
