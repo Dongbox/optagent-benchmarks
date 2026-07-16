@@ -5,11 +5,7 @@
       [
         {
           "machine": 0,
-          "processing": 54
-        },
-        {
-          "machine": 1,
-          "processing": 63
+          "processing": 43
         }
       ],
       [
@@ -26,14 +22,18 @@
     [
       [
         {
+          "machine": 0,
+          "processing": 63
+        },
+        {
           "machine": 1,
-          "processing": 120
+          "processing": 53
         }
       ],
       [
         {
           "machine": 1,
-          "processing": 152
+          "processing": 73
         }
       ]
     ],
@@ -51,19 +51,19 @@
       [
         {
           "machine": 0,
-          "processing": 143
+          "processing": 43
         },
         {
           "machine": 1,
-          "processing": 124
+          "processing": 61
         }
       ]
     ]
   ],
   "reference": {
-    "kind": "optimum",
-    "objective": 355,
-    "lower_bound": 355,
-    "upper_bound": 331
+    "kind": "bounds",
+    "objective": 221,
+    "lower_bound": 212,
+    "upper_bound": 221
   }
 }
