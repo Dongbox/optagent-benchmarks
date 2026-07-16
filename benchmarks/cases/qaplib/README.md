@@ -2,254 +2,521 @@
 
 QAPLIB 目录保存来自 QAPLIB 的 quadratic assignment benchmark case。当前是二次分配问题，用于测试 OptAgent 在 permutation / sequence 优化问题上的表现。
 
-数据集来源：
+## 数据来源说明
+
+QAPLIB（Quadratic Assignment Problem Library）是二次分配问题基准库，提供标准实例和公开参考解，用于评估排列优化算法。
+
+数据集来源网站：
 
 - QAPLIB 主页：https://qaplib.mgi.polymtl.ca
-- 完整公开数据归档：https://doi.org/10.7488/ds/3428
+- QAPLIB 数据归档：https://doi.org/10.7488/ds/3428
+- 本地实例目录：`benchmarks/cases/qaplib/quadratic_assignment/raw/`
 
-本地完整数据集缓存保存在：
+## 问题说明
+
+给定两个 n×n 矩阵，寻找设施到位置的一个置换，使二次分配成本最小：
 
 ```text
-benchmarks/cases/qaplib/quadratic_assignment/raw/
+cost(p) = sum(i, j, A[i][j] * B[p[i]][p[j]])
 ```
 
-正式注册 case 的 `.dat` 和 `.sln` 文件位于 `quadratic_assignment/raw/` 根层，保证 `--no-download` 时可直接运行；未注册的完整数据集仅作为受控下载缓存，不属于 README 的 case 清单。
+每个设施和位置都必须恰好使用一次，目标是最小化总分配成本。
 
-## 矩阵顺序说明
+## 数据筛选依据
 
-QAPLIB `.dat` 文件按原始顺序提供两个 `n x n` 矩阵。当前 benchmark loader 保留该顺序，并按 `sum A[i][j] * B[p[i]][p[j]]` 计算目标值；代码中的 `flow` 和 `distance` 命名不保证反映每个实例中两个矩阵的真实语义。
+规模定义：
 
-在当前“只用于测试模型优化能力”的 benchmark 需求下，两个矩阵分别称为 flow 或 distance 不影响最终优化结果：交换两个矩阵会得到等价的排列优化问题，最优目标值保持一致，只是对应的最优置换表示会变为逆映射。注意，这并不表示同一个置换在交换矩阵后 cost 一定相同。
+- `facilities`：设施数量；
+- `locations`：位置数量，当前与 facilities 相同；
+- 核心规模指标为 n，即矩阵维度。
+
+tier 分类范围（按当前已选 case 的实际范围）：
+
+| tier | case 数量 | n 范围 |
+|---|---:|---:|
+| smoke | 20 | 12–16 |
+| calibration | 20 | 19–30 |
+| full | 15 | 32–80 |
+| pressure | 10 | 90–150 |
+
+筛选策略：将每个算例表示为由 n、流量/距离矩阵的非零比例、归一化分布分位数与离散度、行和不均衡、对称性、谱结构以及两矩阵相关性组成的特征向量。在同一 tier 的完整候选集内对各维做 z-score 标准化，以此后特征向量的欧氏距离度量算例近似程度。
+
+## 建模说明
+
+建模方式：使用 `sequence_var` 表示设施到位置的置换，通过 external callback 计算二次分配目标值，属于 permutation blackbox 模型。
+
+适用的求解方式：
+
+- `solve()`：适用；
+- `solve_cpsat()`：当前不适用；
+- `solve_milp()`：当前不适用，尚未提供 external callback 到 MILP 的 lowering。
+
+## 特殊备注
+
+- `.dat` 文件包含实例维度和两个 n×n 矩阵，`.sln` 文件提供参考目标值和置换信息。
+- 当前正式注册的参考值均为公开最优值。
 
 ## 相关 case
 
 ### smoke
 
 - `qaplib_chr12a`
-  - 问题描述：12 设施/12 位置的 quadratic assignment 问题。
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=12`，`locations=12`
-  - 参考值：`objective=9552`
-  - 数据特征：稀疏关系矩阵配稠密权重矩阵，代表小规模 sparse/dense 结构。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=9552`
+  - 备注：无
+
 - `qaplib_had12`
-  - 问题描述：12 设施/12 位置的 quadratic assignment 问题。
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=12`，`locations=12`
-  - 参考值：`objective=1652`
-  - 数据特征：两个矩阵都较稠密且数值均衡，用作小规模基础 sanity 样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=1652`
+  - 备注：无
+
 - `qaplib_nug12`
-  - 问题描述：12 设施/12 位置的 quadratic assignment 问题。
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=12`，`locations=12`
-  - 参考值：`objective=578`
-  - 数据特征：经典 Nugent 小规模实例，距离结构规整、交互矩阵中等稀疏。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=578`
+  - 备注：无
+
+- `qaplib_rou12`
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=12`，`locations=12`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=235528`
+  - 备注：无
+
 - `qaplib_scr12`
-  - 问题描述：12 设施/12 位置的 quadratic assignment 问题。
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=12`，`locations=12`
-  - 参考值：`objective=31410`
-  - 数据特征：数值跨度明显，补充小规模高权重差异样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=31410`
+  - 备注：无
+
+- `qaplib_tai12a`
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=12`，`locations=12`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=224416`
+  - 备注：无
+
 - `qaplib_tai12b`
-  - 问题描述：12 设施/12 位置的 quadratic assignment 问题。
+  - 问题描述：12 个设施分配到 12 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=12`，`locations=12`
-  - 参考值：`objective=39464925`
-  - 数据特征：Taillard b 型非对称/不均衡矩阵，目标值尺度大。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=39464925`
+  - 备注：无
+
+- `qaplib_nug14`
+  - 问题描述：14 个设施分配到 14 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=14`，`locations=14`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=1014`
+  - 备注：无
+
+- `qaplib_chr15a`
+  - 问题描述：15 个设施分配到 15 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=15`，`locations=15`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=9896`
+  - 备注：无
+
+- `qaplib_rou15`
+  - 问题描述：15 个设施分配到 15 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=15`，`locations=15`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=354210`
+  - 备注：无
+
+- `qaplib_scr15`
+  - 问题描述：15 个设施分配到 15 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=15`，`locations=15`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=51140`
+  - 备注：无
+
+- `qaplib_tai15b`
+  - 问题描述：15 个设施分配到 15 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=15`，`locations=15`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=51765268`
+  - 备注：无
+
 - `qaplib_esc16b`
-  - 问题描述：16 设施/16 位置的 quadratic assignment 问题。
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=16`，`locations=16`
-  - 参考值：`objective=292`
-  - 数据特征：ESC 小规模 mixed/mixed 结构，轻量但不同于 Nugent/Hadley 系列。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=292`
+  - 备注：无
+
+- `qaplib_esc16c`
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=16`，`locations=16`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=160`
+  - 备注：无
+
+- `qaplib_esc16d`
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=16`，`locations=16`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=16`
+  - 备注：无
+
+- `qaplib_esc16f`
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=16`，`locations=16`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=0`
+  - 备注：无
+
 - `qaplib_esc16h`
-  - 问题描述：16 设施/16 位置的 quadratic assignment 问题。
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=16`，`locations=16`
-  - 参考值：`objective=996`
-  - 数据特征：ESC dense/mixed 结构，比 `esc16b` 更有搜索压力。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=996`
+  - 备注：无
+
+- `qaplib_esc16j`
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=16`，`locations=16`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=8`
+  - 备注：无
+
+- `qaplib_had16`
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=16`，`locations=16`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=3720`
+  - 备注：无
+
+- `qaplib_nug16a`
+  - 问题描述：16 个设施分配到 16 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=16`，`locations=16`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=1610`
+  - 备注：无
 
 ### calibration
 
 - `qaplib_els19`
-  - 问题描述：19 设施/19 位置的 quadratic assignment 问题。
+  - 问题描述：19 个设施分配到 19 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=19`，`locations=19`
-  - 参考值：`objective=17212548`
-  - 数据特征：第二矩阵高度稀疏且含大惩罚值，补充极端权重样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=17212548`
+  - 备注：无
+
+- `qaplib_chr20b`
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=20`，`locations=20`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=2298`
+  - 备注：无
+
+- `qaplib_chr20c`
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=20`，`locations=20`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=14142`
+  - 备注：无
+
 - `qaplib_had20`
-  - 问题描述：20 设施/20 位置的 quadratic assignment 问题。
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=20`，`locations=20`
-  - 参考值：`objective=6922`
-  - 数据特征：稠密、对称、数值均衡的中小规模校准样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=6922`
+  - 备注：无
+
 - `qaplib_lipa20a`
-  - 问题描述：20 设施/20 位置的 quadratic assignment 问题。
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=20`，`locations=20`
-  - 参考值：`objective=3683`
-  - 数据特征：LIPA a 型结构，一个矩阵接近常量/低变异，适合测试易解结构。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=3683`
+  - 备注：无
+
 - `qaplib_lipa20b`
-  - 问题描述：20 设施/20 位置的 quadratic assignment 问题。
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=20`，`locations=20`
-  - 参考值：`objective=27076`
-  - 数据特征：LIPA b 型结构，与 a 型同规模但矩阵平衡度不同，保留成对对照。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=27076`
+  - 备注：无
+
 - `qaplib_nug20`
-  - 问题描述：20 设施/20 位置的 quadratic assignment 问题。
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=20`，`locations=20`
-  - 参考值：`objective=2570`
-  - 数据特征：经典 Nugent 20 维实例，距离规整、交互矩阵中等稀疏。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=2570`
+  - 备注：无
+
+- `qaplib_rou20`
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=20`，`locations=20`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=725522`
+  - 备注：无
+
 - `qaplib_scr20`
-  - 问题描述：20 设施/20 位置的 quadratic assignment 问题。
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=20`，`locations=20`
-  - 参考值：`objective=110030`
-  - 数据特征：稀疏/稠密组合且数值跨度大，补充高目标尺度样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=110030`
+  - 备注：无
+
 - `qaplib_tai20b`
-  - 问题描述：20 设施/20 位置的 quadratic assignment 问题。
+  - 问题描述：20 个设施分配到 20 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=20`，`locations=20`
-  - 参考值：`objective=122455319`
-  - 数据特征：Taillard b 型非对称 mixed 结构，目标值尺度很大。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=122455319`
+  - 备注：无
+
 - `qaplib_chr25a`
-  - 问题描述：25 设施/25 位置的 quadratic assignment 问题。
+  - 问题描述：25 个设施分配到 25 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=25`，`locations=25`
-  - 参考值：`objective=3796`
-  - 数据特征：CHR 稀疏结构中保留的较大代表，搜索 gap 对轻预算较敏感。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=3796`
+  - 备注：无
+
 - `qaplib_bur26a`
-  - 问题描述：26 设施/26 位置的 quadratic assignment 问题。
+  - 问题描述：26 个设施分配到 26 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=26`，`locations=26`
-  - 参考值：`objective=5426670`
-  - 数据特征：Burkard 26 维同系列代表，稠密/混合且行和较均衡。
-- `qaplib_bur26g`
-  - 问题描述：26 设施/26 位置的 quadratic assignment 问题。
-  - 规模：`facilities=26`，`locations=26`
-  - 参考值：`objective=10117172`
-  - 数据特征：Burkard 26 维中更高惩罚尺度代表，避免只保留低尺度近邻。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=5426670`
+  - 备注：无
+
+- `qaplib_nug28`
+  - 问题描述：28 个设施分配到 28 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=28`，`locations=28`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=5166`
+  - 备注：无
+
 - `qaplib_kra30a`
-  - 问题描述：30 设施/30 位置的 quadratic assignment 问题。
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=30`，`locations=30`
-  - 参考值：`objective=88900`
-  - 数据特征：Krarup 结构，稠密矩阵配较稀疏权重矩阵，补充 30 维校准样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=88900`
+  - 备注：无
+
+- `qaplib_lipa30a`
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=30`，`locations=30`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=13178`
+  - 备注：无
+
+- `qaplib_lipa30b`
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=30`，`locations=30`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=151426`
+  - 备注：无
+
+- `qaplib_nug30`
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=30`，`locations=30`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=6124`
+  - 备注：无
+
 - `qaplib_tai30a`
-  - 问题描述：30 设施/30 位置的 quadratic assignment 问题。
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=30`，`locations=30`
-  - 参考值：`objective=1818146`
-  - 数据特征：Taillard a 型稠密均衡结构，和 b 型形成对照。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=1818146`
+  - 备注：无
+
 - `qaplib_tai30b`
-  - 问题描述：30 设施/30 位置的 quadratic assignment 问题。
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=30`，`locations=30`
-  - 参考值：`objective=637117113`
-  - 数据特征：Taillard b 型非对称 mixed 结构，目标值尺度和矩阵不均衡度更高。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=637117113`
+  - 备注：无
+
 - `qaplib_tho30`
-  - 问题描述：30 设施/30 位置的 quadratic assignment 问题。
+  - 问题描述：30 个设施分配到 30 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=30`，`locations=30`
-  - 参考值：`objective=149936`
-  - 数据特征：Tho 系列中等规模代表，第二矩阵约半稀疏且数值跨度较大。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=149936`
+  - 备注：无
 
 ### full
 
 - `qaplib_esc32e`
-  - 问题描述：32 设施/32 位置的 quadratic assignment 问题。
+  - 问题描述：32 个设施分配到 32 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=32`，`locations=32`
-  - 参考值：`objective=2`
-  - 数据特征：ESC 32 维有参考解的稀疏代表，最优值很小，适合观察 gap 表现。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=2`
+  - 备注：无
+
 - `qaplib_kra32`
-  - 问题描述：32 设施/32 位置的 quadratic assignment 问题。
+  - 问题描述：32 个设施分配到 32 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=32`，`locations=32`
-  - 参考值：`objective=88900`
-  - 数据特征：Krarup 稀疏/稠密组合，与 `kra30a` 相近但规模略增。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=88900`
+  - 备注：无
+
 - `qaplib_tai35a`
-  - 问题描述：35 设施/35 位置的 quadratic assignment 问题。
+  - 问题描述：35 个设施分配到 35 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=35`，`locations=35`
-  - 参考值：`objective=2422002`
-  - 数据特征：Taillard a 型 full 层入口，稠密均衡矩阵。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=2422002`
+  - 备注：无
+
 - `qaplib_tai35b`
-  - 问题描述：35 设施/35 位置的 quadratic assignment 问题。
+  - 问题描述：35 个设施分配到 35 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=35`，`locations=35`
-  - 参考值：`objective=283315445`
-  - 数据特征：Taillard b 型 full 层入口，非对称 mixed 结构且目标尺度大。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=283315445`
+  - 备注：无
+
 - `qaplib_ste36c`
-  - 问题描述：36 设施/36 位置的 quadratic assignment 问题。
+  - 问题描述：36 个设施分配到 36 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=36`，`locations=36`
-  - 参考值：`objective=8239110`
-  - 数据特征：STE 系列高数值跨度代表；同系列 `ste36a` 轻测出错，因此保留 `ste36c`。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=8239110`
+  - 备注：无
+
 - `qaplib_lipa40a`
-  - 问题描述：40 设施/40 位置的 quadratic assignment 问题。
+  - 问题描述：40 个设施分配到 40 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=40`，`locations=40`
-  - 参考值：`objective=31538`
-  - 数据特征：LIPA a 型 40 维代表，低变异结构，轻预算容易接近最优。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=31538`
+  - 备注：无
+
 - `qaplib_lipa40b`
-  - 问题描述：40 设施/40 位置的 quadratic assignment 问题。
+  - 问题描述：40 个设施分配到 40 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=40`，`locations=40`
-  - 参考值：`objective=476581`
-  - 数据特征：LIPA b 型 40 维代表，与 a 型同规模但目标尺度和结构不同。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=476581`
+  - 备注：无
+
 - `qaplib_tho40`
-  - 问题描述：40 设施/40 位置的 quadratic assignment 问题。
+  - 问题描述：40 个设施分配到 40 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=40`，`locations=40`
-  - 参考值：`objective=240516`
-  - 数据特征：Tho 系列 full 层代表，第二矩阵较稀疏且数值跨度明显。
-- `qaplib_sko42`
-  - 问题描述：42 设施/42 位置的 quadratic assignment 问题。
-  - 规模：`facilities=42`，`locations=42`
-  - 参考值：`objective=15812`
-  - 数据特征：Sko 系列 full 层小规模代表，规整稠密/混合结构。
-- `qaplib_wil50`
-  - 问题描述：50 设施/50 位置的 quadratic assignment 问题。
-  - 规模：`facilities=50`，`locations=50`
-  - 参考值：`objective=48816`
-  - 数据特征：Wilhelm 50 维代表，稠密且较均衡，作为 50 维质量对照。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=240516`
+  - 备注：无
+
 - `qaplib_tai50b`
-  - 问题描述：50 设施/50 位置的 quadratic assignment 问题。
+  - 问题描述：50 个设施分配到 50 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=50`，`locations=50`
-  - 参考值：`objective=458821517`
-  - 数据特征：Taillard b 型 50 维非对称 mixed 结构，保留中大规模困难样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=458821517`
+  - 备注：无
+
+- `qaplib_wil50`
+  - 问题描述：50 个设施分配到 50 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=50`，`locations=50`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=48816`
+  - 备注：无
+
 - `qaplib_sko64`
-  - 问题描述：64 设施/64 位置的 quadratic assignment 问题。
+  - 问题描述：64 个设施分配到 64 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=64`，`locations=64`
-  - 参考值：`objective=48498`
-  - 数据特征：Sko 系列 64 维代表，规模提升但结构仍较规整。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=48498`
+  - 备注：无
+
 - `qaplib_tai64c`
-  - 问题描述：64 设施/64 位置的 quadratic assignment 问题。
+  - 问题描述：64 个设施分配到 64 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=64`，`locations=64`
-  - 参考值：`objective=1855928`
-  - 数据特征：稀疏/高惩罚结构，和常规 TAI a/b、SKO 样本差异明显。
-- `qaplib_tai80b`
-  - 问题描述：80 设施/80 位置的 quadratic assignment 问题。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=1855928`
+  - 备注：无
+
+- `qaplib_lipa80a`
+  - 问题描述：80 个设施分配到 80 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=80`，`locations=80`
-  - 参考值：`objective=818415043`
-  - 数据特征：Taillard b 型 80 维代表，是 full 层最大且较困难的非对称样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=253195`
+  - 备注：无
+
+- `qaplib_tai80a`
+  - 问题描述：80 个设施分配到 80 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=80`，`locations=80`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=13499184`
+  - 备注：无
+
+- `qaplib_tai80b`
+  - 问题描述：80 个设施分配到 80 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=80`，`locations=80`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=818415043`
+  - 备注：无
 
 ### pressure
 
 - `qaplib_lipa90a`
-  - 问题描述：90 设施/90 位置的 quadratic assignment 问题。
+  - 问题描述：90 个设施分配到 90 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=90`，`locations=90`
-  - 参考值：`objective=360630`
-  - 数据特征：LIPA a 型 pressure 代表，低变异结构，适合观察大规模易结构表现。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=360630`
+  - 备注：无
+
 - `qaplib_lipa90b`
-  - 问题描述：90 设施/90 位置的 quadratic assignment 问题。
+  - 问题描述：90 个设施分配到 90 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=90`，`locations=90`
-  - 参考值：`objective=12490441`
-  - 数据特征：LIPA b 型 pressure 代表，与 a 型同规模形成结构对照。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=12490441`
+  - 备注：无
+
 - `qaplib_sko100a`
-  - 问题描述：100 设施/100 位置的 quadratic assignment 问题。
+  - 问题描述：100 个设施分配到 100 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=100`，`locations=100`
-  - 参考值：`objective=152002`
-  - 数据特征：Sko 100 维系列代表；同系列 `sko100b-f` 近似度高，保留一个代表。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=152002`
+  - 备注：无
+
+- `qaplib_sko100e`
+  - 问题描述：100 个设施分配到 100 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=100`，`locations=100`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=149150`
+  - 备注：无
+
 - `qaplib_tai100a`
-  - 问题描述：100 设施/100 位置的 quadratic assignment 问题。
+  - 问题描述：100 个设施分配到 100 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=100`，`locations=100`
-  - 参考值：`objective=21052466`
-  - 数据特征：Taillard a 型 100 维稠密均衡结构，pressure 层标准样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=21052466`
+  - 备注：无
+
 - `qaplib_tai100b`
-  - 问题描述：100 设施/100 位置的 quadratic assignment 问题。
+  - 问题描述：100 个设施分配到 100 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=100`，`locations=100`
-  - 参考值：`objective=1185996137`
-  - 数据特征：Taillard b 型 100 维非对称 mixed 结构，目标尺度大、搜索压力高。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=1185996137`
+  - 备注：无
+
 - `qaplib_wil100`
-  - 问题描述：100 设施/100 位置的 quadratic assignment 问题。
+  - 问题描述：100 个设施分配到 100 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=100`，`locations=100`
-  - 参考值：`objective=273038`
-  - 数据特征：Wilhelm 100 维代表，稠密且较均衡，作为 pressure 层质量对照。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=273038`
+  - 备注：无
+
 - `qaplib_esc128`
-  - 问题描述：128 设施/128 位置的 quadratic assignment 问题。
+  - 问题描述：128 个设施分配到 128 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=128`，`locations=128`
-  - 参考值：`objective=64`
-  - 数据特征：ESC 大规模稀疏结构，最优值很小，能暴露 gap 归一化和稀疏搜索表现。
-- `qaplib_tho150`
-  - 问题描述：150 设施/150 位置的 quadratic assignment 问题。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=64`
+  - 备注：无
+
+- `qaplib_tai150b`
+  - 问题描述：150 个设施分配到 150 个位置的二次分配问题，目标是最小化二次分配成本。
   - 规模：`facilities=150`，`locations=150`
-  - 参考值：`objective=8133398`
-  - 数据特征：Tho 150 维大规模 mixed 结构，是当前正式 pressure 中最大样本。
+  - 参考值性质：最优
+  - 参考值/区间：`objective=498896643`
+  - 备注：无
 
-## 问题定义
-
-每个 case 都是在给定两个权重矩阵的前提下，寻找设施到位置的最优置换，使总分配成本最小。
+- `qaplib_tho150`
+  - 问题描述：150 个设施分配到 150 个位置的二次分配问题，目标是最小化二次分配成本。
+  - 规模：`facilities=150`，`locations=150`
+  - 参考值性质：最优
+  - 参考值/区间：`objective=8133398`
+  - 备注：无

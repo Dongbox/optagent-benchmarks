@@ -1,20 +1,25 @@
 from __future__ import annotations
 
-from . import a
+from . import ali
 from . import att
 from . import bayg
+from . import bays
 from . import berlin
+from . import bier
+from . import brazil
+from . import brg
 from . import burma
-from . import ch
 from . import d
+from . import dantzig
 from . import dsj
 from . import eil
 from . import fl
-from . import gil
+from . import fri
 from . import gr
-from . import kroa
+from . import kroc
 from . import lin
 from . import p
+from . import pa
 from . import pcb
 from . import pr
 from . import rat
@@ -28,21 +33,26 @@ from . import ulysses
 from . import vm
 
 CASES = (
-    *a.CASES,
+    *ali.CASES,
     *att.CASES,
     *bayg.CASES,
+    *bays.CASES,
     *berlin.CASES,
+    *bier.CASES,
+    *brazil.CASES,
+    *brg.CASES,
     *burma.CASES,
-    *ch.CASES,
     *d.CASES,
+    *dantzig.CASES,
     *dsj.CASES,
     *eil.CASES,
     *fl.CASES,
-    *gil.CASES,
+    *fri.CASES,
     *gr.CASES,
-    *kroa.CASES,
+    *kroc.CASES,
     *lin.CASES,
     *p.CASES,
+    *pa.CASES,
     *pcb.CASES,
     *pr.CASES,
     *rat.CASES,
@@ -57,21 +67,26 @@ CASES = (
 )
 
 INSTANCE_MODULES = (
-    a,
+    ali,
     att,
     bayg,
+    bays,
     berlin,
+    bier,
+    brazil,
+    brg,
     burma,
-    ch,
     d,
+    dantzig,
     dsj,
     eil,
     fl,
-    gil,
+    fri,
     gr,
-    kroa,
+    kroc,
     lin,
     p,
+    pa,
     pcb,
     pr,
     rat,

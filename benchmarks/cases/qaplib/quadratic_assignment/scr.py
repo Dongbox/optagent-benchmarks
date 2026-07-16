@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from benchmarks.cases.qaplib.quadratic_assignment._domain import (
     make_qap_case,
@@ -6,20 +6,6 @@ from benchmarks.cases.qaplib.quadratic_assignment._domain import (
 )
 
 CASE_MODULE = __name__
-
-SCR20 = make_qap_case(
-    benchmark_id='qaplib_scr20',
-    instance='scr20',
-    tier='calibration',
-    size=20,
-    raw_path=RAW_DIR / 'scr20.dat',
-    solution_raw_path=RAW_DIR / 'scr20.sln',
-    objective=110030,
-    source_label='Scr20',
-    case_module=CASE_MODULE,
-    instance_url='https://qaplib.mgi.polymtl.ca/data.d/scr20.dat',
-    solution_url='https://qaplib.mgi.polymtl.ca/soln.d/scr20.sln',
-)
 
 SCR12 = make_qap_case(
     benchmark_id='qaplib_scr12',
@@ -35,4 +21,32 @@ SCR12 = make_qap_case(
     solution_url='https://qaplib.mgi.polymtl.ca/soln.d/scr12.sln',
 )
 
-CASES = (SCR20, SCR12,)
+SCR15 = make_qap_case(
+    benchmark_id='qaplib_scr15',
+    instance='scr15',
+    tier='smoke',
+    size=15,
+    raw_path=RAW_DIR / 'scr15.dat',
+    solution_raw_path=RAW_DIR / 'scr15.sln',
+    objective=51140,
+    source_label='Scr15',
+    case_module=CASE_MODULE,
+    instance_url='https://qaplib.mgi.polymtl.ca/data.d/scr15.dat',
+    solution_url='https://qaplib.mgi.polymtl.ca/soln.d/scr15.sln',
+)
+
+SCR20 = make_qap_case(
+    benchmark_id='qaplib_scr20',
+    instance='scr20',
+    tier='calibration',
+    size=20,
+    raw_path=RAW_DIR / 'scr20.dat',
+    solution_raw_path=RAW_DIR / 'scr20.sln',
+    objective=110030,
+    source_label='Scr20',
+    case_module=CASE_MODULE,
+    instance_url='https://qaplib.mgi.polymtl.ca/data.d/scr20.dat',
+    solution_url='https://qaplib.mgi.polymtl.ca/soln.d/scr20.sln',
+)
+
+CASES = (SCR12, SCR15, SCR20,)
