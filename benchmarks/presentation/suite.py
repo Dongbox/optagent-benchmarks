@@ -45,16 +45,14 @@ RUNNER_SCENARIO_DESCRIPTION = (
 BUDGET_POLICY_ID = "family_time_first_v2"
 IMPLEMENTED_FAMILIES = implemented_families()
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
-DEFAULT_STRATEGIES = ("ga", "alns")
-DEFAULT_CANDIDATE_STRATEGIES = ("alns", "ga")
+DEFAULT_STRATEGIES = ("ga",)
+DEFAULT_CANDIDATE_STRATEGIES = ("ga",)
 DEFAULT_PARALLEL_THREAD_COUNTS = (1, 2, 4, 8, 16)
 SCHEDULING_FAMILIES = {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}
-SCHEDULING_DEFAULT_STRATEGIES = ("ga", "alns")
-SCHEDULING_STRATEGY_REPLACEMENTS = {"lns": "alns"}
-SEQUENCE_DEFAULT_STRATEGIES = ("ga", "alns")
+SCHEDULING_DEFAULT_STRATEGIES = ("ga",)
+SCHEDULING_STRATEGY_REPLACEMENTS: dict[str, str] = {}
+SEQUENCE_DEFAULT_STRATEGIES = ("ga",)
 PUBLIC_STRATEGY_CONFIGS = (
-    "LnsConfig",
-    "AlnsConfig",
     "GaConfig",
     "CpSatConfig",
 )
@@ -121,14 +119,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--strategy",
         action="append",
         dest="strategies",
-        help="Strategy to run. Defaults to family-aware ga/alns; scheduling lns requests are replaced by alns.",
+        help="Strategy to run. Defaults to the public GA strategy.",
     )
     parser.add_argument(
         "--default-candidate-matrix",
         action="store_true",
         help=(
             "Emit a default strategy candidate ranking from strategy rows. "
-            "When no --strategy is provided, runs alns/ga candidates."
+            "When no --strategy is provided, runs the GA candidate."
         ),
     )
     parser.add_argument(
@@ -612,10 +610,7 @@ def build_benchmark_inventory(
         "strategy_substitution_rules": {
             "scheduling_families": sorted(SCHEDULING_FAMILIES),
             "replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
-            "reason": (
-                "standalone lns does not currently produce feasible scheduling benchmark rows; "
-                "alns is the repairable scheduling search route"
-            ),
+            "reason": "No strategy substitutions are active in this release.",
         },
         "exact_only_families": ["exact_linear_mip"],
         "family_route_matrix": _family_route_matrix(),
@@ -701,23 +696,23 @@ def _family_route_matrix() -> dict[str, dict[str, Any]]:
             "notes": "CVRP2LIB variable vehicle-count CVRP; model implementation remains scaffold",
         },
         "interval_job_shop": {
-            "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
+            "routes": ["GaConfig", "CpSatConfig via solve_cpsat"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "cumulative_resource_scheduling": {
-            "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
+            "routes": ["GaConfig", "CpSatConfig via solve_cpsat"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "flexible_interval_job_shop": {
-            "routes": ["GaConfig", "AlnsConfig", "CpSatConfig via solve_cpsat"],
+            "routes": ["GaConfig", "CpSatConfig via solve_cpsat"],
             "strategy_replacements": dict(SCHEDULING_STRATEGY_REPLACEMENTS),
         },
         "sequence_blackbox_tsp": {
-            "routes": ["GaConfig", "AlnsConfig"],
+            "routes": ["GaConfig"],
             "strategy_replacements": {},
         },
         "sequence_quadratic_assignment": {
-            "routes": ["GaConfig", "AlnsConfig"],
+            "routes": ["GaConfig"],
             "strategy_replacements": {},
         },
     }
@@ -764,8 +759,7 @@ def resolve_family_strategy_matrix(
                         "effective_strategy": replacement,
                         "decision": decision,
                         "reason": (
-                            "standalone lns does not currently produce feasible scheduling benchmark rows; "
-                            "alns is the repairable scheduling search route"
+                            f"{strategy} is substituted with {replacement}"
                             if decision == "substituted"
                             else "valid family strategy"
                         ),

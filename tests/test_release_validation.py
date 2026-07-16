@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from benchmarks.cases.registry import benchmark_cases
 from benchmarks.release_validation import (
     RELEASE_VALIDATION_SEEDS,
     REPEAT_SEEDS,
@@ -33,10 +34,12 @@ def test_release_plan_uses_ten_seeds_and_three_same_seed_repetitions() -> None:
 
     for row in plan["representative_cases"]:
         if row["family"] == "exact_linear_mip":
+            assert row["strategies"] == ["optx"]
             assert row["seeds"] == [0]
             assert row["repeat_seeds"] == []
             assert row["repeat_count"] == 1
         else:
+            assert row["strategies"] == ["ga"]
             assert row["seeds"] == list(RELEASE_VALIDATION_SEEDS)
             assert row["repeat_seeds"] == list(REPEAT_SEEDS)
             assert row["repeat_count"] == 3
@@ -46,7 +49,8 @@ def test_release_plan_uses_ten_seeds_and_three_same_seed_repetitions() -> None:
 
 def test_linux_full_plan_contains_the_registered_inventory() -> None:
     plan = build_release_plan()
+    registered_ids = {str(case["benchmark_id"]) for case in benchmark_cases()}
 
-    assert len(plan["linux_full"]["case_ids"]) == 196
-    assert len(plan["linux_full"]["cases"]) == 196
+    assert set(plan["linux_full"]["case_ids"]) == registered_ids
+    assert {case["benchmark_id"] for case in plan["linux_full"]["cases"]} == registered_ids
     assert plan["linux_full"]["seed"] == 11

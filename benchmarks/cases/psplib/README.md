@@ -1,16 +1,30 @@
-# PSPLIB
+# PSPLIB 数据来源说明
 
-该数据源包含选定的 PSPLIB J90 资源约束项目调度实例。
+PSPLIB 目录保存来自 ScheduleOpt 归档的 PSPLIB j90 系列 benchmark case，当前是资源受限项目调度问题（RCPSP）。
 
-每个 activity 具有时长、可再生资源需求和前置弧。模型约束前置关系和累计资源容量，并
-最小化项目 makespan。
+## 相关 case
 
-独立验证检查 activity 时间、全部前置弧、按时间展开的可再生资源容量，以及重新计算的
-makespan。
+- `psplib_j90_1_1`
+  - 问题描述：90 个活动、4 个可再生资源的 RCPSP。
+  - 规模：`activities=90`，`renewable_resources=4`
+  - 参考值：`objective=73`
+- `psplib_j90_1_8`
+  - 问题描述：90 个活动、4 个可再生资源的 RCPSP。
+  - 规模：`activities=90`，`renewable_resources=4`
+  - 参考值：`objective=95`
+- `psplib_j90_2_4`
+  - 问题描述：90 个活动、4 个可再生资源的 RCPSP。
+  - 规模：`activities=90`，`renewable_resources=4`
+  - 参考值：`objective=70`
+- `psplib_j90_5_3`
+  - 问题描述：90 个活动、4 个可再生资源的 RCPSP。
+  - 规模：`activities=90`，`renewable_resources=4`
+  - 参考值：`objective=87`
+- `psplib_j90_6_7`
+  - 问题描述：90 个活动、4 个可再生资源的 RCPSP。
+  - 规模：`activities=90`，`renewable_resources=4`
+  - 参考值：`objective=71`
 
-```bash
-./.venv/bin/python benchmark.py list-cases --family cumulative_resource_scheduling
-```
+## 问题定义
 
-原始 `.rcp` 放在 `rcpsp/raw/`；下载文件默认只是本地缓存，除非明确治理为 release
-evidence。
+每个 case 都是在满足活动优先关系和资源容量约束的前提下，最小化项目 makespan。

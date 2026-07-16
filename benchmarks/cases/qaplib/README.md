@@ -1,4 +1,6 @@
-# QAPLIB
+# QAPLIB 数据来源说明
+
+QAPLIB 目录保存来自 QAPLIB 的 quadratic assignment benchmark case。当前是二次分配问题，用于测试 OptAgent 在 permutation / sequence 优化问题上的表现。
 
 ## 数据来源说明
 
