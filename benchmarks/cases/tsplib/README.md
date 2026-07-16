@@ -41,17 +41,59 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=3323`
   - 备注：无
+- `tsplib_ulysses16`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=16`
+  - 参考值：最优
+  - 参考值/区间：`objective=6859`
+  - 备注：无
+- `tsplib_gr17`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=17`
+  - 参考值：最优
+  - 参考值/区间：`objective=2085`
+  - 备注：无
+- `tsplib_gr21`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=21`
+  - 参考值：最优
+  - 参考值/区间：`objective=2707`
+  - 备注：无
 - `tsplib_ulysses22`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=22`
   - 参考值：最优
   - 参考值/区间：`objective=7013`
   - 备注：无
+- `tsplib_gr24`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=24`
+  - 参考值：最优
+  - 参考值/区间：`objective=1272`
+  - 备注：无
+- `tsplib_fri26`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=26`
+  - 参考值：最优
+  - 参考值/区间：`objective=937`
+  - 备注：无
 - `tsplib_bayg29`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=29`
   - 参考值：最优
   - 参考值/区间：`objective=1610`
+  - 备注：无
+- `tsplib_bays29`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=29`
+  - 参考值：最优
+  - 参考值/区间：`objective=2020`
+  - 备注：无
+- `tsplib_dantzig42`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=42`
+  - 参考值：最优
+  - 参考值/区间：`objective=699`
   - 备注：无
 - `tsplib_att48`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -77,6 +119,12 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=7542`
   - 备注：无
+- `tsplib_brazil58`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=58`
+  - 参考值：最优
+  - 参考值/区间：`objective=25395`
+  - 备注：无
 - `tsplib_st70`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=70`
@@ -89,11 +137,23 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=108159`
   - 备注：无
-- `tsplib_kroa100`
+- `tsplib_gr96`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=96`
+  - 参考值：最优
+  - 参考值/区间：`objective=55209`
+  - 备注：无
+- `tsplib_rat99`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=99`
+  - 参考值：最优
+  - 参考值/区间：`objective=1211`
+  - 备注：无
+- `tsplib_kroc100`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=100`
   - 参考值：最优
-  - 参考值/区间：`objective=21282`
+  - 参考值/区间：`objective=20749`
   - 备注：无
 
 ### calibration
@@ -104,17 +164,41 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=629`
   - 备注：无
-- `tsplib_ch130`
+- `tsplib_lin105`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=130`
+  - 规模：`nodes=105`
   - 参考值：最优
-  - 参考值/区间：`objective=6110`
+  - 参考值/区间：`objective=14379`
   - 备注：无
-- `tsplib_kroa150`
+- `tsplib_pr107`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=150`
+  - 规模：`nodes=107`
   - 参考值：最优
-  - 参考值/区间：`objective=26524`
+  - 参考值/区间：`objective=44303`
+  - 备注：无
+- `tsplib_gr120`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=120`
+  - 参考值：最优
+  - 参考值/区间：`objective=6942`
+  - 备注：无
+- `tsplib_pr124`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=124`
+  - 参考值：最优
+  - 参考值/区间：`objective=59030`
+  - 备注：无
+- `tsplib_bier127`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=127`
+  - 参考值：最优
+  - 参考值/区间：`objective=118282`
+  - 备注：无
+- `tsplib_gr137`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=137`
+  - 参考值：最优
+  - 参考值/区间：`objective=69853`
   - 备注：无
 - `tsplib_pr152`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -122,11 +206,35 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=73682`
   - 备注：无
+- `tsplib_si175`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=175`
+  - 参考值：最优
+  - 参考值/区间：`objective=21407`
+  - 备注：无
+- `tsplib_brg180`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=180`
+  - 参考值：最优
+  - 参考值/区间：`objective=1950`
+  - 备注：无
 - `tsplib_rat195`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=195`
   - 参考值：最优
   - 参考值/区间：`objective=2323`
+  - 备注：无
+- `tsplib_d198`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=198`
+  - 参考值：最优
+  - 参考值/区间：`objective=15780`
+  - 备注：无
+- `tsplib_gr202`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=202`
+  - 参考值：最优
+  - 参考值/区间：`objective=40160`
   - 备注：无
 - `tsplib_ts225`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -134,23 +242,17 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=126643`
   - 备注：无
-- `tsplib_gil262`
+- `tsplib_pr226`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=262`
+  - 规模：`nodes=226`
   - 参考值：最优
-  - 参考值/区间：`objective=2378`
+  - 参考值/区间：`objective=80369`
   - 备注：无
-- `tsplib_a280`
+- `tsplib_pr264`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=280`
+  - 规模：`nodes=264`
   - 参考值：最优
-  - 参考值/区间：`objective=2579`
-  - 备注：无
-- `tsplib_lin318`
-  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=318`
-  - 参考值：最优
-  - 参考值/区间：`objective=42029`
+  - 参考值/区间：`objective=49135`
   - 备注：无
 - `tsplib_rd400`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -158,17 +260,23 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=15281`
   - 备注：无
+- `tsplib_fl417`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=417`
+  - 参考值：最优
+  - 参考值/区间：`objective=11861`
+  - 备注：无
 - `tsplib_gr431`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=431`
   - 参考值：最优
   - 参考值/区间：`objective=171414`
   - 备注：无
-- `tsplib_pcb442`
+- `tsplib_pr439`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=442`
+  - 规模：`nodes=439`
   - 参考值：最优
-  - 参考值/区间：`objective=50778`
+  - 参考值/区间：`objective=107217`
   - 备注：无
 
 ### full
@@ -179,11 +287,23 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=27686`
   - 备注：无
+- `tsplib_ali535`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=535`
+  - 参考值：最优
+  - 参考值/区间：`objective=202339`
+  - 备注：无
 - `tsplib_si535`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=535`
   - 参考值：最优
   - 参考值/区间：`objective=48450`
+  - 备注：无
+- `tsplib_pa561`
+  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
+  - 规模：`nodes=561`
+  - 参考值：最优
+  - 参考值/区间：`objective=2763`
   - 备注：无
 - `tsplib_u574`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -236,12 +356,6 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
 
 ### pressure
 
-- `tsplib_pr1002`
-  - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=1002`
-  - 参考值：最优
-  - 参考值/区间：`objective=259045`
-  - 备注：无
 - `tsplib_si1032`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
   - 规模：`nodes=1032`
@@ -266,11 +380,11 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=56892`
   - 备注：无
-- `tsplib_rl1304`
+- `tsplib_fl1400`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=1304`
+  - 规模：`nodes=1400`
   - 参考值：最优
-  - 参考值/区间：`objective=252948`
+  - 参考值/区间：`objective=20127`
   - 备注：无
 - `tsplib_fl1577`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -284,11 +398,11 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=62128`
   - 备注：无
-- `tsplib_d2103`
+- `tsplib_rl1889`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=2103`
+  - 规模：`nodes=1889`
   - 参考值：最优
-  - 参考值/区间：`objective=80450`
+  - 参考值/区间：`objective=316536`
   - 备注：无
 - `tsplib_u2152`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
@@ -296,11 +410,11 @@ TSPLIB 包含 EUC_2D、CEIL_2D、ATT、GEO 和 EXPLICIT 等距离类型，距离
   - 参考值：最优
   - 参考值/区间：`objective=64253`
   - 备注：无
-- `tsplib_pr2392`
+- `tsplib_u2319`
   - 问题描述：对称 TSP，最小化 Hamiltonian 回路总长度。
-  - 规模：`nodes=2392`
+  - 规模：`nodes=2319`
   - 参考值：最优
-  - 参考值/区间：`objective=378032`
+  - 参考值/区间：`objective=234256`
   - 备注：无
 
-共 43 个 case。
+共 62 个 case。

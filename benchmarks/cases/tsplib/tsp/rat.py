@@ -7,6 +7,18 @@ from benchmarks.cases.tsplib.tsp._domain import (
 
 CASE_MODULE = __name__
 
+RAT99 = make_tsp_case(
+    benchmark_id='tsplib_rat99',
+    instance='rat99',
+    tier='smoke',
+    nodes=99,
+    raw_path=RAW_DIR / 'rat99.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/rat99.tsp.gz',
+    objective=1211,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/rat99.tsp',),
+)
+
 RAT195 = make_tsp_case(
     benchmark_id='tsplib_rat195',
     instance='rat195',
@@ -43,4 +55,4 @@ RAT783 = make_tsp_case(
     mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/rat783.tsp',),
 )
 
-CASES = (RAT195, RAT575, RAT783)
+CASES = (RAT99, RAT195, RAT575, RAT783,)

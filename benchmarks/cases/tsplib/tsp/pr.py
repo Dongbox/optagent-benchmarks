@@ -19,6 +19,30 @@ PR76 = make_tsp_case(
     mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr76.tsp',),
 )
 
+PR107 = make_tsp_case(
+    benchmark_id='tsplib_pr107',
+    instance='pr107',
+    tier='calibration',
+    nodes=107,
+    raw_path=RAW_DIR / 'pr107.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr107.tsp.gz',
+    objective=44303,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr107.tsp',),
+)
+
+PR124 = make_tsp_case(
+    benchmark_id='tsplib_pr124',
+    instance='pr124',
+    tier='calibration',
+    nodes=124,
+    raw_path=RAW_DIR / 'pr124.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr124.tsp.gz',
+    objective=59030,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr124.tsp',),
+)
+
 PR152 = make_tsp_case(
     benchmark_id='tsplib_pr152',
     instance='pr152',
@@ -31,28 +55,40 @@ PR152 = make_tsp_case(
     mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr152.tsp',),
 )
 
-PR1002 = make_tsp_case(
-    benchmark_id='tsplib_pr1002',
-    instance='pr1002',
-    tier='pressure',
-    nodes=1002,
-    raw_path=RAW_DIR / 'pr1002.tsp',
-    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr1002.tsp.gz',
-    objective=259045,
+PR226 = make_tsp_case(
+    benchmark_id='tsplib_pr226',
+    instance='pr226',
+    tier='calibration',
+    nodes=226,
+    raw_path=RAW_DIR / 'pr226.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr226.tsp.gz',
+    objective=80369,
     case_module=CASE_MODULE,
-    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr1002.tsp',),
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr226.tsp',),
 )
 
-PR2392 = make_tsp_case(
-    benchmark_id='tsplib_pr2392',
-    instance='pr2392',
-    tier='pressure',
-    nodes=2392,
-    raw_path=RAW_DIR / 'pr2392.tsp',
-    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr2392.tsp.gz',
-    objective=378032,
+PR264 = make_tsp_case(
+    benchmark_id='tsplib_pr264',
+    instance='pr264',
+    tier='calibration',
+    nodes=264,
+    raw_path=RAW_DIR / 'pr264.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr264.tsp.gz',
+    objective=49135,
     case_module=CASE_MODULE,
-    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr2392.tsp',),
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr264.tsp',),
 )
 
-CASES = (PR76, PR152, PR1002, PR2392)
+PR439 = make_tsp_case(
+    benchmark_id='tsplib_pr439',
+    instance='pr439',
+    tier='calibration',
+    nodes=439,
+    raw_path=RAW_DIR / 'pr439.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/pr439.tsp.gz',
+    objective=107217,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/pr439.tsp',),
+)
+
+CASES = (PR76, PR107, PR124, PR152, PR226, PR264, PR439,)

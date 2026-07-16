@@ -55,4 +55,16 @@ U2152 = make_tsp_case(
     mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/u2152.tsp',),
 )
 
-CASES = (U574, U724, U1060, U2152)
+U2319 = make_tsp_case(
+    benchmark_id='tsplib_u2319',
+    instance='u2319',
+    tier='pressure',
+    nodes=2319,
+    raw_path=RAW_DIR / 'u2319.tsp',
+    instance_url='https://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/tsp/u2319.tsp.gz',
+    objective=234256,
+    case_module=CASE_MODULE,
+    mirror_urls=('https://raw.githubusercontent.com/mastqe/tsplib/master/u2319.tsp',),
+)
+
+CASES = (U574, U724, U1060, U2152, U2319,)
