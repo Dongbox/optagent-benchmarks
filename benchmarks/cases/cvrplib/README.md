@@ -45,6 +45,8 @@ CVRPLIB 目录保存来自 CVRPLIB 的 capacitated vehicle routing benchmark cas
 
 ## 建模说明
 
+每个 case 以固定车辆数建立 CVRP：客户分配、车辆流守恒、容量约束和路线连通性共同定义可行解，目标最小化所有车辆路线的总距离。当前 family 为 `capacitated_vehicle_routing_fixed_fleet`，默认通过 `binary_arc_single_commodity_flow` 建模；独立验证重新检查客户覆盖、车辆数量、容量、流守恒和路线距离，不信任 solver summary。
+
 ## 相关 case
 
 ### smoke

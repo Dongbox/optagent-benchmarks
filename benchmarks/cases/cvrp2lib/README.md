@@ -39,6 +39,8 @@ CVRP2LIB 目录保存从 CVRPLIB XML100 生成族中筛选出的特殊 CVRP_XML 
 
 ## 建模说明
 
+当前 family 为 `capacitated_vehicle_routing_variable_fleet`，输入不提供固定车辆数，现有 loader 和 case 注册保持该事实。后续模型必须同时表达车辆启用、客户分配、容量、流守恒和路线距离，并独立验证路线覆盖、容量和 reference 中的车辆数/目标值；不能把 reference.vehicles 回写为输入车辆数。
+
 ## 相关 case
 
 ### calibration
