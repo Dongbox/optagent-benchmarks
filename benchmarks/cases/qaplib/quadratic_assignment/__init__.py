@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from . import bur
 from . import chr
@@ -8,6 +8,7 @@ from . import had
 from . import kra
 from . import lipa
 from . import nug
+from . import rou
 from . import scr
 from . import sko
 from . import ste
@@ -24,6 +25,7 @@ CASES = (
     *kra.CASES,
     *lipa.CASES,
     *nug.CASES,
+    *rou.CASES,
     *scr.CASES,
     *sko.CASES,
     *ste.CASES,
@@ -41,6 +43,7 @@ INSTANCE_MODULES = (
     kra,
     lipa,
     nug,
+    rou,
     scr,
     sko,
     ste,

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from benchmarks.cases.qaplib.quadratic_assignment._domain import (
     make_qap_case,
@@ -6,20 +6,6 @@ from benchmarks.cases.qaplib.quadratic_assignment._domain import (
 )
 
 CASE_MODULE = __name__
-
-BUR26G = make_qap_case(
-    benchmark_id='qaplib_bur26g',
-    instance='bur26g',
-    tier='calibration',
-    size=26,
-    raw_path=RAW_DIR / 'bur26g.dat',
-    solution_raw_path=RAW_DIR / 'bur26g.sln',
-    objective=10117172,
-    source_label='Bur26g',
-    case_module=CASE_MODULE,
-    instance_url='https://qaplib.mgi.polymtl.ca/data.d/bur26g.dat',
-    solution_url='https://qaplib.mgi.polymtl.ca/soln.d/bur26g.sln',
-)
 
 BUR26A = make_qap_case(
     benchmark_id='qaplib_bur26a',
@@ -35,4 +21,4 @@ BUR26A = make_qap_case(
     solution_url='https://qaplib.mgi.polymtl.ca/soln.d/bur26a.sln',
 )
 
-CASES = (BUR26G, BUR26A,)
+CASES = (BUR26A,)

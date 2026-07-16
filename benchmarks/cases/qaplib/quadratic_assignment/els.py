@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from benchmarks.cases.qaplib.quadratic_assignment._domain import (
     make_qap_case,
