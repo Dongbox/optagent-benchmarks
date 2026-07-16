@@ -25,7 +25,7 @@ on:
       max_iterations:
         description: Max iterations budget
         required: false
-        default: "5"
+        default: ""
       time_limit_s:
         description: Time limit seconds budget
         required: false
@@ -33,7 +33,11 @@ on:
       population_size:
         description: Population size budget
         required: false
-        default: "6"
+        default: "16"
+      calibration_seeds:
+        description: Comma-separated calibration seeds
+        required: false
+        default: "11,59,113"
   push:
     branches:
       - main
@@ -54,16 +58,17 @@ jobs:
   benchmark:
     name: Benchmark OptAgent Commit
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 360
     env:
       OPTAGENT_REPOSITORY: ${{ inputs.optagent_repository || 'Dongbox/optagent' }}
       OPTAGENT_REF: ${{ inputs.optagent_ref || 'main' }}
       BENCHMARK_TIER: ${{ inputs.tier || 'smoke' }}
       BENCHMARK_FAMILY: ${{ inputs.family || 'sequence_blackbox_tsp' }}
       BENCHMARK_STRATEGY: ${{ inputs.strategy || 'ga' }}
-      BENCHMARK_MAX_ITERATIONS: ${{ inputs.max_iterations || '5' }}
-      BENCHMARK_TIME_LIMIT_S: ${{ inputs.time_limit_s || '2' }}
-      BENCHMARK_POPULATION_SIZE: ${{ inputs.population_size || '6' }}
+      BENCHMARK_MAX_ITERATIONS: ${{ inputs.max_iterations || '' }}
+      BENCHMARK_TIME_LIMIT_S: ${{ inputs.time_limit_s || '20' }}
+      BENCHMARK_POPULATION_SIZE: ${{ inputs.population_size || '16' }}
+      BENCHMARK_CALIBRATION_SEEDS: ${{ inputs.calibration_seeds || '11,59,113' }}
       OPTAGENT_REPOSITORY_TOKEN: ${{ secrets.OPTAGENT_REPOSITORY_TOKEN }}
     steps:
       - name: Checkout optagent-benchmarks
@@ -95,7 +100,11 @@ jobs:
 
       - name: Resolve OptAgent commit SHA
         working-directory: optagent
-        run: echo "OPTAGENT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          echo "Checked out OptAgent ref: ${OPTAGENT_REF}"
+          echo "OPTAGENT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "Resolved OptAgent SHA: $(git rev-parse HEAD)"
 
       - name: Cache OptAgent native wheel build tree
         uses: actions/cache@v5
@@ -164,9 +173,15 @@ jobs:
               RUN_ARGS+=(--tier "${tier}")
             fi
           done
+          IFS=',' read -ra SEEDS <<< "${BENCHMARK_CALIBRATION_SEEDS}"
+          for seed in "${SEEDS[@]}"; do
+            seed="$(echo "${seed}" | xargs)"
+            if [ -n "${seed}" ]; then
+              RUN_ARGS+=(--calibration-seed "${seed}")
+            fi
+          done
           python benchmark.py suite \
             "${RUN_ARGS[@]}" \
-            --max-iterations "${BENCHMARK_MAX_ITERATIONS}" \
             --time-limit-s "${BENCHMARK_TIME_LIMIT_S}" \
             --population-size "${BENCHMARK_POPULATION_SIZE}" \
             --timestamp "gha-${OPTAGENT_REF:0:12}-${GITHUB_RUN_ID}"
