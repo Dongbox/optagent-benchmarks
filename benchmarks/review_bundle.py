@@ -119,6 +119,9 @@ def load_review_bundle(path: str | Path) -> dict[str, Any]:
 
 def _artifact_meta(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     first = rows[0] if rows else {}
+    time_limits = sorted(
+        {float(row["time_budget_s"]) for row in rows if isinstance(row.get("time_budget_s"), (int, float))}
+    )
     observation_times = tuple(float(value) for value in first.get("observation_times_s") or ())
     if not observation_times:
         observation_times = tuple(
@@ -151,7 +154,8 @@ def _artifact_meta(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "formal_checkpoints_s": checkpoints,
         "expected_seed_count": int(first.get("expected_seed_count") or len({row.get("seed") for row in rows})),
         "configuration": {
-            "time_limit_s": _optional_float(first.get("time_budget_s")),
+            "time_limit_s": time_limits[0] if len(time_limits) == 1 else None,
+            "time_limit_range_s": time_limits,
             "max_iterations": max_iterations,
             "population_size": _optional_int(first.get("population_size")),
             "thread_count": _optional_int(first.get("thread_count")),
@@ -606,13 +610,18 @@ def _validate_artifact_invariants(rows: Sequence[Mapping[str, Any]], role: str) 
         expected = first.get(field)
         if any(row.get(field) != expected for row in rows[1:]):
             raise ValueError(f"{role} artifact has inconsistent {field}")
-    if first.get("review_mode") != "single_family_focus":
-        raise ValueError(f"{role} artifact must use single_family_focus review mode")
+    review_mode = first.get("review_mode")
+    if review_mode not in {"single_family_focus", "multi_family_suite"}:
+        raise ValueError(f"{role} artifact has unsupported review mode: {review_mode}")
     target_families = tuple(first.get("target_families") or ())
-    if len(target_families) != 1:
-        raise ValueError(f"{role} artifact must declare exactly one target family")
-    if not any(str(row.get("family") or "unknown") == str(target_families[0]) for row in rows):
-        raise ValueError(f"{role} artifact target family is not present in its runs")
+    if not target_families:
+        raise ValueError(f"{role} artifact must declare at least one target family")
+    if review_mode == "single_family_focus" and len(target_families) != 1:
+        raise ValueError(f"{role} single-family artifact must declare exactly one target family")
+    present_families = {str(row.get("family") or "unknown") for row in rows}
+    missing_families = set(target_families) - present_families
+    if missing_families:
+        raise ValueError(f"{role} target families are not present in its runs: {sorted(missing_families)}")
 
 
 def _empty_point(time_s: float, expected: int) -> dict[str, Any]:
