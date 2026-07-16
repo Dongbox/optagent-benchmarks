@@ -17,7 +17,15 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
 ## 数据筛选依据
 
 - 数规模定义：candidates = 所有工序的可用机器数之和。
-- tier 范围：smoke：candidates=6-300；calibration：candidates=42-612；full：candidates=165-1951；pressure：candidates=518-3164。
+tier 分类范围：
+
+| tier | case 数量 | candidates 范围 |
+|---|---:|---:|
+| smoke | 12 | 1–300 |
+| calibration | 24 | 301–700 |
+| full | 24 | 701–2000 |
+| pressure | 6 | 2001–3200 |
+
 - 筛选策略：以 candidates 递增为主线，综合保留不同来源系列和参考解状态的代表，去除非常近似的算例。
 
 ## 建模说明

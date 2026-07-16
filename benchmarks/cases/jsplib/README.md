@@ -26,10 +26,13 @@ JSPLIB（Job-Shop Scheduling Problem Library）是 job-shop 调度问题基准�
 
 tier 分类范围：
 
-- smoke：operations=36-100
-- calibration：operations=100-150
-- full：operations=200-450
-- pressure：operations=500-750
+| tier | case 数量 | operations 范围 |
+|---|---:|---:|
+| smoke | 20 | 30–99 |
+| calibration | 20 | 100–199 |
+| full | 15 | 200–499 |
+| pressure | 10 | 500–750 |
+
 筛选策略：每个算例使用 operations 与 jobs/machines 比例、加工时间分布、作业和机器负荷不均衡、机器路线重合度、机器先后关系图的密度与熵构成特征向量。在同一 tier 候选集内对各特征做 z-score 标准化；两个算例的近似程度为标准化特征向量之间的欧氏距离，距离越小表示结构和数据特征越接近。
 
 ## 建模说明

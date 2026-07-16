@@ -18,7 +18,15 @@ CVRPLIB 是容量约束车辆路由问题的公开基准数据集，用于评估
 ## 数据筛选依据
 
 - 数规模定义：nodes=客户数+1，customers=nodes-1，并保留 vehicles、capacity 和 directed_arcs 作为辅助规模特征。
-- tier 范围：smoke：nodes=16-80，calibration：nodes=81-200，full：nodes=201-500，pressure：nodes=501-1200。
+tier 分类范围：
+
+| tier | case 数量 | nodes 范围 |
+|---|---:|---:|
+| smoke | 17 | 16–80 |
+| calibration | 31 | 81–200 |
+| full | 15 | 201–500 |
+| pressure | 16 | 501–1200 |
+
 - 筛选策略：先按规模分层，再综合比较车辆数、容量、需求分布、距离分布、近邻结构、仓库距离和空间密度，去除结构高度重复的算例，同时保留不同来源系列的代表。
 
 ## 建模说明
