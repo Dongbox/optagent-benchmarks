@@ -135,7 +135,7 @@ def test_authority_requires_clean_provenance_complete_matrix_and_verified_rows()
     assert any("fallback" in reason for reason in fallback.reasons)
 
 
-def test_capability_assessment_keeps_strategy_failures_separate_from_family_support() -> None:
+def test_capability_assessment_marks_failed_release_profile() -> None:
     rows = []
     for coordinate in iter_run_coordinates():
         rows.append(
@@ -153,21 +153,21 @@ def test_capability_assessment_keeps_strategy_failures_separate_from_family_supp
                 "verification_passed": True,
             }
         )
-    failed_alns = [dict(row) for row in rows]
-    for row in failed_alns:
-        if row["family"] == "interval_job_shop" and row["strategy"] == "alns":
+    failed_ga = [dict(row) for row in rows]
+    for row in failed_ga:
+        if row["family"] == "interval_job_shop" and row["strategy"] == "ga":
             row["status"] = "verification_failed"
             row["feasible"] = False
             row["verification_status"] = "failed"
             row["verification_passed"] = False
 
-    assessment = assess_capabilities(failed_alns)
+    assessment = assess_capabilities(failed_ga)
 
-    assert assessment["release_status"] == "passed"
-    assert assessment["families"]["interval_job_shop"]["status"] == "supported"
+    assert assessment["release_status"] == "failed"
+    assert assessment["families"]["interval_job_shop"]["status"] == "experimental"
     assert (
         assessment["profiles"][
-            "interval_job_shop|interval_var_sequence_no_overlap_precedence|native_search|alns|" + _platform_coordinate()
+            "interval_job_shop|interval_var_sequence_no_overlap_precedence|native_search|ga|" + _platform_coordinate()
         ]["status"]
         == "failed"
     )
@@ -176,7 +176,7 @@ def test_capability_assessment_keeps_strategy_failures_separate_from_family_supp
 def test_release_gate_coordinates_and_lifecycle_are_explicit() -> None:
     coordinates = iter_run_coordinates()
 
-    assert len(coordinates) == 43
+    assert len(coordinates) == 22
     assert {coordinate.solve_route for coordinate in coordinates} == {"embedded_highs", "native_search"}
     assert all("|route=" in coordinate.run_key for coordinate in coordinates)
     assert case_lifecycle("jsplib_ft06") == "release_gate"
@@ -217,6 +217,15 @@ def test_strategy_config_rejects_nonpositive_time_limit() -> None:
 
     with pytest.raises(ValueError, match="time_limit_s must be > 0"):
         build_strategy_config(case=case, strategy_name="ga", budget=budget)
+
+
+@pytest.mark.parametrize("strategy_name", ["alns", "lns"])
+def test_strategy_config_marks_alns_unavailable_for_this_release(strategy_name: str) -> None:
+    case = case_object_by_id("jsplib_ft06")
+    budget = LocalRunBudget(max_iterations=1, time_limit_s=0.1, population_size=4, thread_count=1)
+
+    with pytest.raises(ValueError, match="ALNS is temporarily unavailable"):
+        build_strategy_config(case=case, strategy_name=strategy_name, budget=budget)
 
 
 def test_authoritative_child_command_is_isolated_and_pins_the_model_style() -> None:

@@ -135,16 +135,16 @@ def run_benchmark_case(
 
 def default_strategy_names_for_family(family: str) -> tuple[str, ...]:
     if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
-        return ("ga", "alns")
+        return ("ga",)
     if family in {"sequence_blackbox_tsp", "sequence_quadratic_assignment", "sequence_transition_penalty"}:
-        return ("ga", "alns")
+        return ("ga",)
     if family == "exact_linear_mip":
         return ("optx",)
     return ("ga",)
 
 
 def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: Any) -> Any:
-    from optagent import AlnsConfig, CpSatConfig, GaConfig, MilpConfig
+    from optagent import CpSatConfig, GaConfig, MilpConfig
 
     population_size = max(4, int(getattr(budget, "population_size", 10)))
     thread_count = int(getattr(budget, "thread_count", 1))
@@ -152,16 +152,7 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
     if time_limit_s <= 0.0:
         raise ValueError("benchmark time_limit_s must be > 0")
     max_iterations = None
-    size = dict(case.size)
     family = case.family
-    dimension = int(
-        size.get("nodes")
-        or size.get("facilities")
-        or size.get("activities")
-        or size.get("operations")
-        or size.get("variables")
-        or 10
-    )
 
     if family == "exact_linear_mip" or strategy_name in {"optx", "milp", "mathopt_mp"}:
         backend = "mathopt_mp" if strategy_name == "mathopt_mp" else "optx"
@@ -175,29 +166,8 @@ def build_strategy_config(*, case: BenchmarkCase, strategy_name: str, budget: An
             max_iterations=max_iterations,
             population_size=population_size,
         )
-    if strategy_name == "alns":
-        destroy_count = max(
-            2,
-            min(
-                16,
-                dimension
-                // (
-                    8
-                    if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}
-                    else 12
-                ),
-            ),
-        )
-        kwargs: dict[str, Any] = {
-            "max_iterations": max_iterations,
-            "destroy_count": destroy_count,
-            "repair_operators": ("greedy", "beam"),
-            "acceptance": "not_worse",
-        }
-        return AlnsConfig(**kwargs)
-    if strategy_name == "lns":
-        # LnsConfig was consolidated into AlnsConfig; map lns requests to ALNS.
-        return AlnsConfig(max_iterations=max_iterations, destroy_count=max(2, min(16, dimension // 8)))
+    if strategy_name in {"alns", "lns"}:
+        raise ValueError("ALNS is temporarily unavailable in this release pending validation")
     raise ValueError(f"unsupported strategy for {case.benchmark_id}: {strategy_name}")
 
 
