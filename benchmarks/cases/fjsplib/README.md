@@ -58,7 +58,7 @@ tier 分类范围：
   - 问题描述：柔性作业车间调度，最小化 makespan。
   - 规模：`candidates=10`
   - 参考值：最优
-  - 参考值/区间：`objective=355, lower_bound=355, upper_bound=331`
+  - 参考值/区间：`objective=355, lower_bound=355, upper_bound=355`
   - 备注：无
 - `fjsplib_sfjs05`
   - 问题描述：柔性作业车间调度，最小化 makespan。

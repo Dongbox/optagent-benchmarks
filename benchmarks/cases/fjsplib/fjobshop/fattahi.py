@@ -136,7 +136,7 @@ SFJS04 = make_flexible_job_shop_case(
         'kind': 'optimum',
         'objective': 355,
         'lower_bound': 355,
-        'upper_bound': 331,
+        'upper_bound': 355,
     },
 )
 
