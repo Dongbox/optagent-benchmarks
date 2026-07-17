@@ -27,6 +27,9 @@ tmp/
 # wheel
 *.whl
 
+# license
+*.license
+
 # Keep versioned dashboard/presentation artifacts addable by default.
 !presentation/
 !presentation/results/
