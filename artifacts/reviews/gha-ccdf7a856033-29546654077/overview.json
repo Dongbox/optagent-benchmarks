@@ -1,0 +1,497 @@
+{
+  "baseline": null,
+  "case_count": 266,
+  "compatibility_reasons": [],
+  "compatible": true,
+  "current": {
+    "benchmarks_commit": "unknown",
+    "created_at": "2026-07-17T01:09:59Z",
+    "optagent_commit": "unknown",
+    "strategy": "ga"
+  },
+  "family_checkpoints": [
+    {
+      "case_count": 5,
+      "checkpoints": [
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 15,
+            "gap": {
+              "median": 4.2105263157894735,
+              "p25": 0.0,
+              "p75": 6.8493150684931505,
+              "sample_count": 5
+            },
+            "valid": 15
+          },
+          "time_s": 5.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 15,
+            "gap": {
+              "median": 4.2105263157894735,
+              "p25": 0.0,
+              "p75": 6.8493150684931505,
+              "sample_count": 5
+            },
+            "valid": 15
+          },
+          "time_s": 10.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 15,
+            "gap": {
+              "median": 4.2105263157894735,
+              "p25": 0.0,
+              "p75": 6.8493150684931505,
+              "sample_count": 5
+            },
+            "valid": 15
+          },
+          "time_s": 20.0
+        }
+      ],
+      "family": "cumulative_resource_scheduling",
+      "role": "target"
+    },
+    {
+      "case_count": 66,
+      "checkpoints": [
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 192,
+            "gap": {
+              "median": 77.08829646435998,
+              "p25": 25.021331058020476,
+              "p75": 213.24190857022595,
+              "sample_count": 64
+            },
+            "valid": 192
+          },
+          "time_s": 5.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 192,
+            "gap": {
+              "median": 62.309285698376286,
+              "p25": 25.021331058020476,
+              "p75": 158.84551495016612,
+              "sample_count": 64
+            },
+            "valid": 192
+          },
+          "time_s": 10.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 192,
+            "gap": {
+              "median": 60.23240231344336,
+              "p25": 25.021331058020476,
+              "p75": 151.3423849285764,
+              "sample_count": 64
+            },
+            "valid": 192
+          },
+          "time_s": 20.0
+        }
+      ],
+      "family": "flexible_interval_job_shop",
+      "role": "target"
+    },
+    {
+      "case_count": 65,
+      "checkpoints": [
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 195,
+            "gap": {
+              "median": 34.48275862068966,
+              "p25": 21.635850025680533,
+              "p75": 130.99775784753362,
+              "sample_count": 65
+            },
+            "valid": 195
+          },
+          "time_s": 5.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 195,
+            "gap": {
+              "median": 32.30846774193548,
+              "p25": 21.635850025680533,
+              "p75": 91.3677130044843,
+              "sample_count": 65
+            },
+            "valid": 195
+          },
+          "time_s": 10.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 195,
+            "gap": {
+              "median": 32.30846774193548,
+              "p25": 21.635850025680533,
+              "p75": 91.3677130044843,
+              "sample_count": 65
+            },
+            "valid": 195
+          },
+          "time_s": 20.0
+        }
+      ],
+      "family": "interval_job_shop",
+      "role": "target"
+    },
+    {
+      "case_count": 62,
+      "checkpoints": [
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 138,
+            "gap": {
+              "median": 9.637990373339775,
+              "p25": 2.3401928546709376,
+              "p75": 15.276125462498609,
+              "sample_count": 46
+            },
+            "valid": 138
+          },
+          "time_s": 5.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 138,
+            "gap": {
+              "median": 9.637990373339775,
+              "p25": 2.3401928546709376,
+              "p75": 15.276125462498609,
+              "sample_count": 46
+            },
+            "valid": 138
+          },
+          "time_s": 10.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 138,
+            "gap": {
+              "median": 9.637990373339775,
+              "p25": 2.3401928546709376,
+              "p75": 15.276125462498609,
+              "sample_count": 46
+            },
+            "valid": 138
+          },
+          "time_s": 20.0
+        }
+      ],
+      "family": "sequence_blackbox_tsp",
+      "role": "target"
+    },
+    {
+      "case_count": 65,
+      "checkpoints": [
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 192,
+            "gap": {
+              "median": 8.882977908896805,
+              "p25": 2.8925045267730174,
+              "p75": 12.430399325084364,
+              "sample_count": 64
+            },
+            "valid": 192
+          },
+          "time_s": 5.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 192,
+            "gap": {
+              "median": 7.422219731245427,
+              "p25": 2.374739367764247,
+              "p75": 12.183859167702188,
+              "sample_count": 64
+            },
+            "valid": 192
+          },
+          "time_s": 10.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 192,
+            "gap": {
+              "median": 7.1492813288929735,
+              "p25": 2.374739367764247,
+              "p75": 11.945379002657383,
+              "sample_count": 64
+            },
+            "valid": 192
+          },
+          "time_s": 20.0
+        }
+      ],
+      "family": "sequence_quadratic_assignment",
+      "role": "target"
+    },
+    {
+      "case_count": 3,
+      "checkpoints": [
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 9,
+            "gap": {
+              "median": 0.0,
+              "p25": -40.909090909090914,
+              "p75": 2450.0,
+              "sample_count": 3
+            },
+            "valid": 9
+          },
+          "time_s": 5.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 9,
+            "gap": {
+              "median": 0.0,
+              "p25": -40.909090909090914,
+              "p75": 1650.0,
+              "sample_count": 3
+            },
+            "valid": 9
+          },
+          "time_s": 10.0
+        },
+        {
+          "baseline": null,
+          "case_delta_pp": {
+            "median": null,
+            "p25": null,
+            "p75": null,
+            "sample_count": 0
+          },
+          "current": {
+            "feasible": 9,
+            "gap": {
+              "median": 0.0,
+              "p25": -40.909090909090914,
+              "p75": 1650.0,
+              "sample_count": 3
+            },
+            "valid": 9
+          },
+          "time_s": 20.0
+        }
+      ],
+      "family": "sequence_transition_penalty",
+      "role": "target"
+    }
+  ],
+  "family_count": 6,
+  "metric_definitions": {
+    "quantile": {
+      "formula": "sorted linear interpolation at position (n - 1) * q",
+      "p25_p75": "middle 50% of the displayed cohort"
+    },
+    "reference_gap": {
+      "direction": "lower",
+      "display_unit": "%",
+      "maximize": "(reference - objective) / abs(reference)",
+      "minimize": "(objective - reference) / abs(reference)",
+      "zero_reference": "unavailable"
+    },
+    "reference_gap_change": {
+      "direction": "negative improves; positive regresses; zero unchanged",
+      "formula": "current gap - baseline gap",
+      "unit": "pp"
+    },
+    "trajectory_cohort": {
+      "comparison": "valid paired seeds where both sides are feasible at that second",
+      "single": "valid feasible seeds at that second"
+    }
+  },
+  "preset": {
+    "configuration": {
+      "max_iterations": null,
+      "observation_interval_s": 1.0,
+      "population_size": 8,
+      "thread_count": 1,
+      "time_limit_range_s": [
+        2.0,
+        5.0,
+        10.0,
+        20.0
+      ],
+      "time_limit_s": null
+    },
+    "expected_seed_count": 3,
+    "formal_checkpoints_s": [
+      5.0,
+      10.0,
+      20.0
+    ],
+    "id": "standard_benchmark_suite",
+    "observation_times_s": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      18.0,
+      19.0,
+      20.0
+    ],
+    "version": "1"
+  },
+  "protocol_id": "suite-smoke,calibration,full,pressure-v1",
+  "render_mode": "single",
+  "review_mode": "multi_family_suite",
+  "review_schema_version": 2,
+  "run_count": 798,
+  "target_families": [
+    "cumulative_resource_scheduling",
+    "flexible_interval_job_shop",
+    "interval_job_shop",
+    "sequence_blackbox_tsp",
+    "sequence_quadratic_assignment",
+    "sequence_transition_penalty"
+  ]
+}

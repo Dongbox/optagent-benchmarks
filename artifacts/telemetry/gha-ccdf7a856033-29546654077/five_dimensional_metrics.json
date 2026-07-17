@@ -1,0 +1,410 @@
+{
+  "anytime": {
+    "by_strategy": {
+      "ga": {
+        "ecdf_target_hit_ratio": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "curves",
+            "targets",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "source": "benchmarks",
+          "unit": "ratio",
+          "value": 0.11904761904761904
+        },
+        "mean_normalized_primal_integral": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "gap",
+          "value": 1.294768921422719
+        },
+        "mean_primal_integral": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 13.399380151170737
+        },
+        "mean_time_to_target_s": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "s",
+          "value": 6.869384811918053
+        }
+      }
+    }
+  },
+  "effectiveness": {
+    "by_strategy": {
+      "ga": {
+        "best_gap_to_reference": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 0.0
+        },
+        "best_objective": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 3.0
+        },
+        "feasible_runs": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "source": "benchmarks",
+          "unit": "runs",
+          "value": 778
+        },
+        "mean_gap_to_reference": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 0.6324237885409745
+        },
+        "mean_objective": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 18384708.980719794
+        },
+        "median_gap_to_reference": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 0.1678863538527766
+        },
+        "run_count": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "source": "benchmarks",
+          "unit": "runs",
+          "value": 798
+        },
+        "solved_ratio": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "source": "benchmarks",
+          "unit": "ratio",
+          "value": 0.974937343358396
+        }
+      }
+    }
+  },
+  "efficiency": {
+    "by_strategy": {
+      "ga": {
+        "candidate_throughput_per_s": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "candidates/s",
+          "value": 8793.688021809618
+        },
+        "mean_evaluated_candidates": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 23423.10627400768
+        },
+        "mean_wall_time_s": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "s",
+          "value": 7.411270694332907
+        }
+      }
+    }
+  },
+  "robustness": {
+    "by_strategy": {
+      "ga": {
+        "gap_cv": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "ratio",
+          "value": 3.546550632444326
+        },
+        "gap_mean": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 0.6324237885409745
+        },
+        "gap_mean_ci95": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "",
+          "value": {
+            "high": 0.7900326511015183,
+            "low": 0.4748149259804306,
+            "mean": 0.6324237885409745
+          }
+        },
+        "gap_median": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 0.1678863538527766
+        },
+        "gap_stddev": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 2.24292298722283
+        },
+        "objective_cv": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "ratio",
+          "value": 6.633229437551574
+        },
+        "objective_mean": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 18384708.980719794
+        },
+        "objective_mean_ci95": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "",
+          "value": {
+            "high": 26954062.349433407,
+            "low": 9815355.61200618,
+            "mean": 18384708.980719794
+          }
+        },
+        "objective_median": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 798,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 3872.0
+        },
+        "objective_stddev": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 121949992.81172933
+        },
+        "objective_variance": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "sample_count": 778,
+          "source": "benchmarks",
+          "unit": "",
+          "value": 1.4871800746780836e+16
+        },
+        "run_count": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "source": "benchmarks",
+          "unit": "runs",
+          "value": 798
+        },
+        "success_rate": {
+          "availability": "available",
+          "provenance": [
+            "run-telemetry.pb",
+            "rows",
+            "five_dimensional_metrics"
+          ],
+          "reason": "",
+          "source": "benchmarks",
+          "unit": "ratio",
+          "value": 0.974937343358396
+        }
+      }
+    }
+  },
+  "statistical_validity": {
+    "omnibus": {
+      "availability": "insufficient_data",
+      "provenance": [
+        "run-telemetry.pb",
+        "rows",
+        "five_dimensional_metrics"
+      ],
+      "reason": "requires_three_strategies",
+      "source": "benchmarks",
+      "unit": "",
+      "value": null
+    },
+    "pairwise": [],
+    "reason": "requires_at_least_two_strategies",
+    "status": "insufficient_data"
+  }
+}

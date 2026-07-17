@@ -1,0 +1,111 @@
+{
+  "artifacts": {
+    "curves.jsonl": {
+      "bytes": 2429881,
+      "path": "curves.jsonl",
+      "sha256": "d73c53517ae1d3b9b96e3252d794a98eb4630d06c7b84120b1093c8b649be492"
+    },
+    "dashboard.json": {
+      "bytes": 25007,
+      "path": "dashboard.json",
+      "sha256": "71f77dcd6ab59ae84762354516f1b218351da514e45d13b1fec2670dd7a7ec7c"
+    },
+    "dashboard.md": {
+      "bytes": 3539,
+      "path": "dashboard.md",
+      "sha256": "3ac806ab8cc40c6378b5acba445d8f25811e0cf48e630689e60319c3ea525b24"
+    },
+    "five_dimensional_metrics.json": {
+      "bytes": 10792,
+      "path": "five_dimensional_metrics.json",
+      "sha256": "cb64d2881790cb41d3d403c709ca4f23089acf280641e36106dbd2f64d56658c"
+    },
+    "rows.jsonl": {
+      "bytes": 7856845,
+      "path": "rows.jsonl",
+      "sha256": "e126cd4a5139bfac822faf520ee4fc4c7ac0f2f3cf4674f6d5720df7e7b80813"
+    },
+    "statistical_tests.json": {
+      "bytes": 368,
+      "path": "statistical_tests.json",
+      "sha256": "68409772d0745e86a9ff7a1444589a7a3eff5f8e27251cab1dcc925ad939fc94"
+    },
+    "strategy_optimization_feedback.json": {
+      "bytes": 7113,
+      "path": "strategy_optimization_feedback.json",
+      "sha256": "48d7f3842d5b613f90825c1e7f57d3cd2fb01f1b406abd4d14ac5fd4dcb588f1"
+    },
+    "throughput.jsonl": {
+      "bytes": 354863,
+      "path": "throughput.jsonl",
+      "sha256": "10204deef39c8979ede863274b333e799d3eca922a2b5428b36969db865d7c53"
+    }
+  },
+  "availability": {
+    "available": 6966,
+    "insufficient_data": 3,
+    "null": 17,
+    "unsupported": 17
+  },
+  "commits": {
+    "benchmarks": "a5f9780d965bca4a16f591eaef01d8f43815ba94",
+    "opt-agent": "ccdf7a8560336f24e4ef774c7a7b8a60c6338422"
+  },
+  "created_at": "2026-07-17T01:09:59Z",
+  "generator": {
+    "name": "benchmarks.telemetry_artifacts",
+    "version": "phase4-v1"
+  },
+  "manifest_schema_version": 1,
+  "provenance": {
+    "curves.jsonl": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl",
+      "curves.jsonl"
+    ],
+    "dashboard.json": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl",
+      "curves.jsonl",
+      "throughput.jsonl",
+      "five_dimensional_metrics.json",
+      "statistical_tests.json",
+      "strategy_optimization_feedback.json",
+      "dashboard.json"
+    ],
+    "five_dimensional_metrics.json": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl",
+      "curves.jsonl",
+      "five_dimensional_metrics.json"
+    ],
+    "rows.jsonl": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl"
+    ],
+    "statistical_tests.json": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl",
+      "statistical_tests.json"
+    ],
+    "strategy_optimization_feedback.json": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl",
+      "curves.jsonl",
+      "five_dimensional_metrics.json",
+      "statistical_tests.json",
+      "strategy_optimization_feedback.json"
+    ],
+    "throughput.jsonl": [
+      "suite-run/rows.jsonl",
+      "rows.jsonl",
+      "throughput.jsonl"
+    ]
+  },
+  "source": {
+    "accepted_projection": "json_diagnostics",
+    "canonical_format": "protobuf",
+    "count": 798,
+    "label": "suite-run/rows.jsonl"
+  }
+}

@@ -1,8 +1,8 @@
 {
-  "artifact_id": "gha-ccdf7a856033-29546160912",
-  "artifact_path": "artifacts/telemetry/gha-ccdf7a856033-29546160912",
-  "benchmarks_commit": "d561e10b0d76eb647d7c74993c0a15a1068dca2b",
-  "created_at": "2026-07-17T01:05:44Z",
+  "artifact_id": "gha-ccdf7a856033-29546654077",
+  "artifact_path": "artifacts/telemetry/gha-ccdf7a856033-29546654077",
+  "benchmarks_commit": "a5f9780d965bca4a16f591eaef01d8f43815ba94",
+  "created_at": "2026-07-17T01:09:59Z",
   "optagent_commit": "ccdf7a8560336f24e4ef774c7a7b8a60c6338422",
   "schema_version": 1
 }
