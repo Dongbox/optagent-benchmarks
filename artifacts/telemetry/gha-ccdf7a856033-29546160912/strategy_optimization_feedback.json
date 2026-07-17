@@ -1,0 +1,194 @@
+{
+  "by_strategy": {
+    "ga": {
+      "availability": "available",
+      "confidence": {
+        "availability": "insufficient_data",
+        "comparisons": [],
+        "reason": "insufficient_matched_statistical_evidence"
+      },
+      "provenance": [
+        "run-telemetry.pb",
+        "rows",
+        "five_dimensional_metrics",
+        "strategy_optimization_feedback",
+        "five_dimensional_metrics"
+      ],
+      "recommended_focus": [
+        {
+          "focus": "anytime_target_reaching",
+          "priority": "high",
+          "reason": "Not all runs reach the target within budget; improve early construction, repair, or acceptance schedules.",
+          "source_metrics": [
+            "anytime.ecdf_target_hit_ratio",
+            "anytime.mean_time_to_target_s"
+          ]
+        },
+        {
+          "focus": "early_search_progress",
+          "priority": "medium",
+          "reason": "Normalized primal integral is worse than final gap, suggesting improvements arrive late.",
+          "source_metrics": [
+            "anytime.mean_normalized_primal_integral",
+            "effectiveness.mean_gap_to_reference"
+          ]
+        },
+        {
+          "focus": "random_seed_robustness",
+          "priority": "medium",
+          "reason": "Gap coefficient of variation is high; tune stochastic controls, population diversity, or restart policy.",
+          "source_metrics": [
+            "robustness.gap_cv"
+          ]
+        }
+      ],
+      "regression_guards": [
+        {
+          "condition": "below",
+          "guidance": "Do not accept changes that reduce solved ratio without explicit scope.",
+          "metric": "effectiveness.solved_ratio",
+          "threshold": 1.0,
+          "triggered": false,
+          "value": 1.0
+        },
+        {
+          "condition": "above",
+          "guidance": "Do not trade away median gap unless another primary objective explicitly improves.",
+          "metric": "effectiveness.median_gap_to_reference",
+          "threshold": 0.0,
+          "triggered": true,
+          "value": 0.01180149815937975
+        },
+        {
+          "condition": "below",
+          "guidance": "Do not regress target hit ratio when target-reaching is a benchmark goal.",
+          "metric": "anytime.ecdf_target_hit_ratio",
+          "threshold": 1.0,
+          "triggered": true,
+          "value": 0.45
+        },
+        {
+          "condition": "above",
+          "guidance": "Treat high gap variance as a default-strategy release risk.",
+          "metric": "robustness.gap_cv",
+          "threshold": 0.25,
+          "triggered": true,
+          "value": 1.3083461879686
+        }
+      ],
+      "run_count": 20,
+      "sample_context": {
+        "families": [
+          "sequence_blackbox_tsp"
+        ],
+        "instance_count": 20,
+        "seed_count": 1
+      },
+      "signals": {
+        "anytime": {
+          "ecdf_target_hit_ratio": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": null,
+            "unit": "ratio",
+            "value": 0.45
+          },
+          "mean_normalized_primal_integral": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "gap",
+            "value": 0.0642866370439871
+          },
+          "mean_time_to_target_s": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "s",
+            "value": 1.1679659840499999
+          }
+        },
+        "effectiveness": {
+          "best_gap_to_reference": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "",
+            "value": 0.0
+          },
+          "mean_gap_to_reference": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "",
+            "value": 0.04474682663796102
+          },
+          "median_gap_to_reference": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "",
+            "value": 0.01180149815937975
+          },
+          "solved_ratio": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": null,
+            "unit": "ratio",
+            "value": 1.0
+          }
+        },
+        "efficiency": {
+          "candidate_throughput_per_s": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "candidates/s",
+            "value": 6280.096357722699
+          },
+          "mean_evaluated_candidates": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "",
+            "value": 12632.4
+          },
+          "mean_wall_time_s": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "s",
+            "value": 2.0090895528
+          }
+        },
+        "robustness": {
+          "gap_cv": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "ratio",
+            "value": 1.3083461879686
+          },
+          "gap_stddev": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": 20,
+            "unit": "",
+            "value": 0.05854434005546811
+          },
+          "success_rate": {
+            "availability": "available",
+            "reason": "",
+            "sample_count": null,
+            "unit": "ratio",
+            "value": 1.0
+          }
+        }
+      },
+      "strategy": "ga"
+    }
+  },
+  "purpose": "strategy_optimization_feedback",
+  "schema_version": 1,
+  "source": "benchmarks"
+}
