@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from benchmarks.presentation.common import StrategyBudgetRequest, resolve_family_tier_budget
-from benchmarks.presentation.suite import build_summary
+from benchmarks.presentation.suite import build_review_metadata, build_summary
 
 
 def test_tier_defaults_use_time_limits_without_iteration_caps() -> None:
@@ -89,3 +89,28 @@ def test_summary_distinguishes_requested_and_executed_families(tmp_path) -> None
     assert summary["requested_families"] == ["interval_job_shop", "exact_linear_mip"]
     assert summary["executed_families"] == ["interval_job_shop"]
     assert summary["requested_families_without_rows"] == ["exact_linear_mip"]
+
+
+def test_review_metadata_is_a_complete_single_family_contract() -> None:
+    metadata = build_review_metadata(families=("sequence_blackbox_tsp",), expected_seed_count=1)
+
+    assert metadata == {
+        "preset_id": "standard_benchmark_suite",
+        "preset_version": "1",
+        "review_mode": "single_family_focus",
+        "target_families": ["sequence_blackbox_tsp"],
+        "formal_checkpoints_s": [5.0, 10.0, 20.0],
+        "observation_times_s": [float(value) for value in range(1, 21)],
+        "expected_seed_count": 1,
+    }
+
+
+def test_review_metadata_is_shared_by_multi_family_calibration() -> None:
+    metadata = build_review_metadata(
+        families=("sequence_blackbox_tsp", "interval_job_shop"),
+        expected_seed_count=3,
+    )
+
+    assert metadata["review_mode"] == "multi_family_suite"
+    assert metadata["target_families"] == ["interval_job_shop", "sequence_blackbox_tsp"]
+    assert metadata["expected_seed_count"] == 3

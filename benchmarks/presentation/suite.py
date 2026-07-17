@@ -43,6 +43,8 @@ RUNNER_SCENARIO_DESCRIPTION = (
     "and dashboard publication inputs. Use benchmarks.run for lightweight local case tests."
 )
 BUDGET_POLICY_ID = "family_time_first_v2"
+REVIEW_OBSERVATION_TIMES_S = tuple(float(value) for value in range(1, 21))
+REVIEW_FORMAL_CHECKPOINTS_S = (5.0, 10.0, 20.0)
 IMPLEMENTED_FAMILIES = implemented_families()
 DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequence_quadratic_assignment")
 DEFAULT_STRATEGIES = ("ga",)
@@ -405,6 +407,12 @@ def run_benchmark_suite(
                 )
                 for row in case_rows
             ]
+            review_metadata = build_review_metadata(
+                families=tuple(sorted({str(row.get("family") or family) for row in case_rows})),
+                expected_seed_count=1,
+            )
+            for row in case_rows:
+                row.update(review_metadata)
             append_jsonl(run_dir / "rows.jsonl", case_rows)
             rows.extend(case_rows)
 
@@ -479,10 +487,35 @@ def run_calibration_suite(
         tiers=tiers,
         strategies=strategies,
     )
+    review_metadata = build_review_metadata(
+        families=tuple(sorted({str(row.get("family") or "") for row in rows if row.get("family")})),
+        expected_seed_count=len(seeds),
+    )
+    for row in rows:
+        row.update(review_metadata)
     append_jsonl(calibration_dir / "rows.jsonl", rows)
     write_json(calibration_dir / "calibration_summary.json", calibration)
     write_json(calibration_dir / "strategy_feedback.json", calibration["strategy_feedback"])
     return calibration
+
+
+def build_review_metadata(*, families: tuple[str, ...], expected_seed_count: int) -> dict[str, Any]:
+    """Return the invariant review context carried by every suite row."""
+
+    normalized_families = tuple(sorted({str(family) for family in families if str(family)}))
+    if not normalized_families:
+        raise ValueError("review metadata requires at least one family")
+    if expected_seed_count < 1:
+        raise ValueError("review metadata requires at least one expected seed")
+    return {
+        "preset_id": "standard_benchmark_suite",
+        "preset_version": "1",
+        "review_mode": "single_family_focus" if len(normalized_families) == 1 else "multi_family_suite",
+        "target_families": list(normalized_families),
+        "formal_checkpoints_s": list(REVIEW_FORMAL_CHECKPOINTS_S),
+        "observation_times_s": list(REVIEW_OBSERVATION_TIMES_S),
+        "expected_seed_count": expected_seed_count,
+    }
 
 
 def _budget_matrix(
