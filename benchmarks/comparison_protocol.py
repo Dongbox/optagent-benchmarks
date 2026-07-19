@@ -88,14 +88,14 @@ _PROFILE_CATALOG = (
         "sequence_blackbox_tsp",
         "sequence_var_external_call",
         ("tsplib_berlin52", "tsplib_eil51", "tsplib_st70"),
-        ("tsplib_pr76", "tsplib_kroa100"),
+        ("tsplib_pr76", "tsplib_kroc100"),
         "full",
     ),
     (
         "sequence_blackbox_tsp",
         "sequence_var_sequence_transition_sum",
         ("tsplib_berlin52", "tsplib_eil51", "tsplib_st70"),
-        ("tsplib_pr76", "tsplib_kroa100"),
+        ("tsplib_pr76", "tsplib_kroc100"),
         "full",
     ),
     (
@@ -115,15 +115,15 @@ _PROFILE_CATALOG = (
     (
         "flexible_interval_job_shop",
         "optional_interval_machine_choice_no_overlap_precedence",
-        ("fjsplib_sfjs01", "fjsplib_sfjs02", "fjsplib_sfjs04"),
+        ("fjsplib_sfjs03", "fjsplib_sfjs02", "fjsplib_sfjs04"),
         ("fjsplib_sfjs05", "fjsplib_sfjs06"),
         "full",
     ),
     (
         "cumulative_resource_scheduling",
         "interval_var_cumulative_precedence",
-        ("psplib_j90_1_1", "psplib_j90_1_8", "psplib_j90_2_4"),
-        ("psplib_j90_5_3", "psplib_j90_6_7"),
+        ("psplib_j90_13_2", "psplib_j90_16_7", "psplib_j90_17_10"),
+        ("psplib_j90_19_5", "psplib_j90_29_1"),
         "full",
     ),
 )

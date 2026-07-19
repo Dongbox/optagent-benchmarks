@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from benchmarks.cases.base import BenchmarkCase, SolutionVerification
-from benchmarks.run import LocalRunBudget, _verify_observation_snapshots, run_benchmark_case
+from benchmarks.run import LocalRunBudget, _verify_observation_snapshots, case_object_by_id, run_benchmark_case
 
 
 @dataclass(frozen=True)
@@ -202,14 +202,15 @@ def test_sequence_case_verifiers_recompute_objectives_and_reject_non_permutation
 
 
 def test_scheduling_verifiers_accept_serial_schedules_and_reject_bad_intervals() -> None:
-    from benchmarks.cases.fjsplib.fjobshop.fattahi import SFJS01
+    from benchmarks.cases.fjsplib.fjobshop.fattahi import SFJS03
     from benchmarks.cases.jsplib.jobshop.ft import FT06
-    from benchmarks.cases.psplib.rcpsp.j90_1 import J90_1_1
+
+    j30_1_4 = case_object_by_id("psplib_j30_1_4")
 
     for case, values in (
         (FT06, _serial_job_shop_values(FT06)),
-        (SFJS01, _serial_flexible_job_shop_values(SFJS01)),
-        (J90_1_1, _serial_rcpsp_values(J90_1_1)),
+        (SFJS03, _serial_flexible_job_shop_values(SFJS03)),
+        (j30_1_4, _serial_rcpsp_values(j30_1_4)),
     ):
         accepted = case.verify_solution(SimpleNamespace(variable_values=values, feasible=True, objective_value=-1.0))
         broken = dict(values)

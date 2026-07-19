@@ -30,7 +30,7 @@ RELEASE_GATE_PLAN = (
         strategies=("ga",),
     ),
     ReleaseGateEntry(
-        benchmark_id="fjsplib_sfjs01",
+        benchmark_id="fjsplib_sfjs03",
         family="flexible_interval_job_shop",
         model_styles=("optional_interval_machine_choice_no_overlap_precedence",),
         solve_route="native_search",
@@ -44,7 +44,7 @@ RELEASE_GATE_PLAN = (
         strategies=("ga",),
     ),
     ReleaseGateEntry(
-        benchmark_id="psplib_j90_1_1",
+        benchmark_id="psplib_j60_13_1",
         family="cumulative_resource_scheduling",
         model_styles=("interval_var_cumulative_precedence",),
         solve_route="native_search",

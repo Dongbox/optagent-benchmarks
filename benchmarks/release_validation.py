@@ -14,8 +14,8 @@ RELEASE_VALIDATION_SEEDS = (11, 23, 47, 59, 71, 83, 97, 101, 113, 127)
 REPEAT_SEEDS = (11, 59, 113)
 LINUX_FULL_SEED = 11
 REPRESENTATIVE_CASE_IDS = (
-    "psplib_j90_1_1",
-    "psplib_j90_1_8",
+    "psplib_j30_1_4",
+    "psplib_j60_13_1",
     "miplib2017_50v-10",
     "miplib2017_reblock115",
     "fjsplib_sfjs02",
@@ -23,7 +23,7 @@ REPRESENTATIVE_CASE_IDS = (
     "jsplib_ft06",
     "jsplib_abz5",
     "tsplib_burma14",
-    "tsplib_a280",
+    "tsplib_pr264",
     "qaplib_had12",
     "qaplib_had20",
     "custom_steel_sequence_toy",

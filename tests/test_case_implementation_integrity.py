@@ -13,7 +13,7 @@ REQUIRED_SMOKE_CASES = {
     "custom_steel_sequence_toy",
     "jsplib_ft06",
     "miplib2017_50v-10",
-    "psplib_j90_1_1",
+    "psplib_j30_1_4",
     "qaplib_nug12",
     "tsplib_berlin52",
 }
