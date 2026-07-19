@@ -178,6 +178,9 @@ def make_rcpsp_case(
     objective: int,
     case_module: str,
     instance_url: str | None = None,
+    lower_bound: int | None = None,
+    upper_bound: int | None = None,
+    is_optimal: bool = True,
 ) -> RcpspCase:
     compare_key = f"{SOURCE_KEY}/{PROBLEM_TYPE}/{INSTANCE_TYPE}/{instance}"
     data: dict[str, Any] = {
@@ -186,6 +189,10 @@ def make_rcpsp_case(
     }
     if instance_url is not None:
         data["instance_url"] = instance_url
+    reference_upper_bound = objective if upper_bound is None else upper_bound
+    reference_lower_bound = objective if lower_bound is None and is_optimal else lower_bound
+    reference_status = "closed" if is_optimal else "open"
+    reference_kind = "optimal" if is_optimal else "best_known_upper_bound"
     return RcpspCase(
         benchmark_id=benchmark_id,
         source=SOURCE,
@@ -199,13 +206,17 @@ def make_rcpsp_case(
         size={"activities": activities, "renewable_resources": renewable_resources},
         data=data,
         reference={
-            "lower_bound": objective,
-            "notes": "Rows marked with * in j90lb.sm have verified LB=UB optimal makespan.",
-            "objective": objective,
-            "source_url": "https://raw.githubusercontent.com/ScheduleOpt/benchmarks/main/rcpsp/instances/j90lb.sm",
-            "status": "closed",
-            "upper_bound": objective,
-            "value_kind": "optimal",
+            "lower_bound": reference_lower_bound,
+            "notes": (
+                "PSPLIB marks this instance as proven optimal."
+                if is_optimal
+                else "PSPLIB best known upper bound; lower bound is recorded when published."
+            ),
+            "objective": reference_upper_bound,
+            "source_url": "https://www.om-db.wi.tum.de/psplib/getdata.php?mode=sm",
+            "status": reference_status,
+            "upper_bound": reference_upper_bound,
+            "value_kind": reference_kind,
         },
         problem_description=(
             f"PSPLIB RCPSP instance {instance}: schedule {activities} project activities with "

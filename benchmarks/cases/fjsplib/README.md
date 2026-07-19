@@ -16,10 +16,18 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
 
 ## 数据筛选依据
 
-- 数规模定义：candidates = 所有工序的可用机器数之和。
-- tier 范围：smoke：candidates=6-300；calibration：candidates=42-612；full：candidates=165-1951；pressure：candidates=518-3164。
-- 筛选策略：以 candidates 递增为主线，综合保留不同来源系列和参考解状态的代表，去除非常近似的算例。
+- 数据规模定义：candidates = 所有工序的可用机器数之和。
 
+tier 分类范围：
+
+| tier | case 数量 | candidates 范围 |
+|---|---:|---:|
+| smoke | 20 | 1–80 |
+| calibration | 20 | 81–200 |
+| full | 15 | 201–500 |
+| pressure | 10 | 501–1000 |
+
+- 筛选策略：以作业-工序-候选机器二分图的规模与度分布、作业工序数分布、加工时间分布组成特征向量；在 candidates 为 1–1000 的完整候选池上按特征列标准化后，以欧氏距离衡量算例相近程度。每个 tier 先去除距离低于未选集合最近距离均值/中位数较大者的近似算例，再按距离最远原则补充至上限。
 ## 建模说明
 
 使用 optional_interval_var 表示候选机器上的可选工序，用 bool_var 和 exactly_one 确定唯一机器选择，使用 sequence_var + no_overlap 建模机器容量，并用先后约束与 max 建模 makespan。
@@ -34,17 +42,17 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
 
 ### smoke
 
-- `fjsplib_sfjs01`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=8`
-  - 参考值：最优
-  - 参考值/区间：`objective=66, lower_bound=66, upper_bound=66`
-  - 备注：无
 - `fjsplib_sfjs02`
   - 问题描述：柔性作业车间调度，最小化 makespan。
   - 规模：`candidates=6`
   - 参考值：最优
   - 参考值/区间：`objective=107, lower_bound=107, upper_bound=107`
+  - 备注：无
+- `fjsplib_sfjs03`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=10`
+  - 参考值：可行
+  - 参考值/区间：`objective=221, lower_bound=212, upper_bound=221`
   - 备注：无
 - `fjsplib_sfjs04`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -76,17 +84,17 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：最优
   - 参考值/区间：`objective=210, lower_bound=210, upper_bound=210`
   - 备注：无
-- `fjsplib_k1`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=60`
-  - 参考值：最优
-  - 参考值/区间：`objective=11, lower_bound=11, upper_bound=11`
-  - 备注：无
 - `fjsplib_sfjs10`
   - 问题描述：柔性作业车间调度，最小化 makespan。
   - 规模：`candidates=20`
   - 参考值：可行
   - 参考值/区间：`objective=516, lower_bound=427, upper_bound=516`
+  - 备注：无
+- `fjsplib_mfjs01`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=33`
+  - 参考值：可行
+  - 参考值/区间：`objective=468, lower_bound=403, upper_bound=468`
   - 备注：无
 - `fjsplib_mfjs02`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -94,38 +102,11 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：可行
   - 参考值/区间：`objective=446, lower_bound=396, upper_bound=446`
   - 备注：无
-- `fjsplib_k2`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=203`
-  - 参考值：最优
-  - 参考值/区间：`objective=11, lower_bound=11, upper_bound=11`
-  - 备注：无
-- `fjsplib_k3`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=300`
-  - 参考值：最优
-  - 参考值/区间：`objective=7, lower_bound=7, upper_bound=7`
-  - 备注：无
-
-### calibration
-
-- `fjsplib_mfjs07`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=78`
-  - 参考值：可行
-  - 参考值/区间：`objective=879, lower_bound=764, upper_bound=879`
-  - 备注：无
 - `fjsplib_e-mt06`
   - 问题描述：柔性作业车间调度，最小化 makespan。
   - 规模：`candidates=42`
   - 参考值：最优
   - 参考值/区间：`objective=55, lower_bound=55, upper_bound=55`
-  - 备注：无
-- `fjsplib_v-mt06`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=103`
-  - 参考值：最优
-  - 参考值/区间：`objective=47, lower_bound=47, upper_bound=47`
   - 备注：无
 - `fjsplib_e-car7`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -139,23 +120,11 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：最优
   - 参考值/区间：`objective=550, lower_bound=550, upper_bound=550`
   - 备注：无
-- `fjsplib_med01_4`
+- `fjsplib_k1`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=564`
-  - 参考值：可行
-  - 参考值/区间：`objective=87, lower_bound=70, upper_bound=87`
-  - 备注：无
-- `fjsplib_sm01_1`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=304`
-  - 参考值：可行
-  - 参考值/区间：`objective=91, lower_bound=70, upper_bound=91`
-  - 备注：无
-- `fjsplib_v-la05`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=119`
+  - 规模：`candidates=60`
   - 参考值：最优
-  - 参考值/区间：`objective=457, lower_bound=457, upper_bound=457`
+  - 参考值/区间：`objective=11, lower_bound=11, upper_bound=11`
   - 备注：无
 - `fjsplib_e-car2`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -163,41 +132,68 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：可行
   - 参考值/区间：`objective=6455, lower_bound=5929, upper_bound=6455`
   - 备注：无
-- `fjsplib_mk01`
+- `fjsplib_e-car5`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=115`
-  - 参考值：最优
-  - 参考值/区间：`objective=40, lower_bound=40, upper_bound=40`
-  - 备注：无
-- `fjsplib_k4`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=560`
-  - 参考值：最优
-  - 参考值/区间：`objective=12, lower_bound=12, upper_bound=12`
-  - 备注：无
-- `fjsplib_mk02`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=238`
+  - 规模：`candidates=70`
   - 参考值：可行
-  - 参考值/区间：`objective=26, lower_bound=24, upper_bound=26`
+  - 参考值/区间：`objective=7229, lower_bound=4909, upper_bound=7229`
   - 备注：无
-- `fjsplib_v-car8`
+- `fjsplib_e-car3`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=254`
-  - 参考值：最优
-  - 参考值/区间：`objective=4613, lower_bound=4613, upper_bound=4613`
-  - 备注：无
-- `fjsplib_r-car6`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=140`
+  - 规模：`candidates=71`
   - 参考值：可行
-  - 参考值/区间：`objective=6147, lower_bound=5486, upper_bound=6147`
+  - 参考值/区间：`objective=6856, lower_bound=5597, upper_bound=6856`
   - 备注：无
-- `fjsplib_mk04`
+- `fjsplib_r-mt06`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=172`
+  - 规模：`candidates=74`
   - 参考值：最优
-  - 参考值/区间：`objective=60, lower_bound=60, upper_bound=60`
+  - 参考值/区间：`objective=47, lower_bound=47, upper_bound=47`
+  - 备注：无
+- `fjsplib_e-car8`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=75`
+  - 参考值：可行
+  - 参考值/区间：`objective=7689, lower_bound=4613, upper_bound=7689`
+  - 备注：无
+- `fjsplib_mfjs07`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=78`
+  - 参考值：可行
+  - 参考值/区间：`objective=879, lower_bound=764, upper_bound=879`
+  - 备注：无
+
+### calibration
+
+- `fjsplib_r-la01`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=96`
+  - 参考值：可行
+  - 参考值/区间：`objective=571, lower_bound=570, upper_bound=571`
+  - 备注：无
+- `fjsplib_r-car7`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=102`
+  - 参考值：可行
+  - 参考值/区间：`objective=4432, lower_bound=4216, upper_bound=4432`
+  - 备注：无
+- `fjsplib_v-mt06`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=103`
+  - 参考值：最优
+  - 参考值/区间：`objective=47, lower_bound=47, upper_bound=47`
+  - 备注：无
+- `fjsplib_r-car4`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=110`
+  - 参考值：可行
+  - 参考值/区间：`objective=6518, lower_bound=6514, upper_bound=6518`
+  - 备注：无
+- `fjsplib_mfjs10`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=112`
+  - 参考值：可行
+  - 参考值/区间：`objective=1208, lower_bound=944, upper_bound=1208`
   - 备注：无
 - `fjsplib_e-abz5`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -211,80 +207,41 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：最优
   - 参考值/区间：`objective=1103, lower_bound=1103, upper_bound=1103`
   - 备注：无
-- `fjsplib_mk07`
+- `fjsplib_mk01`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=283`
-  - 参考值：可行
-  - 参考值/区间：`objective=139, lower_bound=133, upper_bound=139`
-  - 备注：无
-- `fjsplib_mt10c1`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=110`
+  - 规模：`candidates=115`
   - 参考值：最优
-  - 参考值/区间：`objective=927, lower_bound=927, upper_bound=927`
+  - 参考值/区间：`objective=40, lower_bound=40, upper_bound=40`
   - 备注：无
-- `fjsplib_mt10xxx`
+- `fjsplib_v-car2`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=130`
+  - 规模：`candidates=119`
+  - 参考值：可行
+  - 参考值/区间：`objective=5930, lower_bound=5929, upper_bound=5930`
+  - 备注：无
+- `fjsplib_v-la05`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=119`
   - 参考值：最优
-  - 参考值/区间：`objective=918, lower_bound=918, upper_bound=918`
+  - 参考值/区间：`objective=457, lower_bound=457, upper_bound=457`
   - 备注：无
-- `fjsplib_r-la17`
+- `fjsplib_r-car3`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=193`
-  - 参考值：最优
-  - 参考值/区间：`objective=646, lower_bound=646, upper_bound=646`
-  - 备注：无
-- `fjsplib_sm02_5`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=612`
+  - 规模：`candidates=121`
   - 参考值：可行
-  - 参考值/区间：`objective=133, lower_bound=81, upper_bound=133`
+  - 参考值/区间：`objective=5626, lower_bound=5597, upper_bound=5626`
   - 备注：无
-- `fjsplib_v-abz5`
+- `fjsplib_r-car8`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=467`
+  - 规模：`candidates=123`
   - 参考值：可行
-  - 参考值/区间：`objective=860, lower_bound=859, upper_bound=860`
+  - 参考值/区间：`objective=5692, lower_bound=4613, upper_bound=5692`
   - 备注：无
-- `fjsplib_v-orb7`
+- `fjsplib_r-car6`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=456`
-  - 参考值：最优
-  - 参考值/区间：`objective=275, lower_bound=275, upper_bound=275`
-  - 备注：无
-
-### full
-
-- `fjsplib_lar01_3`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=964`
+  - 规模：`candidates=140`
   - 参考值：可行
-  - 参考值/区间：`objective=86, lower_bound=68, upper_bound=86`
-  - 备注：无
-- `fjsplib_med02_2`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=1192`
-  - 参考值：可行
-  - 参考值/区间：`objective=132, lower_bound=81, upper_bound=132`
-  - 备注：无
-- `fjsplib_mk05`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=181`
-  - 参考值：可行
-  - 参考值/区间：`objective=172, lower_bound=168, upper_bound=172`
-  - 备注：无
-- `fjsplib_mk03`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=451`
-  - 参考值：最优
-  - 参考值/区间：`objective=204, lower_bound=204, upper_bound=204`
-  - 备注：无
-- `fjsplib_mk06`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=490`
-  - 参考值：可行
-  - 参考值/区间：`objective=58, lower_bound=33, upper_bound=58`
+  - 参考值/区间：`objective=6147, lower_bound=5486, upper_bound=6147`
   - 备注：无
 - `fjsplib_setb4c9`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -292,53 +249,68 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：最优
   - 参考值/区间：`objective=914, lower_bound=914, upper_bound=914`
   - 备注：无
+- `fjsplib_v-car7`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=169`
+  - 参考值：可行
+  - 参考值/区间：`objective=4281, lower_bound=4216, upper_bound=4281`
+  - 备注：无
+- `fjsplib_v-car5`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=170`
+  - 参考值：可行
+  - 参考值/区间：`objective=4932, lower_bound=4909, upper_bound=4932`
+  - 备注：无
+- `fjsplib_mk04`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=172`
+  - 参考值：最优
+  - 参考值/区间：`objective=60, lower_bound=60, upper_bound=60`
+  - 备注：无
+- `fjsplib_mk05`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=181`
+  - 参考值：可行
+  - 参考值/区间：`objective=172, lower_bound=168, upper_bound=172`
+  - 备注：无
+- `fjsplib_r-la17`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=193`
+  - 参考值：最优
+  - 参考值/区间：`objective=646, lower_bound=646, upper_bound=646`
+  - 备注：无
+- `fjsplib_v-la08`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=194`
+  - 参考值：最优
+  - 参考值/区间：`objective=765, lower_bound=765, upper_bound=765`
+  - 备注：无
+
+### full
+
+- `fjsplib_k2`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=203`
+  - 参考值：最优
+  - 参考值/区间：`objective=11, lower_bound=11, upper_bound=11`
+  - 备注：无
+- `fjsplib_mk02`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=238`
+  - 参考值：可行
+  - 参考值/区间：`objective=26, lower_bound=24, upper_bound=26`
+  - 备注：无
+- `fjsplib_v-car8`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=254`
+  - 参考值：最优
+  - 参考值/区间：`objective=4613, lower_bound=4613, upper_bound=4613`
+  - 备注：无
 - `fjsplib_mk11`
   - 问题描述：柔性作业车间调度，最小化 makespan。
   - 规模：`candidates=270`
   - 参考值：可行
   - 参考值/区间：`objective=615, lower_bound=594, upper_bound=615`
-  - 备注：无
-- `fjsplib_mk12`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=288`
-  - 参考值：最优
-  - 参考值/区间：`objective=508, lower_bound=508, upper_bound=508`
-  - 备注：无
-- `fjsplib_dpp01`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=221`
-  - 参考值：可行
-  - 参考值/区间：`objective=2518, lower_bound=2505, upper_bound=2518`
-  - 备注：无
-- `fjsplib_dpp04`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=221`
-  - 参考值：最优
-  - 参考值/区间：`objective=2503, lower_bound=2503, upper_bound=2503`
-  - 备注：无
-- `fjsplib_dpp05`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=332`
-  - 参考值：可行
-  - 参考值/区间：`objective=2216, lower_bound=2189, upper_bound=2216`
-  - 备注：无
-- `fjsplib_v-la27`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=915`
-  - 参考值：最优
-  - 参考值/区间：`objective=1084, lower_bound=1084, upper_bound=1084`
-  - 备注：无
-- `fjsplib_mk08`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=322`
-  - 参考值：最优
-  - 参考值/区间：`objective=523, lower_bound=523, upper_bound=523`
-  - 备注：无
-- `fjsplib_r-la39`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=436`
-  - 参考值：最优
-  - 参考值/区间：`objective=1011, lower_bound=1011, upper_bound=1011`
   - 备注：无
 - `fjsplib_seti5xxx`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -346,47 +318,29 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：最优
   - 参考值/区间：`objective=1194, lower_bound=1194, upper_bound=1194`
   - 备注：无
-- `fjsplib_mk13`
+- `fjsplib_mk07`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=778`
+  - 规模：`candidates=283`
   - 参考值：可行
-  - 参考值/区间：`objective=430, lower_bound=353, upper_bound=430`
+  - 参考值/区间：`objective=139, lower_bound=133, upper_bound=139`
   - 备注：无
-- `fjsplib_mk09`
+- `fjsplib_k3`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=606`
+  - 规模：`candidates=300`
   - 参考值：最优
-  - 参考值/区间：`objective=307, lower_bound=307, upper_bound=307`
+  - 参考值/区间：`objective=7, lower_bound=7, upper_bound=7`
   - 备注：无
-- `fjsplib_mk10`
+- `fjsplib_sm01_1`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=716`
+  - 规模：`candidates=304`
   - 参考值：可行
-  - 参考值/区间：`objective=197, lower_bound=175, upper_bound=197`
+  - 参考值/区间：`objective=91, lower_bound=70, upper_bound=91`
   - 备注：无
-- `fjsplib_sm03_4`
+- `fjsplib_dpp05`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=1524`
+  - 规模：`candidates=332`
   - 参考值：可行
-  - 参考值/区间：`objective=258, lower_bound=164, upper_bound=258`
-  - 备注：无
-- `fjsplib_mk14`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=432`
-  - 参考值：最优
-  - 参考值/区间：`objective=694, lower_bound=694, upper_bound=694`
-  - 备注：无
-- `fjsplib_dpp09`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=1182`
-  - 参考值：可行
-  - 参考值/区间：`objective=2066, lower_bound=2061, upper_bound=2066`
-  - 备注：无
-- `fjsplib_e-abz7`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=339`
-  - 参考值：可行
-  - 参考值/区间：`objective=638, lower_bound=492, upper_bound=638`
+  - 参考值/区间：`objective=2216, lower_bound=2189, upper_bound=2216`
   - 备注：无
 - `fjsplib_e-la33`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -394,32 +348,44 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：最优
   - 参考值/区间：`objective=1547, lower_bound=1547, upper_bound=1547`
   - 备注：无
-- `fjsplib_v-abz7`
+- `fjsplib_mk14`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=1951`
+  - 规模：`candidates=432`
+  - 参考值：最优
+  - 参考值/区间：`objective=694, lower_bound=694, upper_bound=694`
+  - 备注：无
+- `fjsplib_mk03`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=451`
+  - 参考值：最优
+  - 参考值/区间：`objective=204, lower_bound=204, upper_bound=204`
+  - 备注：无
+- `fjsplib_v-orb7`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=456`
+  - 参考值：最优
+  - 参考值/区间：`objective=275, lower_bound=275, upper_bound=275`
+  - 备注：无
+- `fjsplib_v-abz5`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=467`
   - 参考值：可行
-  - 参考值/区间：`objective=495, lower_bound=492, upper_bound=495`
+  - 参考值/区间：`objective=860, lower_bound=859, upper_bound=860`
+  - 备注：无
+- `fjsplib_mk06`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=490`
+  - 参考值：可行
+  - 参考值/区间：`objective=58, lower_bound=33, upper_bound=58`
   - 备注：无
 
 ### pressure
 
-- `fjsplib_med03_2`
+- `fjsplib_dpp03`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=3052`
+  - 规模：`candidates=501`
   - 参考值：可行
-  - 参考值/区间：`objective=259, lower_bound=77, upper_bound=259`
-  - 备注：无
-- `fjsplib_dpp13`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=518`
-  - 参考值：可行
-  - 参考值/区间：`objective=2257, lower_bound=2161, upper_bound=2257`
-  - 备注：无
-- `fjsplib_dpp15`
-  - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=1941`
-  - 参考值：可行
-  - 参考值/区间：`objective=2165, lower_bound=2161, upper_bound=2165`
+  - 参考值/区间：`objective=2229, lower_bound=2228, upper_bound=2229`
   - 备注：无
 - `fjsplib_dpp16`
   - 问题描述：柔性作业车间调度，最小化 makespan。
@@ -427,17 +393,53 @@ FJSPLIB 是柔性作业车间调度问题实例库，用于评估机器选择和
   - 参考值：可行
   - 参考值/区间：`objective=2255, lower_bound=2148, upper_bound=2255`
   - 备注：无
-- `fjsplib_dpp17`
+- `fjsplib_k4`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=1156`
-  - 参考值：可行
-  - 参考值/区间：`objective=2140, lower_bound=2088, upper_bound=2140`
+  - 规模：`candidates=560`
+  - 参考值：最优
+  - 参考值/区间：`objective=12, lower_bound=12, upper_bound=12`
   - 备注：无
-- `fjsplib_sm04_3`
+- `fjsplib_med01_4`
   - 问题描述：柔性作业车间调度，最小化 makespan。
-  - 规模：`candidates=3164`
+  - 规模：`candidates=564`
   - 参考值：可行
-  - 参考值/区间：`objective=555, lower_bound=321, upper_bound=555`
+  - 参考值/区间：`objective=87, lower_bound=70, upper_bound=87`
+  - 备注：无
+- `fjsplib_r-abz9`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=584`
+  - 参考值：可行
+  - 参考值/区间：`objective=562, lower_bound=497, upper_bound=562`
+  - 备注：无
+- `fjsplib_sm02_5`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=612`
+  - 参考值：可行
+  - 参考值/区间：`objective=133, lower_bound=81, upper_bound=133`
+  - 备注：无
+- `fjsplib_mk10`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=716`
+  - 参考值：可行
+  - 参考值/区间：`objective=197, lower_bound=175, upper_bound=197`
+  - 备注：无
+- `fjsplib_mk13`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=778`
+  - 参考值：可行
+  - 参考值/区间：`objective=430, lower_bound=353, upper_bound=430`
+  - 备注：无
+- `fjsplib_v-la27`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=915`
+  - 参考值：最优
+  - 参考值/区间：`objective=1084, lower_bound=1084, upper_bound=1084`
+  - 备注：无
+- `fjsplib_lar01_3`
+  - 问题描述：柔性作业车间调度，最小化 makespan。
+  - 规模：`candidates=964`
+  - 参考值：可行
+  - 参考值/区间：`objective=86, lower_bound=68, upper_bound=86`
   - 备注：无
 
-共 66 个 case。
+共 65 个 case。

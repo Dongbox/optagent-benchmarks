@@ -1,20 +1,12 @@
 from __future__ import annotations
 
-from . import j90_1
-from . import j90_2
-from . import j90_5
-from . import j90_6
+from . import j30, j60, j90, j120
 
 CASES = (
-    *j90_1.CASES,
-    *j90_2.CASES,
-    *j90_5.CASES,
-    *j90_6.CASES,
+    *j30.CASES,
+    *j60.CASES,
+    *j90.CASES,
+    *j120.CASES,
 )
 
-INSTANCE_MODULES = (
-    j90_1,
-    j90_2,
-    j90_5,
-    j90_6,
-)
+INSTANCE_MODULES = (j30, j60, j90, j120)

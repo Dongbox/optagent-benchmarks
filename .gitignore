@@ -11,6 +11,7 @@ __pycache__/
 htmlcov/
 
 # Local environments and build outputs
+.venv312/
 .venv/
 venv/
 env/
@@ -25,6 +26,9 @@ tmp/
 
 # wheel
 *.whl
+
+# license
+*.license
 
 # Keep versioned dashboard/presentation artifacts addable by default.
 !presentation/
