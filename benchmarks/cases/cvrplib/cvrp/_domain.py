@@ -8,7 +8,7 @@ from typing import Any
 
 from optagent import ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification
 
 SOURCE = "CVRPLIB"
 SOURCE_KEY = "cvrplib"
@@ -264,6 +264,74 @@ class CvrpCase(BenchmarkCase):
             "vehicles": instance.vehicles,
         }
 
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance: CvrpInstance = context["instance"]
+        values = getattr(solution, "variable_values", {}) or {}
+        arc_variables = context["arc_variables"]
+        selected_arcs: set[tuple[int, int]] = set()
+        violations: list[str] = []
+        for arc, variable in arc_variables.items():
+            raw_value = values.get(variable.node_id, 0)
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                violations.append(f"arc {arc} must have a numeric value")
+                continue
+            if not math.isclose(value, 0.0, abs_tol=1e-6) and not math.isclose(value, 1.0, abs_tol=1e-6):
+                violations.append(f"arc {arc} must be binary")
+            elif value > 0.5:
+                selected_arcs.add(arc)
+
+        depot = context["depot"]
+        customers = set(context["customers"])
+        incoming = {node: 0 for node in customers}
+        outgoing = {node: 0 for node in customers}
+        depot_incoming = 0
+        depot_outgoing = 0
+        for left, right in selected_arcs:
+            if right in incoming:
+                incoming[right] += 1
+            if left in outgoing:
+                outgoing[left] += 1
+            if right == depot:
+                depot_incoming += 1
+            if left == depot:
+                depot_outgoing += 1
+        for customer in sorted(customers):
+            if incoming[customer] != 1:
+                violations.append(f"customer {customer} incoming degree is {incoming[customer]}, expected 1")
+            if outgoing[customer] != 1:
+                violations.append(f"customer {customer} outgoing degree is {outgoing[customer]}, expected 1")
+        if depot_incoming != instance.vehicles:
+            violations.append(f"depot incoming degree is {depot_incoming}, expected {instance.vehicles}")
+        if depot_outgoing != instance.vehicles:
+            violations.append(f"depot outgoing degree is {depot_outgoing}, expected {instance.vehicles}")
+
+        routes = _decode_routes(
+            selected_arcs,
+            depot=depot,
+            customer_count=instance.customer_count,
+        )
+        visited = [customer for route in routes for customer in route]
+        if len(routes) != instance.vehicles:
+            violations.append(f"decoded route count is {len(routes)}, expected {instance.vehicles}")
+        if len(visited) != len(customers) or set(visited) != customers:
+            violations.append("decoded routes do not visit every customer exactly once")
+        if len(visited) != len(set(visited)):
+            violations.append("decoded routes visit a customer more than once")
+        demands = {index: instance.nodes[index].demand for index in customers}
+        for route_number, route in enumerate(routes, start=1):
+            load = sum(demands[index] for index in route)
+            if load > instance.capacity + 1e-9:
+                violations.append(
+                    f"route {route_number} load {load:g} exceeds capacity {instance.capacity:g}"
+                )
+
+        if violations:
+            return SolutionVerification.failed(*violations)
+        objective = sum(instance.distance(left, right) for left, right in selected_arcs)
+        return SolutionVerification.accepted(objective=float(objective))
 
 def make_cvrp_case(
     *,
