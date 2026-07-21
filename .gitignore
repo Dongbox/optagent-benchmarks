@@ -30,6 +30,9 @@ tmp/
 # license
 *.license
 
+# ?
+*.cc
+
 # Keep versioned dashboard/presentation artifacts addable by default.
 !presentation/
 !presentation/results/
