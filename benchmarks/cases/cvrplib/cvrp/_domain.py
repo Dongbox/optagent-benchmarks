@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 import math
 from pathlib import Path
@@ -40,6 +40,7 @@ class CvrpInstance:
     nodes: tuple[CvrpNode, ...]
     statistics: dict[str, Any]
     reference: dict[str, Any]
+    distance_matrix: tuple[tuple[float, ...], ...] | None = None
 
     @property
     def node_count(self) -> int:
@@ -61,11 +62,15 @@ class CvrpInstance:
         """Return the instance distance between two internal node indices."""
         if left == right:
             return 0.0
+        edge_weight_type = self.edge_weight_type.upper()
+        if edge_weight_type == "EXPLICIT":
+            if self.distance_matrix is None:
+                raise ValueError(f"EXPLICIT CVRPLIB instance {self.name!r} has no distance matrix")
+            return self.distance_matrix[left][right]
         first = self.nodes[left]
         second = self.nodes[right]
         dx = abs(first.x - second.x)
         dy = abs(first.y - second.y)
-        edge_weight_type = self.edge_weight_type.upper()
         if edge_weight_type in {"EUC_2D", "EUC_3D"}:
             return math.hypot(dx, dy)
         if edge_weight_type == "CEIL_2D":
@@ -479,6 +484,81 @@ def parse_cvrplib_json(text: str, *, expected_name: str | None = None) -> CvrpIn
     )
 
 
+
+def parse_cvrplib_vrp_text(text: str, *, expected_name: str | None = None) -> tuple[tuple[float, ...], ...]:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    headers: dict[str, str] = {}
+    section_index: int | None = None
+    for index, line in enumerate(lines):
+        upper = line.upper()
+        if upper == "EDGE_WEIGHT_SECTION":
+            section_index = index
+            break
+        if ":" in line:
+            key, value = line.split(":", 1)
+            headers[key.strip().upper()] = value.strip()
+    if section_index is None:
+        raise ValueError("CVRPLIB .vrp is missing EDGE_WEIGHT_SECTION")
+    name = headers.get("NAME", "")
+    if expected_name is not None and name != expected_name:
+        raise ValueError(f"CVRPLIB .vrp name {name!r} does not match expected {expected_name!r}")
+    edge_type = headers.get("EDGE_WEIGHT_TYPE", "").upper()
+    edge_format = headers.get("EDGE_WEIGHT_FORMAT", "").upper()
+    if edge_type != "EXPLICIT":
+        raise ValueError(f"CVRPLIB .vrp distance type {edge_type!r} is not EXPLICIT")
+    if edge_format != "LOWER_ROW":
+        raise ValueError(f"unsupported EXPLICIT CVRPLIB .vrp format: {edge_format!r}")
+    try:
+        dimension = int(headers["DIMENSION"])
+    except (KeyError, ValueError) as exc:
+        raise ValueError("CVRPLIB .vrp requires an integer DIMENSION") from exc
+    values: list[float] = []
+    for line in lines[section_index + 1 :]:
+        upper = line.upper()
+        if upper == "EOF" or upper.endswith("_SECTION"):
+            break
+        values.extend(float(item) for item in line.split())
+    expected_values = dimension * (dimension - 1) // 2
+    if len(values) != expected_values:
+        raise ValueError(
+            f"CVRPLIB LOWER_ROW distance count mismatch: expected {expected_values}, found {len(values)}"
+        )
+    matrix = [[0.0 for _ in range(dimension)] for _ in range(dimension)]
+    cursor = 0
+    for row in range(1, dimension):
+        for column in range(row):
+            value = values[cursor]
+            cursor += 1
+            matrix[row][column] = value
+            matrix[column][row] = value
+    return tuple(tuple(row) for row in matrix)
+
+
+def _attach_explicit_distance_matrix(
+    instance: CvrpInstance,
+    *,
+    json_path: Path,
+    data: dict[str, Any],
+) -> CvrpInstance:
+    if instance.edge_weight_type.upper() != "EXPLICIT":
+        return instance
+    raw_vrp_path = data.get("source_vrp_path")
+    vrp_path = Path(str(raw_vrp_path)) if raw_vrp_path else json_path.with_suffix(".vrp")
+    if not vrp_path.is_absolute():
+        vrp_path = json_path.parent / vrp_path
+    if not vrp_path.exists():
+        raise FileNotFoundError(f"EXPLICIT CVRPLIB .vrp file not found: {vrp_path}")
+    matrix = parse_cvrplib_vrp_text(
+        vrp_path.read_text(encoding="utf-8"),
+        expected_name=instance.name,
+    )
+    if len(matrix) != instance.node_count:
+        raise ValueError(
+            f"EXPLICIT CVRPLIB matrix dimension {len(matrix)} does not match node count {instance.node_count}"
+        )
+    return replace(instance, distance_matrix=matrix)
+
+
 def load_cvrp_json(path: str | Path, *, expected_name: str | None = None) -> CvrpInstance:
     path = Path(path)
     return parse_cvrplib_json(path.read_text(encoding="utf-8"), expected_name=expected_name)
@@ -494,7 +574,9 @@ def load_cvrp_case(
     source_instance = str(data.get("source_instance") or case.get("instance") or "")
     local_path = data.get("local_path")
     if local_path:
-        return load_cvrp_json(local_path, expected_name=source_instance)
+        json_path = Path(local_path)
+        instance = load_cvrp_json(json_path, expected_name=source_instance)
+        return _attach_explicit_distance_matrix(instance, json_path=json_path, data=data)
 
     path = (
         Path(str(data["raw_path"]))
@@ -502,7 +584,8 @@ def load_cvrp_case(
         else Path(cache_dir) / f"{source_instance}.json"
     )
     if path.exists():
-        return load_cvrp_json(path, expected_name=source_instance)
+        instance = load_cvrp_json(path, expected_name=source_instance)
+        return _attach_explicit_distance_matrix(instance, json_path=path, data=data)
     if not allow_download:
         raise FileNotFoundError(f"cached CVRPLIB file not found and downloads are disabled: {path}")
     raise FileNotFoundError(f"cached CVRPLIB file not found: {path}")
