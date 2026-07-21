@@ -108,6 +108,10 @@ class CvrpCase(BenchmarkCase):
             index: int(round(instance.nodes[index].demand)) for index in customers
         }
         reference_x, reference_flow = _reference_defaults(instance, depot, customers)
+        # Keep reference-route parsing/validation available, but start the model
+        # with neutral zero defaults rather than seeding it from the reference.
+        reference_x = {arc: 0 for arc in reference_x}
+        reference_flow = {arc: 0 for arc in reference_flow}
 
         builder = ModelBuilder(
             metadata={
