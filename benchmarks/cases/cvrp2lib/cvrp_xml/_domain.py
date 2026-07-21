@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
+import math
 from pathlib import Path
 from typing import Any
 
 from optagent import ModelBuilder
 
-from benchmarks.cases.base import BenchmarkCase
+from benchmarks.cases.base import BenchmarkCase, SolutionVerification
 
 SOURCE = "CVRP2LIB"
 SOURCE_KEY = "cvrp2lib"
@@ -39,6 +40,7 @@ class CvrpInstance:
     nodes: tuple[CvrpNode, ...]
     statistics: dict[str, Any]
     reference: dict[str, Any]
+    distance_matrix: tuple[tuple[float, ...], ...] | None = None
 
     @property
     def node_count(self) -> int:
@@ -56,6 +58,29 @@ class CvrpInstance:
     def customer_nodes(self) -> tuple[CvrpNode, ...]:
         return tuple(node for node in self.nodes if not node.is_depot)
 
+    def distance(self, left: int, right: int) -> float:
+        if left == right:
+            return 0.0
+        edge_weight_type = self.edge_weight_type.upper()
+        if edge_weight_type == "EXPLICIT":
+            if self.distance_matrix is None:
+                raise ValueError(f"EXPLICIT CVRP2LIB instance {self.name!r} has no distance matrix")
+            return self.distance_matrix[left][right]
+        first = self.nodes[left]
+        second = self.nodes[right]
+        if first.x is None or first.y is None or second.x is None or second.y is None:
+            raise ValueError(f"CVRP2LIB instance {self.name!r} lacks coordinates for {edge_weight_type}")
+        dx = abs(first.x - second.x)
+        dy = abs(first.y - second.y)
+        if edge_weight_type in {"EUC_2D", "EUC_3D"}:
+            return math.hypot(dx, dy)
+        if edge_weight_type == "CEIL_2D":
+            return float(math.ceil(math.hypot(dx, dy)))
+        if edge_weight_type == "MAN_2D":
+            return dx + dy
+        if edge_weight_type == "MAX_2D":
+            return max(dx, dy)
+        raise ValueError(f"Unsupported CVRP2LIB edge_weight_type: {self.edge_weight_type}")
 
 class CvrpXmlCase(BenchmarkCase):
     def build_model(self, **kwargs: Any) -> ModelBuilder:
@@ -65,6 +90,70 @@ class CvrpXmlCase(BenchmarkCase):
 
     def solution_metrics(self, solution: Any, **kwargs: Any) -> dict[str, Any]:
         raise NotImplementedError("CVRP_XML solution decoding is intentionally pending")
+
+    def verify_solution(self, solution: Any, **kwargs: Any) -> SolutionVerification:
+        context = self._build_context()
+        instance: CvrpInstance = context["instance"]
+        values = getattr(solution, "variable_values", {}) or {}
+        arc_variables = context.get("arc_variables", {})
+        selected_arcs: set[tuple[int, int]] = set()
+        violations: list[str] = []
+        for arc, variable in arc_variables.items():
+            raw_value = values.get(variable.node_id, 0)
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                violations.append(f"arc {arc} must have a numeric value")
+                continue
+            if not math.isclose(value, 0.0, abs_tol=1e-6) and not math.isclose(value, 1.0, abs_tol=1e-6):
+                violations.append(f"arc {arc} must be binary")
+            elif value > 0.5:
+                selected_arcs.add(arc)
+
+        depot = context["depot"]
+        customers = set(context["customers"])
+        incoming = {node: 0 for node in customers}
+        outgoing = {node: 0 for node in customers}
+        depot_incoming = 0
+        depot_outgoing = 0
+        for left, right in selected_arcs:
+            if right in incoming:
+                incoming[right] += 1
+            if left in outgoing:
+                outgoing[left] += 1
+            if right == depot:
+                depot_incoming += 1
+            if left == depot:
+                depot_outgoing += 1
+        for customer in sorted(customers):
+            if incoming[customer] != 1:
+                violations.append(f"customer {customer} incoming degree is {incoming[customer]}, expected 1")
+            if outgoing[customer] != 1:
+                violations.append(f"customer {customer} outgoing degree is {outgoing[customer]}, expected 1")
+        expected_routes = instance.vehicles or instance.reference.get("route_count")
+        if expected_routes is not None:
+            if depot_incoming != expected_routes:
+                violations.append(f"depot incoming degree is {depot_incoming}, expected {expected_routes}")
+            if depot_outgoing != expected_routes:
+                violations.append(f"depot outgoing degree is {depot_outgoing}, expected {expected_routes}")
+
+        routes = _decode_routes(selected_arcs, depot=depot, customer_count=instance.customer_count)
+        visited = [customer for route in routes for customer in route]
+        if expected_routes is not None and len(routes) != expected_routes:
+            violations.append(f"decoded route count is {len(routes)}, expected {expected_routes}")
+        if len(visited) != len(customers) or set(visited) != customers:
+            violations.append("decoded routes do not visit every customer exactly once")
+        if len(visited) != len(set(visited)):
+            violations.append("decoded routes visit a customer more than once")
+        demands = {index: instance.nodes[index].demand for index in customers}
+        for route_number, route in enumerate(routes, start=1):
+            load = sum(demands[index] for index in route)
+            if load > instance.capacity + 1e-9:
+                violations.append(f"route {route_number} load {load:g} exceeds capacity {instance.capacity:g}")
+        if violations:
+            return SolutionVerification.failed(*violations)
+        objective = sum(instance.distance(left, right) for left, right in selected_arcs)
+        return SolutionVerification.accepted(objective=float(objective))
 
 
 def make_cvrp_case(
@@ -218,6 +307,81 @@ def parse_cvrp_json(text: str, *, expected_name: str | None = None) -> CvrpInsta
     )
 
 
+
+def parse_cvrp_vrp_text(text: str, *, expected_name: str | None = None) -> tuple[tuple[float, ...], ...]:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    headers: dict[str, str] = {}
+    section_index: int | None = None
+    for index, line in enumerate(lines):
+        upper = line.upper()
+        if upper == "EDGE_WEIGHT_SECTION":
+            section_index = index
+            break
+        if ":" in line:
+            key, value = line.split(":", 1)
+            headers[key.strip().upper()] = value.strip()
+    if section_index is None:
+        raise ValueError("CVRP2LIB .vrp is missing EDGE_WEIGHT_SECTION")
+    name = headers.get("NAME", "")
+    if expected_name is not None and name != expected_name:
+        raise ValueError(f"CVRP2LIB .vrp name {name!r} does not match expected {expected_name!r}")
+    if headers.get("EDGE_WEIGHT_TYPE", "").upper() != "EXPLICIT":
+        raise ValueError("CVRP2LIB .vrp parser expects EDGE_WEIGHT_TYPE EXPLICIT")
+    if headers.get("EDGE_WEIGHT_FORMAT", "").upper() != "LOWER_ROW":
+        raise ValueError(
+            f"unsupported EXPLICIT CVRP2LIB .vrp format: {headers.get('EDGE_WEIGHT_FORMAT', '')!r}"
+        )
+    try:
+        dimension = int(headers["DIMENSION"])
+    except (KeyError, ValueError) as exc:
+        raise ValueError("CVRP2LIB .vrp requires an integer DIMENSION") from exc
+    values: list[float] = []
+    for line in lines[section_index + 1 :]:
+        upper = line.upper()
+        if upper == "EOF" or upper.endswith("_SECTION"):
+            break
+        values.extend(float(item) for item in line.split())
+    expected_values = dimension * (dimension - 1) // 2
+    if len(values) != expected_values:
+        raise ValueError(
+            f"CVRP2LIB LOWER_ROW distance count mismatch: expected {expected_values}, found {len(values)}"
+        )
+    matrix = [[0.0 for _ in range(dimension)] for _ in range(dimension)]
+    cursor = 0
+    for row in range(1, dimension):
+        for column in range(row):
+            value = values[cursor]
+            cursor += 1
+            matrix[row][column] = value
+            matrix[column][row] = value
+    return tuple(tuple(row) for row in matrix)
+
+
+def _attach_explicit_distance_matrix(
+    instance: CvrpInstance,
+    *,
+    json_path: Path,
+    data: dict[str, Any],
+) -> CvrpInstance:
+    if instance.edge_weight_type.upper() != "EXPLICIT":
+        return instance
+    raw_vrp_path = data.get("source_vrp_path")
+    vrp_path = Path(str(raw_vrp_path)) if raw_vrp_path else json_path.with_suffix(".vrp")
+    if not vrp_path.is_absolute():
+        vrp_path = json_path.parent / vrp_path
+    if not vrp_path.exists():
+        raise FileNotFoundError(f"EXPLICIT CVRP2LIB .vrp file not found: {vrp_path}")
+    matrix = parse_cvrp_vrp_text(
+        vrp_path.read_text(encoding="utf-8"),
+        expected_name=instance.name,
+    )
+    if len(matrix) != instance.node_count:
+        raise ValueError(
+            f"EXPLICIT CVRP2LIB matrix dimension {len(matrix)} does not match node count {instance.node_count}"
+        )
+    return replace(instance, distance_matrix=matrix)
+
+
 def load_cvrp_json(path: str | Path, *, expected_name: str | None = None) -> CvrpInstance:
     path = Path(path)
     return parse_cvrp_json(path.read_text(encoding="utf-8"), expected_name=expected_name)
@@ -233,7 +397,9 @@ def load_cvrp_case(
     source_instance = str(data.get("source_instance") or case.get("instance") or "")
     local_path = data.get("local_path")
     if local_path:
-        return load_cvrp_json(local_path, expected_name=source_instance)
+        json_path = Path(local_path)
+        instance = load_cvrp_json(json_path, expected_name=source_instance)
+        return _attach_explicit_distance_matrix(instance, json_path=json_path, data=data)
 
     path = (
         Path(str(data["raw_path"]))
@@ -241,7 +407,35 @@ def load_cvrp_case(
         else Path(cache_dir) / f"{source_instance}.json"
     )
     if path.exists():
-        return load_cvrp_json(path, expected_name=source_instance)
+        instance = load_cvrp_json(path, expected_name=source_instance)
+        return _attach_explicit_distance_matrix(instance, json_path=path, data=data)
     if not allow_download:
         raise FileNotFoundError(f"cached CVRP2LIB file not found and downloads are disabled: {path}")
     raise FileNotFoundError(f"cached CVRP2LIB file not found: {path}")
+
+
+
+def _decode_routes(
+    selected_arcs: set[tuple[int, int]],
+    *,
+    depot: int,
+    customer_count: int,
+) -> list[list[int]]:
+    successors: dict[int, int] = {}
+    for left, right in selected_arcs:
+        successors[left] = right
+    routes: list[list[int]] = []
+    starts = sorted(right for left, right in selected_arcs if left == depot and right != depot)
+    for start in starts:
+        route: list[int] = []
+        current = start
+        visited: set[int] = set()
+        while current != depot and current not in visited and len(route) <= customer_count:
+            visited.add(current)
+            route.append(current)
+            next_node = successors.get(current)
+            if next_node is None:
+                break
+            current = next_node
+        routes.append(route)
+    return routes
