@@ -15,7 +15,7 @@ SOURCE_KEY = "cvrplib"
 PROBLEM_TYPE = "routing"
 INSTANCE_TYPE = "cvrp"
 FAMILY = "capacitated_vehicle_routing_fixed_fleet"
-MODEL_STYLE = "binary_arc_single_commodity_flow"
+MODEL_STYLE = "binary_arc_node_load_mtz"
 RAW_DIR = Path(__file__).resolve().parent / "raw"
 DOCUMENTATION_URL = "http://vrp.atd-lab.inf.puc-rio.br/index.php/en/"
 
@@ -107,11 +107,10 @@ class CvrpCase(BenchmarkCase):
         demands = {
             index: int(round(instance.nodes[index].demand)) for index in customers
         }
-        reference_x, reference_flow = _reference_defaults(instance, depot, customers)
+        reference_x, _reference_flow = _reference_defaults(instance, depot, customers)
         # Keep reference-route parsing/validation available, but start the model
         # with neutral zero defaults rather than seeding it from the reference.
         reference_x = {arc: 0 for arc in reference_x}
-        reference_flow = {arc: 0 for arc in reference_flow}
 
         builder = ModelBuilder(
             metadata={
@@ -127,14 +126,14 @@ class CvrpCase(BenchmarkCase):
             )
             for arc in arcs
         }
-        flow_variables = {
-            arc: builder.int_var(
-                default=int(reference_flow.get(arc, 0)),
+        load_variables = {
+            customer: builder.int_var(
+                default=0,
                 lb=0,
                 ub=int(round(instance.capacity)),
-                name=f"f_{arc[0]}_{arc[1]}",
+                name=f"u_{customer}",
             )
-            for arc in arcs
+            for customer in customers
         }
 
         for customer in customers:
@@ -172,46 +171,22 @@ class CvrpCase(BenchmarkCase):
             name="depot_outgoing_vehicles",
         )
 
+        capacity = int(round(instance.capacity))
         for customer in customers:
-            incoming_flow = _sum_expr(
-                builder,
-                (flow_variables[(left, customer)]
-                for left in range(node_count)
-                if left != customer
-                )
-            )
-            outgoing_flow = _sum_expr(
-                builder,
-                (flow_variables[(customer, right)]
-                for right in range(node_count)
-                if right != customer
-                )
-            )
             builder.constraint(
-                incoming_flow - outgoing_flow == demands[customer],
-                name=f"flow_balance_{customer}",
+                load_variables[customer] >= demands[customer],
+                name=f"load_lower_{customer}",
             )
-
-        total_demand = sum(demands.values())
-        builder.constraint(
-            _sum_expr(
-                builder,
-                (flow_variables[(depot, customer)] for customer in customers),
-            )
-            == total_demand,
-            name="depot_flow_balance",
-        )
-        for left, right in arcs:
-            if right == depot:
+        for left in customers:
+            for right in customers:
+                if left == right:
+                    continue
                 builder.constraint(
-                    flow_variables[(left, right)] == 0,
-                    name=f"flow_to_depot_{left}",
-                )
-            else:
-                builder.constraint(
-                    flow_variables[(left, right)]
-                    <= int(round(instance.capacity)) * arc_variables[(left, right)],
-                    name=f"flow_arc_capacity_{left}_{right}",
+                    load_variables[left]
+                    - load_variables[right]
+                    + capacity * arc_variables[(left, right)]
+                    <= capacity - demands[right],
+                    name=f"load_transition_{left}_{right}",
                 )
 
         objective = _weighted_sum(
@@ -228,7 +203,7 @@ class CvrpCase(BenchmarkCase):
                 "depot": depot,
                 "customers": customers,
                 "arc_variables": arc_variables,
-                "flow_variables": flow_variables,
+                "load_variables": load_variables,
             }
         )
         return builder
@@ -268,7 +243,7 @@ class CvrpCase(BenchmarkCase):
             "selected_arc_count": len(selected_arcs),
             "raw_objective": getattr(solution, "objective_value", None),
             "model_style": MODEL_STYLE,
-            "flow_formulation": "single_commodity_flow",
+            "flow_formulation": "node_load_mtz",
             "capacity": instance.capacity,
             "vehicles": instance.vehicles,
         }
