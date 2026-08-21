@@ -9,10 +9,10 @@ BUNDLED_HEAD40 = make_steel_case(
     tier="calibration",
     coils=40,
     reference={
-        "objective": 22,
-        "status": "baseline",
-        "value_kind": "baseline",
-        "notes": "Baseline is the natural bundled data order from the steel example.",
+        "objective": 3,
+        "status": "optimal",
+        "value_kind": "optimal",
+        "notes": "CP-SAT proved optimum via augmented Hamiltonian-cycle feasibility checks.",
     },
     case_module=CASE_MODULE,
 )
@@ -23,9 +23,9 @@ BUNDLED = make_steel_case(
     coils=285,
     reference={
         "objective": 1,
-        "status": "baseline",
-        "value_kind": "baseline",
-        "notes": "Baseline is the natural bundled data order from the steel example.",
+        "status": "optimal",
+        "value_kind": "optimal",
+        "notes": "CP-SAT proved optimum via augmented Hamiltonian-cycle feasibility checks.",
     },
     case_module=CASE_MODULE,
 )

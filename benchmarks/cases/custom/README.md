@@ -11,17 +11,17 @@
 - `custom_steel_sequence_bundled_head40`
   - 问题描述：从 bundled 数据前 40 个钢卷得到的转序问题。
   - 规模：`coils=40`
-  - 参考值：`objective=22`
+  - 参考值：`objective=3`（CP-SAT 已证明最优）
 - `custom_steel_sequence_bundled`
   - 问题描述：完整 bundled 钢卷数据的转序问题。
   - 规模：`coils=285`
-  - 参考值：`objective=1`
+  - 参考值：`objective=1`（CP-SAT 已证明最优）
 
 ## 问题定义
 
 当前自定义示例是钢卷转序问题：在给定钢卷集合中寻找一个顺序，使相邻钢卷尽可能满足焊接条件；不可直接焊接的相邻转移会产生罚分。
 
-模型使用 sequence variable 和 external transition cost。toy case 的 reference 可通过穷举置换独立验证，bundled case 的 reference 是原始 bundled 顺序的 baseline，不应描述为已证明最优。
+模型使用 sequence variable 和 external transition cost。toy case 的 reference 可通过穷举置换独立验证；两个 bundled case 的 reference 已由 CP-SAT 的增广哈密顿环可行性检查证明最优。原始数据的自然顺序不是 `bundled` 的参考解。
 
 ## 相关文件
 
