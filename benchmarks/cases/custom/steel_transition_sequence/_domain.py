@@ -8,6 +8,10 @@ from typing import Any
 from optagent import ExternalCallbackContext, ModelBuilder
 
 from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_permutation
+from benchmarks.cases.custom.steel_transition_sequence.data_adapter import (
+    SteelTransitionInstance,
+    load_steel_instances as load_normalized_steel_instances,
+)
 
 SOURCE = "OptAgent custom"
 SOURCE_KEY = "custom"
@@ -31,8 +35,8 @@ class SteelCoilInstance:
 
 class SteelSequenceCase(BenchmarkCase):
     def build_model(self, **kwargs: Any) -> ModelBuilder:
-        instance = load_steel_instances()[self.instance]
-        matrix = build_penalty_matrix(instance.coils)
+        instance = load_normalized_steel_instances()[self.instance]
+        matrix = resolve_penalty_matrix(instance)
         default_sequence = list(range(instance.coil_count))
         builder = ModelBuilder(metadata={"model_style": MODEL_STYLE})
         coil_sequence = builder.sequence_var(
@@ -190,6 +194,11 @@ def build_penalty_matrix(coils: tuple[tuple[float, ...], ...]) -> list[list[int]
         for left in range(len(coils))
     ]
 
+
+def resolve_penalty_matrix(instance: SteelTransitionInstance) -> list[list[int]]:
+    if instance.penalty_matrix is not None:
+        return [list(row) for row in instance.penalty_matrix]
+    return build_penalty_matrix(instance.coils)
 
 def transition_count(sequence: list[int], penalty_matrix: list[list[int]]) -> int:
     return sum(penalty_matrix[sequence[index - 1]][sequence[index]] for index in range(1, len(sequence)))
