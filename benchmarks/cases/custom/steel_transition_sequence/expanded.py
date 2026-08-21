@@ -9,10 +9,10 @@ SAMPLE303 = make_steel_case(
     tier="full",
     coils=303,
     reference={
-        "objective": 3,
+        "objective": 1,
         "status": "optimal",
         "value_kind": "optimal",
-        "notes": "answer.xlsx supplies a verified 303-coil permutation with transition count 3.",
+        "notes": "CP-SAT proved optimum via augmented Hamiltonian-cycle feasibility checks.",
     },
     case_module=CASE_MODULE,
 )
