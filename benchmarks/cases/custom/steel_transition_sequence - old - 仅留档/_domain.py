@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from optagent import ModelBuilder
+from optagent import ExternalCallbackContext, ModelBuilder
 
 from benchmarks.cases.base import BenchmarkCase, SolutionVerification, verify_permutation
 from benchmarks.cases.custom.steel_transition_sequence.data_adapter import (
@@ -18,7 +18,7 @@ SOURCE_KEY = "custom"
 PROBLEM_TYPE = "production"
 INSTANCE_TYPE = "steel_transition_sequence"
 FAMILY = "sequence_transition_penalty"
-MODEL_STYLE = "sequence_var_sequence_transition_sum"
+MODEL_STYLE = "sequence_var_external_transition_penalty"
 DATA_PATH = Path(__file__).resolve().parent / "data" / "steel_coils.json"
 EPS = 1e-6
 
@@ -45,12 +45,19 @@ class SteelSequenceCase(BenchmarkCase):
             name="coil_sequence",
         )
 
+        def transition_penalty(ctx: ExternalCallbackContext) -> int:
+            sequence = [int(item) for item in ctx.value(coil_sequence)]
+            return transition_count(sequence, matrix)
+
         builder.minimize(
-            builder.sequence_transition_sum(
-                coil_sequence,
-                matrix,
-                include_return_edge=False,
-                cost_semantics="penalty",
+            builder.external_call(
+                transition_penalty,
+                name="transition_penalty",
+                pure=True,
+                deterministic=True,
+                cacheable=True,
+                timeout_ms=100,
+                depends_on=(coil_sequence,),
             ),
             name="transition_count",
         )
@@ -133,7 +140,7 @@ def make_steel_case(
         modeling_notes={
             "model_style": MODEL_STYLE,
             "objective_sense": "minimize",
-            "public_api_primitives": ["sequence_var", "sequence_transition_sum"],
+            "public_api_primitives": ["sequence_var", "external_call"],
         },
     )
 
