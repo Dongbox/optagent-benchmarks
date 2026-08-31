@@ -190,7 +190,7 @@ def strategy_profile_name(
         if strategy in {"optx", "mathopt_mp"}:
             return f"{strategy}_mip_exact_v1"
         return f"{strategy}_exact_baseline_v1"
-    if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}:
+    if family in {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling", "sequence_weighted_tardiness_scheduling"}:
         if strategy == "ga":
             return "ga_scheduling_feasibility_v1"
         if strategy == "alns":
@@ -352,7 +352,7 @@ def _machine_order_dimension(machine_orders: dict[Any, Any]) -> int | None:
 def _dimension_from_case_size(case_size: Any) -> int | None:
     if not isinstance(case_size, dict):
         return None
-    for key in ("nodes", "facilities", "activities", "operations", "variables", "coils", "locations"):
+    for key in ("nodes", "facilities", "activities", "operations", "jobs", "variables", "coils", "locations"):
         value = case_size.get(key)
         if value is None:
             continue

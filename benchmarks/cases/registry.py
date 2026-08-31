@@ -32,6 +32,7 @@ IMPLEMENTED_FAMILY_NAMES = {
     "sequence_transition_penalty",
     "sequence_blackbox_tsp",
     "sequence_quadratic_assignment",
+    "sequence_weighted_tardiness_scheduling",
 }
 
 

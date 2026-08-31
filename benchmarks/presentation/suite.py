@@ -48,7 +48,12 @@ DEFAULT_RUNNABLE_FAMILIES = ("interval_job_shop", "sequence_blackbox_tsp", "sequ
 DEFAULT_STRATEGIES = ("ga",)
 DEFAULT_CANDIDATE_STRATEGIES = ("ga",)
 DEFAULT_PARALLEL_THREAD_COUNTS = (1, 2, 4, 8, 16)
-SCHEDULING_FAMILIES = {"interval_job_shop", "flexible_interval_job_shop", "cumulative_resource_scheduling"}
+SCHEDULING_FAMILIES = {
+    "interval_job_shop",
+    "flexible_interval_job_shop",
+    "cumulative_resource_scheduling",
+    "sequence_weighted_tardiness_scheduling",
+}
 SCHEDULING_DEFAULT_STRATEGIES = ("ga",)
 SCHEDULING_STRATEGY_REPLACEMENTS: dict[str, str] = {}
 SEQUENCE_DEFAULT_STRATEGIES = ("ga",)
@@ -847,7 +852,9 @@ def _inventory_case_row(case: dict[str, Any]) -> dict[str, Any]:
         "tier": case.get("tier"),
         "instance": case.get("instance"),
         "reference_kind": reference.get("value_kind") or case.get("reference_kind"),
-        "reference_objective": reference.get("objective") or case.get("reference_objective"),
+        "reference_objective": (
+            reference["objective"] if reference.get("objective") is not None else case.get("reference_objective")
+        ),
         "model_style": case.get("model_style"),
         "implemented": case.get("family") in IMPLEMENTED_FAMILIES,
     }

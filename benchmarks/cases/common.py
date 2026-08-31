@@ -19,6 +19,7 @@ MODEL_STYLE_BY_FAMILY = {
     "sequence_blackbox_tsp": "sequence_var_external_call",
     "sequence_quadratic_assignment": "sequence_var_external_call",
     "sequence_transition_penalty": "sequence_var_external_transition_penalty",
+    "sequence_weighted_tardiness_scheduling": "interval_var_sequence_setup_weighted_tardiness",
 }
 
 
