@@ -18,6 +18,7 @@ INSTANCE_COLLECTION_MODULES = (
     "benchmarks.cases.psplib.rcpsp",
     "benchmarks.cases.tsplib.tsp",
     "benchmarks.cases.qaplib.quadratic_assignment",
+    "benchmarks.cases.wtsdslib.wtsds",
     "benchmarks.cases.miplib2017.linear_mip",
 )
 
